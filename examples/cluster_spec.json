@@ -1,0 +1,10 @@
+{
+  "ps": [
+    "localhost:14285",
+    "localhost:14888"
+  ],
+  "worker": [
+    "localhost:14286",
+    "localhost:14287"
+  ]
+}
