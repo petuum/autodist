@@ -1,0 +1,21 @@
+stages:
+  - lint
+  - build
+
+lint:
+   except:
+      - master
+   stage: lint
+   tags:
+      - docker
+   image: python:3.6-slim
+   script:
+      - pip install flake8
+      - flake8 autodist examples
+
+build:
+  stage: build
+  tags:
+    - docker
+  script:
+    - sh GENVER --pep440
