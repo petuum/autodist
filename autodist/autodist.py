@@ -18,6 +18,7 @@ class AutoDist:
     def __init__(self, resource_spec, strategy_name=None):
         self._graph = ops.Graph()
         self._resource_spec = resource_spec
+        self._strategy_name = strategy_name
 
     @tf_contextlib.contextmanager
     def scope(self):
@@ -28,7 +29,7 @@ class AutoDist:
         """
         Core Logic
         """
-        s = Strategy.create(self._graph, self._resource_spec, strategy_name=None)
+        s = Strategy.create(self._graph, self._resource_spec, strategy_name=self._strategy_name)
         Runner(s).run(fetches)
 
     # def run(self, fetches, feed_dict):
@@ -59,17 +60,3 @@ class AutoDist:
             # self._run(fetches)
             pass
         return wrapper
-
-
-
-
-
-
-
-
-
-
-
-
-
-

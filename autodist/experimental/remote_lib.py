@@ -51,7 +51,7 @@ def remote_copy(local_path, remote_path, hostname, username, port=22, key_file=N
     client.load_system_host_keys()
     client.set_missing_host_key_policy(paramiko.WarningPolicy)
     client.connect(hostname=hostname, port=port, username=username, pkey=pkey)
-    stdin, stdout, stderr = client.exec_command('mkdir -p %s' % remote_path)
+    _ = client.exec_command('mkdir -p %s' % remote_path)
     client.close()
 
     t = paramiko.Transport((hostname, port))
