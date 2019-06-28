@@ -5,6 +5,7 @@
 #    modules as different sub-libs.)
 ####################################
 
+from abc import abstractmethod
 from tensorflow.python.ops import nccl_ops
 
 
@@ -23,7 +24,8 @@ class Synchronizer:
     def __init__(self, config=Config()):
         self._config = config
 
-    def apply(self, graph):
+    @abstractmethod
+    def apply(self, graph, target=None):
         raise NotImplementedError
 
 

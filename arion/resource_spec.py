@@ -1,2 +1,2 @@
-class ResourceSpec():
+class ResourceSpec:
     pass

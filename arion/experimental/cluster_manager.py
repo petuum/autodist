@@ -57,13 +57,10 @@ class TFCluster:
 
 
 class LocalTFCluster(TFCluster):
-    def __init__(self):
-        super().__init__()
-
     def start(self):
 
         for k, v in self.cluster_spec.items():
-            for i, a in enumerate(v):
+            for i, _ in enumerate(v):
                 proc = Process(target=single_server_starter.start_server,
                                args=(self.cluster_spec, k, i), daemon=False)
                 self.processes.append(proc)
@@ -134,7 +131,7 @@ if __name__ == '__main__':
     c = Cluster()
     c.start()
 
-    def shutdown(recv_signal, frame):
+    def shutdown(_, __):
         c.terminate()
         print('\n[AutoDist] TF cluster terminated.')
     signal.signal(signal.SIGINT, shutdown)
