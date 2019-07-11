@@ -10,8 +10,9 @@ lint:
       - docker
    image: python:3.6-slim
    script:
-      - pip install flake8
-      - flake8 autodist examples
+      - pip install pydocstyle==3.0.0
+      - pip install prospector==1.1.6.2
+      - prospector
 
 build:
   stage: build

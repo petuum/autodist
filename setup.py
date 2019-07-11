@@ -9,7 +9,7 @@ setup(
     classifiers=[
         'Programming Language :: Python :: 3 :: Only',
     ],
-    install_requires=["paramiko", "scipy", "numpy"],
+    install_requires=["paramiko", "numpy", "pyyaml", "protobuf"],
     packages=find_packages(),
     zip_safe=False,
 )

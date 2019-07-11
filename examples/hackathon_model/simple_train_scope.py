@@ -1,9 +1,14 @@
+import os
 import time
-
+import json
 import tensorflow as tf
 import numpy as np
 from absl import app
-from absl import logging
+
+from autodist import AutoDist
+
+resource_spec_file = os.path.join(os.path.dirname(__file__), 'cluster_spec')
+autodist = AutoDist(resource_spec_file)
 
 vocab_size = 10000
 embedding_size = 16
@@ -45,27 +50,27 @@ class SimpleModel():
         # dense
         x = tf.linalg.matmul(x, self.w1) + self.b1
         x = tf.nn.relu(x)
-        logits = tf.linalg.matmul(x, self.w2) + self.b2  #logits
+        logits = tf.linalg.matmul(x, self.w2) + self.b2  # logits
         logits = tf.squeeze(logits)
-        loss = tf.nn.sigmoid_cross_entropy_with_logits(y, logits)
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=logits)
         loss = tf.reduce_mean(loss)
         return loss
 
-    #@tf.function
-    def train_fn(self, x, y):
+    @autodist.function
+    def train_fn(self, xy):
+        x, y = xy
         with tf.GradientTape() as tape:
             loss = self.forward(x, y)
         trainables = [self.emb, self.w1, self.b1, self.w2, self.b2]
         gradients = tape.gradient(loss, trainables)
-        self.optimizer.apply_gradients(zip(gradients, trainables))
-        return loss
+
+        # strategy requires users to provide the train_op handle
+        train_op = self.optimizer.apply_gradients(zip(gradients, trainables))
+        return loss, train_op
 
 
 def main(_):
-    (train_data,
-     train_labels), (test_data,
-                     test_labels) = tf.keras.datasets.imdb.load_data(
-                         num_words=vocab_size)
+    (train_data, train_labels), (test_data, test_labels) = tf.keras.datasets.imdb.load_data(num_words=vocab_size)
     train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data,
                                                                value=0,
                                                                padding='post',
@@ -76,25 +81,26 @@ def main(_):
                                                               maxlen=256)
     train_labels = train_labels.astype(np.float32)
 
-    model = SimpleModel()
-    left = 0
-    prev_time = time.time()
-    for local_step in range(max_steps):
-        x = train_data[left:left + batch_size]
-        y = train_labels[left:left + batch_size]
-        loss = model.train_fn(x, y)
-        if local_step % log_frequency == 0:
-            cur_time = time.time()
-            elapsed_time = cur_time - prev_time
-            num_sentences = batch_size * log_frequency
-            wps = float(num_sentences) / elapsed_time
-            logging.info(
-                "Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" %
-                (local_step, cur_time - prev_time, wps, loss))
-            prev_time = cur_time
-        left = left + batch_size
-        if left > train_data.shape[0]:
-            left = left % train_data.shape[0]
+    with autodist.scope():  # AutoDist code
+        train_dataset = tf.compat.v1.data.Dataset.from_tensor_slices((train_data, train_labels)) \
+            .shuffle(25000).batch(batch_size).repeat()
+        my_iterator = train_dataset.make_one_shot_iterator().get_next()
+        model = SimpleModel()
+        prev_time = time.time()
+        for local_step in range(max_steps):
+            # fetch train_op and loss
+            # loss, _ = model.train_fn(x, y)
+            # loss, _ = ar.run(model.train_fn, my_iterator)
+            loss = model.train_fn(my_iterator)
+            if local_step % log_frequency == 0:
+                cur_time = time.time()
+                elapsed_time = cur_time - prev_time
+                num_sentences = batch_size * log_frequency
+                wps = float(num_sentences) / elapsed_time
+                # logging.info("Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" % (
+                #     local_step, cur_time - prev_time, wps, loss))
+                prev_time = cur_time
+                break
 
 
 app.run(main)
