@@ -1,18 +1,45 @@
+---
 stages:
+  - toolchain
   - lint
+  - test
   - build
 
-lint:
-   except:
-      - master
-   stage: lint
+variables:
+   TOOLCHAIN_IMAGE: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_latest
+
+update-toolchain:
+   stage: toolchain
+   image: registry.petuum.com/internal/devops/docker-dind-jq:1.0
    tags:
       - docker
-   image: python:3.6-slim
+   before_script:
+      - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
    script:
-      - pip install pydocstyle==3.0.0
-      - pip install prospector==1.1.6.2
+      - ./toolchain/update_toolchain_image.sh
+
+lint:
+   stage: lint
+   image: '${TOOLCHAIN_IMAGE}'
+   except:
+      - master
+   tags:
+      - docker
+   script:
       - prospector
+
+test:
+   stage: test
+   image: '${TOOLCHAIN_IMAGE}'
+   tags:
+     - docker
+   script:
+     - 'python3 -m pytest -s --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov tests/'
+   artifacts:
+     name: cov-report
+     paths:
+       - htmlcov
+     expire_in: '1 day'
 
 build:
   stage: build

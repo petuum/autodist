@@ -1,0 +1,10 @@
+numpy==1.16.4
+paramiko==2.6.0
+pyyaml==5.1.1 
+tensorflow==2.0.0-beta1
+
+# Dev Requirements
+pytest==5.0.1
+pytest-cov==2.7.1
+pydocstyle==3.0.0
+prospector==1.1.6.2
