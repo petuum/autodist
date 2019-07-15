@@ -1,5 +1,5 @@
 """Auto Strategy."""
-from .base import StrategyBuilder, Strategy
+from autodist.strategy.base import StrategyBuilder, Strategy
 
 
 class Auto(StrategyBuilder):

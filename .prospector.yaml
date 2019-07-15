@@ -53,7 +53,7 @@ pep257:
     # - D102  # Missing doctring in public method
     # - D103  # Missing doctring in public method
     - D104  # Missing doctring in public package
-    # - D105  # Missing doctring in magic method
+    - D105  # Missing doctring in magic method
     - D107  # Missing docstring in __init__
     - D203  # Blank line before class docstring
     - D212  # Multi-line docstring should start at first line
