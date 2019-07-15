@@ -1,5 +1,6 @@
 """Synchronizer."""
 
+
 class Config:
     """Default Config."""
 

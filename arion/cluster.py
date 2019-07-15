@@ -10,19 +10,17 @@ class Cluster:
 
         self.cluster_spec = self._get_default_cluster_spec(resource_spec)
 
-    def _get_default_cluster_spec(self, resource_spec):
-        print(self.cluster_spec)
+    @staticmethod
+    def _get_default_cluster_spec(resource_spec):
 
-        nodes = resource_spec.get_nodes()
-        cluster_spec = {
+        return {
             'worker': [
                 '{ip}:{port}'.format(
                     ip=n,
                     port=next(DEFAULT_PORT_RANGE)
                 )
-            ] for n in nodes
+            ] for n in resource_spec.nodes
         }
-        return cluster_spec
 
     def start(self):
         """Start."""

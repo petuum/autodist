@@ -59,6 +59,14 @@ class Strategy:
         self.node_config = {}
         self.graph_config = {}
 
+    def as_dict(self):
+        """Strategy representation as dict"""
+        return {
+            '_id': self._id,
+            'node_config': self.node_config,
+            'graph_config': self.graph_config
+        }
+
     def serialize(self):
         """
         Serialize the strategy.
@@ -67,11 +75,7 @@ class Strategy:
         """
         os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
         path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._id)
-        yaml.safe_dump({
-            '_id': self._id,
-            'node_config': self.node_config,
-            'graph_config': self.graph_config
-        }, stream=open(path, 'w+'))
+        yaml.safe_dump(self.as_dict(), stream=open(path, 'w+'))
 
     @classmethod
     def deserialize(cls, strategy_id):
@@ -80,3 +84,6 @@ class Strategy:
         o = cls()
         o.__dict__.update(yaml.safe_load(open(path, 'r')))
         return o
+
+    def __str__(self):
+        return str(self.as_dict())

@@ -30,13 +30,65 @@ class ResourceSpec:
         Construct a device graph containing the connectivity between devices.
 
         Each device is represented as an autodist.device_spec.
-        If file_path is None, use the local machines and all visible GPUs.
+        If resource_file is None, use the local machines and all visible GPUs.
 
         Args:
-            file_path (string, optional): path to the file containing the resource info. Defaults to None.
+            resource_file (string, optional): path to the file containing the resource info. Defaults to None.
         """
-        self.devices = dict()
+        # protected properties
+        self.__devices = dict()
+        self.__nodes = None
+        self.__cpu_devices = None
+        self.__num_cpus = None
+        self.__gpu_devices = None
+        self.__num_gpus = None
+
+        # set self.__devices
         self._from_resource_info(resource_file)
+
+    @property
+    def devices(self):
+        """Return all devices."""
+        return self.__devices.items()
+
+    @property
+    def nodes(self):
+        """Return all node addresses."""
+        if not self.__nodes:
+            self.__nodes = {k.split(':')[0] for k in self.__devices}  # set
+        return self.__nodes
+
+    @property
+    def cpu_devices(self):
+        """String-to-device_spec mapping of all cpu devices."""
+        if not self.__cpu_devices:
+            self.__cpu_devices = {k: v for k, v in self.__devices.items() if v.device_type is DeviceType.CPU}
+        return self.__cpu_devices.items()
+
+    @property
+    def num_cpus(self):
+        """Number of all cpu devices."""
+        if not self.__num_cpus:
+            self.__num_cpus = len(self.cpu_devices)
+        return self.__num_cpus
+
+    @property
+    def gpu_devices(self):
+        """String-to-device_spec mapping of all gpu devices."""
+        if not self.__gpu_devices:
+            self.__gpu_devices = {k: v for k, v in self.__devices.items() if v.device_type is DeviceType.GPU}
+        return self.__gpu_devices.items()
+
+    @property
+    def num_gpus(self):
+        """Number of all gpu devices."""
+        if not self.__num_gpus:
+            self.__num_gpus = len(self.gpu_devices)
+        return self.__num_gpus
+
+    def _add_device(self, device_spec):
+        if device_spec.name_string() not in self.__devices:
+            self.__devices[device_spec.name_string()] = device_spec
 
     def _from_resource_info(self, resource_file=None):
         if resource_file is None:
@@ -60,27 +112,17 @@ class ResourceSpec:
                                      index)
                     self._add_device(gpu)
 
-    def _add_device(self, device_spec):
-        if device_spec.name_string() not in self.devices:
-            self.devices[device_spec.name_string()] = device_spec
+    def is_single_node(self):
+        """Return True if there is only a single node"""
+        return self.num_cpus == 1
 
-    def get_nodes(self):
-        """Return all node addresses."""
-        return {k.split(':')[0] for k in self.devices}
-
-    @property
-    def num_gpus(self):
-        """Return the number of GPUs across all nodes."""
-        return len([v for _, v in self.devices if v.device_type is DeviceType.GPU])
-
-    # TODO (hao.zhang)
-    def get_cpu_devices(self):
-        """Return all cpus across all nodes."""
-        pass
+    def is_single_node_with_gpu(self):
+        """Return True if there is a single node with GPUs"""
+        return self.is_single_node() and self.num_gpus > 0
 
 
 class DeviceSpec:
-    """Device Spec."""
+    """Device specification."""
 
     def __init__(self,
                  resource_spec, host_address,

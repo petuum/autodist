@@ -12,20 +12,25 @@ class PS(StrategyBuilder):
 
     def _build(self):
         expr = Strategy()
-        expr.graph_config['num_replica'] = self._resource_spec.num_gpus()
 
+        # get each variable, generate variable synchronizer config
+        expr.graph_config['replicas'] = {k for k, v in self._resource_spec.gpu_devices}
         # find all variables
-        variables = self._item.get_variables()
-        for node in variables:
-            node_config = {
-                'P': 4,
-                'synchronizer': {
-                    'type': 'ps',
-                    'config': {
-                        'reduction_devices': self._resource_spec.get_cpu_devices(),
-                        'num_partition': 4
-                    }
+        variables = self._item.get_variables_to_sync()
+        reduction_device_names = [k for k, _ in self._resource_spec.cpu_devices]
+        for var in variables:
+            config = self._gen_ps_node_config(reduction_device_names)
+            expr.node_config.update({var.name: config})
+        return expr
+
+    @staticmethod
+    def _gen_ps_node_config(reduction_destinations):
+        node_config = {
+            'synchronizer': {
+                'type': 'ps',
+                'config': {
+                    'reduction_destinations': reduction_destinations
                 }
             }
-            expr.node_config[node.name] = node_config
-        return expr
+        }
+        return node_config
