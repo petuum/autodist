@@ -16,6 +16,7 @@ class Runner:
         # devices setter
         # paritioner
         # synchronizer + replicator(?)
+        print('Potatos!!!')
         return self
 
     def run(self, fetches, feed=None):

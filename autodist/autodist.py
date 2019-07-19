@@ -4,16 +4,17 @@ import os
 
 from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
-from tensorflow.python.util import tf_contextlib
 from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.util import tf_contextlib
 
-from autodist.strategy.base import StrategyBuilder
+from autodist.const import Env
 from autodist.coordinator import Coordinator
-from autodist.runner import Runner
 from autodist.item import Item
 from autodist.resource_spec import ResourceSpec
+from autodist.runner import Runner
+from autodist.strategy.base import StrategyBuilder
 
-ENV_AUTODIST_WOKRER = os.environ.get('AUTODIST_WORKER')
+IS_AUTODIST_WORKER = os.environ.get(Env.AUTODIST_WORKER.name) == 'true'
 
 
 class AutoDist:
@@ -41,19 +42,21 @@ class AutoDist:
         # this line will traverse the graph and generate necessary stats
         item = Item(self._graph)
 
-        if not ENV_AUTODIST_WOKRER:
+        if not IS_AUTODIST_WORKER:
             s = StrategyBuilder.build(item, self._resource_spec, self._strategy_name)
         else:
             s = StrategyBuilder.load_strategy()
 
         logging.info(s)
 
-        if not ENV_AUTODIST_WOKRER:
+        if not IS_AUTODIST_WORKER:
+            print('# Master')
             Coordinator(
                 strategy=s,
                 resource_spec=self._resource_spec
-            ).launch()
+            ).launch_cluster().launch_clients()
         else:
+            print('# Worker')
             Runner(s, self._resource_spec).build(item).run(fetches)
 
     # def run(self, fetches, feed_dict):

@@ -7,7 +7,7 @@ from absl import app
 
 from autodist import AutoDist
 
-resource_spec_file = os.path.join(os.path.dirname(__file__), 'cluster_spec')
+resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
 autodist = AutoDist(resource_spec_file, 'PS')
 
 vocab_size = 10000
