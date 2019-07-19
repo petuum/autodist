@@ -1,10 +1,11 @@
 """Strategy Base."""
 
-from datetime import datetime
 import os
+from datetime import datetime
+
 import yaml
 
-from autodist.const import DEFAULT_SERIALIZATION_DIR
+from autodist.const import DEFAULT_SERIALIZATION_DIR, Env
 from autodist.resource_spec import ResourceSpec
 
 
@@ -46,7 +47,7 @@ class StrategyBuilder:
     @classmethod
     def load_strategy(cls):
         """Load serialized strategy."""
-        strategy_id = os.environ['AUTODIST_STRATEGY_ID']
+        strategy_id = os.environ[Env.AUTODIST_STRATEGY_ID.name]
         o = Strategy.deserialize(strategy_id)
         return o
 
@@ -58,6 +59,12 @@ class Strategy:
         self._id = datetime.utcnow().strftime('%Y%m%dT%H%M%SM%f')
         self.node_config = {}
         self.graph_config = {}
+
+        self.path = ''
+
+    def get_id(self):
+        """Return the strategy id."""
+        return self._id
 
     def as_dict(self):
         """Strategy representation as dict"""
@@ -76,6 +83,7 @@ class Strategy:
         os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
         path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._id)
         yaml.safe_dump(self.as_dict(), stream=open(path, 'w+'))
+        self.path = path
 
     @classmethod
     def deserialize(cls, strategy_id):

@@ -1,8 +1,8 @@
 """Item as metagraph wrapper."""
 
-from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
-from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.framework import ops
+from tensorflow.python.ops.variables import trainable_variables
+from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
 
 class Item:

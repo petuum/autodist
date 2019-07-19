@@ -1,7 +1,11 @@
 """Resource Specification."""
 
-import os
+import re
 from enum import Enum
+
+import yaml
+
+from autodist.utils.network import SSHConfig
 
 
 class Connectivity(Enum):
@@ -42,6 +46,7 @@ class ResourceSpec:
         self.__num_cpus = None
         self.__gpu_devices = None
         self.__num_gpus = None
+        self.__ssh_config = dict()
 
         # set self.__devices
         self._from_resource_info(resource_file)
@@ -86,6 +91,11 @@ class ResourceSpec:
             self.__num_gpus = len(self.gpu_devices)
         return self.__num_gpus
 
+    @property
+    def ssh_config(self):
+        """Configurations for SSH."""
+        return self.__ssh_config
+
     def _add_device(self, device_spec):
         if device_spec.name_string() not in self.__devices:
             self.__devices[device_spec.name_string()] = device_spec
@@ -94,23 +104,20 @@ class ResourceSpec:
         if resource_file is None:
             # TODO(Hao): To deal with single-node GPUs
             return
-        if not os.path.exists(resource_file):
-            raise FileNotFoundError
-        lines = [line.rstrip('\n') for line in open(resource_file)]
-        for line in lines:
-            devices = line.split(':')
-            host_address = devices[0]
-            host_cpu = DeviceSpec(self, host_address)
+
+        resource_info = yaml.safe_load(open(resource_file, 'r'))
+
+        for node in resource_info.pop('nodes', {}):
+            host_address = node['address']
+            host_cpu = DeviceSpec(host_address)
             self._add_device(host_cpu)
             # handle GPUs
-            if len(devices) > 1:
-                gpu_indices = devices[1].split(',')
-                for index in gpu_indices:
-                    gpu = DeviceSpec(self, host_address,
-                                     host_cpu,
-                                     DeviceType.GPU,
-                                     index)
-                    self._add_device(gpu)
+            for gpu_index in node.get('gpus', {}):
+                gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
+                self._add_device(gpu)
+
+        # all other configs except nodes are (optional) ssh config
+        self.__ssh_config = SSHConfig(resource_info.pop('ssh', {}))
 
     def is_single_node(self):
         """Return True if there is only a single node"""
@@ -124,21 +131,22 @@ class ResourceSpec:
 class DeviceSpec:
     """Device specification."""
 
-    def __init__(self,
-                 resource_spec, host_address,
-                 host_device=None,
-                 device_type=DeviceType.CPU,
-                 device_index=None):
-        # reference to a device graph
-        self._resource_spec = resource_spec
+    def __init__(
+        self,
+        host_address,
+        host_device=None,
+        device_type=DeviceType.CPU,
+        device_index=None
+    ):
         self.host_address = host_address
         self.device_type = device_type
         if self.device_type is DeviceType.GPU:
             self.device_index = device_index
-            if host_device is None or \
-                    host_device.device_type is not DeviceType.CPU:
-                raise ValueError('Host device must be a CPU')
-            self.host_device = host_device
+            if host_device is not None:
+                if host_device.device_type is not DeviceType.CPU:
+                    raise ValueError('Host device must be a CPU')
+            else:
+                self.host_device = DeviceSpec(host_address)
         else:
             self.device_index = 0
             self.host_device = self
@@ -146,12 +154,16 @@ class DeviceSpec:
     def name_string(self):
         """Name string."""
         if self.device_type is DeviceType.CPU:
-            return self.host_address
+            return self.host_address + ':' + DeviceType.CPU.name + '0'
         else:
-            return self.host_address + ':' + str(self.device_index)
+            return self.host_address + ':' + self.device_type.name + str(self.device_index)
 
     def connectivity_with(self, device_spec):
-        """Connectivity."""
+        """
+        Connectivity.
+
+        TODO (hao.zhang): why func rather than an precalculated adjacency list.
+        """
         if self.host_address is not device_spec.host_address:
             return Connectivity.ETHERNET
         # on the same pyhsical node
@@ -165,3 +177,28 @@ class DeviceSpec:
             return Connectivity.SAME
         else:
             return Connectivity.GPU_TO_GPU_LOCAL
+
+    @classmethod
+    def from_string(cls, name_string):
+        """
+        Construct an AutoDist DeviceSpec based on its name string.
+
+        Args:
+            name_string: AutoDist DeviceSpec name string
+
+        Returns:
+            DeviceSpec: an instance
+        """
+        address, device_type, device_index = re.match(r"(\S+):([a-zA-Z]+)(\d+)", name_string).groups()
+        obj = cls(
+            address,
+            device_type=DeviceType[device_type],
+            device_index=device_index
+        )
+        return obj
+
+    def __repr__(self):
+        return "<DeviceSpec: {}>".format(self.name_string())
+
+    def __str__(self):
+        return self.name_string()

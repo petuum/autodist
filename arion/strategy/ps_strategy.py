@@ -1,7 +1,7 @@
 """PS Strategy."""
 
-from autodist.strategy.base import Strategy, StrategyBuilder
 from autodist.item import Item
+from autodist.strategy.base import Strategy, StrategyBuilder
 
 
 class PS(StrategyBuilder):
