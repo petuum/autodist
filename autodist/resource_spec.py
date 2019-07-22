@@ -60,7 +60,7 @@ class ResourceSpec:
     def nodes(self):
         """Return all node addresses."""
         if not self.__nodes:
-            self.__nodes = {k.split(':')[0] for k in self.__devices}  # set
+            self.__nodes = {v.host_address for v in self.__devices.values()}  # set
         return self.__nodes
 
     @property
@@ -154,9 +154,9 @@ class DeviceSpec:
     def name_string(self):
         """Name string."""
         if self.device_type is DeviceType.CPU:
-            return self.host_address + ':' + DeviceType.CPU.name + '0'
+            return self.host_address + ':' + DeviceType.CPU.name + ':0'
         else:
-            return self.host_address + ':' + self.device_type.name + str(self.device_index)
+            return self.host_address + ':' + self.device_type.name + ':' + str(self.device_index)
 
     def connectivity_with(self, device_spec):
         """
@@ -189,7 +189,7 @@ class DeviceSpec:
         Returns:
             DeviceSpec: an instance
         """
-        address, device_type, device_index = re.match(r"(\S+):([a-zA-Z]+)(\d+)", name_string).groups()
+        address, device_type, device_index = re.match(r"(\S+):([a-zA-Z]+):(\d+)", name_string).groups()
         obj = cls(
             address,
             device_type=DeviceType[device_type],

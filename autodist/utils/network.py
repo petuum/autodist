@@ -66,7 +66,7 @@ def is_local_address(address):
         Boolean
     """
     # TODO: use ipaddress for more rigorous checking
-    if address.split(':').pop() == 'localhost':
+    if address.split(':')[0] == 'localhost':
         return True
     return False
 
