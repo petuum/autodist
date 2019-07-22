@@ -1,8 +1,6 @@
 nodes:
   - address: localhost
     gpus: [0,1]
-  - address: 127.0.0.1
-    gpus: [1]
 
 #ssh:
 #  username: 'peng'
