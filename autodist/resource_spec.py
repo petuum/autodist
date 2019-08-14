@@ -1,8 +1,8 @@
 """Resource Specification."""
 
-import re
 from enum import Enum
 
+import re
 import yaml
 
 from autodist.utils.network import SSHConfig
@@ -46,10 +46,16 @@ class ResourceSpec:
         self.__num_cpus = None
         self.__gpu_devices = None
         self.__num_gpus = None
+        self.__chief_address = None
         self.__ssh_config = dict()
 
         # set self.__devices
         self._from_resource_info(resource_file)
+
+    @property
+    def chief(self):
+        """Return chief address."""
+        return self.__chief_address
 
     @property
     def devices(self):
@@ -110,6 +116,8 @@ class ResourceSpec:
         for node in resource_info.pop('nodes', {}):
             host_address = node['address']
             host_cpu = DeviceSpec(host_address)
+            if node.get('chief', False):
+                self.__chief_address = host_address
             self._add_device(host_cpu)
             # handle GPUs
             for gpu_index in node.get('gpus', {}):
@@ -118,6 +126,10 @@ class ResourceSpec:
 
         # all other configs except nodes are (optional) ssh config
         self.__ssh_config = SSHConfig(resource_info.pop('ssh', {}))
+
+        # checks
+        if self.__chief_address is None:
+            raise ValueError('Must provide "chief: true" in one of the nodes in resource spec.')
 
     def is_single_node(self):
         """Return True if there is only a single node"""
@@ -132,11 +144,11 @@ class DeviceSpec:
     """Device specification."""
 
     def __init__(
-        self,
-        host_address,
-        host_device=None,
-        device_type=DeviceType.CPU,
-        device_index=None
+            self,
+            host_address,
+            host_device=None,
+            device_type=DeviceType.CPU,
+            device_index=None
     ):
         self.host_address = host_address
         self.device_type = device_type
@@ -196,6 +208,12 @@ class DeviceSpec:
             device_index=device_index
         )
         return obj
+
+    def __hash__(self):
+        return hash(self.name_string())
+
+    def __eq__(self, other):
+        return self.name_string() == other.name_string()
 
     def __repr__(self):
         return "<DeviceSpec: {}>".format(self.name_string())

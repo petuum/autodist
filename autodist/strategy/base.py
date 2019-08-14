@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-
+from copy import deepcopy
 import yaml
 
 from autodist.const import DEFAULT_SERIALIZATION_DIR, Env
@@ -38,7 +38,6 @@ class StrategyBuilder:
 
         o = cls.get_subclasses()[strategy_name](item, resource_spec)
         strategy = o._build()  # pylint: disable=protected-access
-        strategy.serialize()
         return strategy
 
     def _build(self):
@@ -74,6 +73,13 @@ class Strategy:
             'graph_config': self.graph_config
         }
 
+    @classmethod
+    def from_dict(cls, d):
+        """Create a new Strategy instance from the serialized dict."""
+        o = cls()
+        o.__dict__.update(d)
+        return o
+
     def serialize(self):
         """
         Serialize the strategy.
@@ -89,9 +95,39 @@ class Strategy:
     def deserialize(cls, strategy_id):
         """Deserialize the strategy."""
         path = os.path.join(DEFAULT_SERIALIZATION_DIR, strategy_id)
-        o = cls()
-        o.__dict__.update(yaml.safe_load(open(path, 'r')))
-        return o
+        return cls.from_dict(yaml.safe_load(open(path, 'r')))
 
     def __str__(self):
         return str(self.as_dict())
+
+    def copy(self):
+        """Return a deepcopy of the strategy."""
+        return self.from_dict(deepcopy(self.as_dict()))
+
+
+class StrategyCompiler:
+    """Strategy Compiler."""
+
+    def __init__(self):
+        self._device_resolver = None
+
+    def set_device_resolver(self, resolver):
+        """Add a device resolver to resolve devices in the strategy."""
+        self._device_resolver = resolver
+        return self
+
+    def _resolve_devices(self, strategy):
+        s = strategy.copy()
+        for n in s.node_config:
+            d = s.node_config[n]['synchronizer']['config']['reduction_destinations']
+            s.node_config[n]['synchronizer']['config']['reduction_destinations'] = self._device_resolver(d)
+
+        d = s.graph_config['replicas']
+        s.graph_config['replicas'] = self._device_resolver(d)
+        return s
+
+    def compile(self, strategy):
+        """Compile the strategy."""
+        if self._device_resolver:
+            strategy = self._resolve_devices(strategy)
+        return strategy

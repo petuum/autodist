@@ -1,8 +1,0 @@
-nodes:
-  - address: localhost
-    gpus: [0,1]
-
-#ssh:
-#  username: 'peng'
-#  key_file: '/home/peng/.ssh/id_rsa'
-#  python_venv: 'source /home/peng/rmtvenvs/full_autodist/bin/activate'

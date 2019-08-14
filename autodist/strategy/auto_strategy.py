@@ -6,4 +6,5 @@ class Auto(StrategyBuilder):
     """Auto Strategy."""
 
     def _build(self):
+        print(self)
         return Strategy()

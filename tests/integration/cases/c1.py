@@ -1,17 +1,10 @@
-import sys
 
 import numpy as np
-import os
 import tensorflow as tf
-
-from autodist import AutoDist
 from tensorflow.python.training.training_util import get_or_create_global_step
 
-resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
 
-
-def main(_):
-    autodist = AutoDist(resource_spec_file, 'PS')
+def main(autodist):
 
     d = autodist
 
@@ -55,7 +48,7 @@ def main(_):
         ])
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
         optimizer = tf.keras.optimizers.SGD()
-        # optimizer.iterations = get_or_create_global_step()
+        optimizer.iterations = get_or_create_global_step()
 
         def train_step(inputs):
 
@@ -70,12 +63,9 @@ def main(_):
                 grads = tf.gradients(loss, all_vars)
             update = optimizer.apply_gradients(zip(grads, all_vars))
 
-            return loss, update, optimizer.iterations
+            return loss, update
 
         for epoch in range(EPOCHS):
             for _ in range(train_steps_per_epoch):
-                loss, _, i = d.run(train_step, train_iterator)
-                print(f"step: {i}, train_loss: {loss}")
-
-
-main(sys.argv)
+                loss, _ = d.run(train_step, train_iterator)
+                print(f"train_loss: {loss}")
