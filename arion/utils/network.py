@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import warnings
-
 import paramiko
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
@@ -55,18 +54,20 @@ class SSHConfig():
         return self._env
 
 
-def is_local_address(address):
+def is_local_address(address, is_local_chief=False):
     """
     Determine whether an address is local.
 
     Args:
         address: ip
+        is_local_chief: enforce the ip to be local chief when checking
 
     Returns:
         Boolean
     """
     # TODO: use ipaddress for more rigorous checking
-    if address.split(':')[0] == 'localhost':
+    ip = address.split(':')[0]
+    if ip == 'localhost' or is_local_chief:
         return True
     return False
 

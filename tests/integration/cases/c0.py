@@ -1,20 +1,10 @@
-import sys
-import os
-import json
-
 import numpy as np
 import tensorflow as tf
 
 from tensorflow.python.training.training_util import get_or_create_global_step
 
-from autodist import AutoDist
 
-resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
-
-
-
-def main(_):
-    autodist = AutoDist(resource_spec_file, 'PS')
+def main(autodist):
 
     TRUE_W = 3.0
     TRUE_b = 2.0
@@ -35,7 +25,6 @@ def main(_):
             return inputs
 
     inputs_iterator = MyIterator()
-    print('I am going to a scope.')
     with autodist.scope():
         # x = placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
 
@@ -52,7 +41,7 @@ def main(_):
                 return tf.reduce_mean(tf.square(predicted_y - desired_y))
 
             optimizer = tf.optimizers.SGD(0.01)
-            # optimizer.iterations = get_or_create_global_step()
+            optimizer.iterations = get_or_create_global_step()
 
             with tf.GradientTape() as tape:
                 loss = l(y(input), outputs)
@@ -62,17 +51,8 @@ def main(_):
                 gradients = tf.gradients(loss, vs)
 
                 train_op = optimizer.apply_gradients(zip(gradients, vs))
-                print(optimizer.iterations)
-            return loss, train_op, optimizer.iterations
+            return loss, train_op
 
         for epoch in range(EPOCHS):
-            l, t, i = train_step(input=inputs_iterator.get_next())
-            print('step: {}, loss: {}'.format(i, l))
-            # print(l, t)
-            # break
-
-    print('I am out of scope')
-
-
-main(sys.argv)
-
+            l, t = train_step(input=inputs_iterator.get_next())
+            print('loss:', l)

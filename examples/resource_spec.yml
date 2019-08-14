@@ -1,0 +1,16 @@
+nodes:
+  # single-node experiment
+  - address: localhost
+    gpus: [0,1]
+    chief: true
+
+  # multi-nodes experiment
+#  - address: 172.31.30.187
+#    gpus: [0,1,2,3]
+#    chief: true
+#  - address: 172.31.18.140
+#    gpus: [0,1,2,3]
+#ssh:
+#  username: 'ubuntu'
+#  key_file: '/home/ubuntu/.ssh/autodist.pem'
+#  python_venv: 'source /home/ubuntu/venvs/autodist/bin/activate'
