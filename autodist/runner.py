@@ -6,6 +6,7 @@ from tensorflow.python import ops
 from tensorflow.python.client.session import Session
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import global_variables_initializer, local_variables_initializer, Variable
+from tensorflow.python.ops.lookup_ops import tables_initializer
 from tensorflow.python.summary.writer import writer
 from tensorflow.python.training.saver import import_meta_graph
 
@@ -82,6 +83,8 @@ class Runner:
                 ))
                 self.session.run(global_variables_initializer())
                 self.session.run(local_variables_initializer())
+                if ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
+                    self.session.run(tables_initializer())
 
             new_fetches = []
             for f in fetches:
