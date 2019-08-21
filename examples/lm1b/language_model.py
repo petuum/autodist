@@ -60,7 +60,7 @@ class LM:
         # [bs, steps, emb_size]
         x = tf.compat.v1.nn.embedding_lookup(self.emb, x, partition_strategy='div')
         if training:
-            x = tf.nn.dropout(x, self.keep_prob)
+            x = tf.nn.dropout(x, 1 - self.keep_prob)
 
         # [bs, emb_size] * steps
         inputs = [tf.squeeze(v, axis=[1]) for v in tf.split(value=x, num_or_size_splits=self.num_steps, axis=1)]
@@ -73,7 +73,7 @@ class LM:
             self.h = tf.linalg.matmul(self.h, self.W_P)
             inputs[t] = self.h
             if training:
-                inputs[t] = tf.nn.dropout(inputs[t], self.keep_prob)
+                inputs[t] = tf.nn.dropout(inputs[t], 1 - self.keep_prob)
 
         inputs[t] = tf.identity(inputs[t])
         inputs = tf.reshape(tf.concat(inputs, axis=1), [-1, self.projected_size])
@@ -102,9 +102,7 @@ class LM:
         # with ops.device('/cpu:0'):
         text_init = tf.lookup.TextFileInitializer(os.path.join(FLAGS.datadir, "1b_word_vocab.txt"), tf.string, 0,
                                                   tf.int64, -1, delimiter=" ")
-        self.vocab = tf.lookup.StaticVocabularyTable(
-            text_init,
-            FLAGS.oov_bucket_size)
+        self.vocab = tf.lookup.StaticVocabularyTable(text_init, FLAGS.oov_bucket_size)
         xy = tf.dtypes.cast(self.vocab.lookup(input_data), dtype=tf.int32)
         x = xy[:, 0, :]
         y = xy[:, 1, :]
@@ -113,9 +111,9 @@ class LM:
         # FIXME: cast a PartitionVariabvles to a list of Variables
         # so that we can derive its gradients
         # otherwise will throw an error
-        emb_vars = list(self.emb)
+        emb_vars = [self.emb]
         lstm_vars = [self.W, self.B, self.W_P]
-        softmax_vars = list(self.softmax_w) + [self.softmax_b]
+        softmax_vars = [self.softmax_w, self.softmax_b]
         all_vars = emb_vars + lstm_vars + softmax_vars
 
         # all_vars = [self.emb, self.softmax_w, self.W, self.B, self.W_P, self.softmax_b]
