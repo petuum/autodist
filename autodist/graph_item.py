@@ -5,6 +5,7 @@ from collections import defaultdict
 import functools
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import resource_variable_ops
+from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
@@ -138,8 +139,11 @@ class GraphItem:
                 # handle IndexSlices
                 indices = op.inputs[input_indices[0]]
                 values = op.inputs[input_indices[1]]
-                resource = op.inputs[input_indices[2]]
-                dense_shape = resource_variable_ops.variable_shape(resource)
+                handle = op.inputs[input_indices[2]]
+                if handle.dtype is dtypes.resource:
+                    dense_shape = resource_variable_ops.variable_shape(handle)
+                else:
+                    dense_shape = handle.shape
                 grads.append(ops.IndexedSlices(values, indices, dense_shape))
         return grads
 

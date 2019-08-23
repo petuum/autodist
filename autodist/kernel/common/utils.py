@@ -1,6 +1,5 @@
 """A collection of useful functions for the kernel submodule."""
 from collections import defaultdict
-from tensorflow.python.framework import ops
 
 from autodist.kernel.common.op_info import STAGE_OP_TYPES
 
@@ -128,11 +127,6 @@ def get_shared_name_to_stage_ops(input_ops):
         shared_name = stage_op.get_attr("shared_name")
         shared_name_to_stage_ops[shared_name].append(stage_op)
     return shared_name_to_stage_ops
-
-
-def get_resource_read_variable_tensor(handle):
-    """Given a resource handle, get the tensor of its readable value."""
-    return ops.get_default_graph().get_tensor_by_name(handle.op.name + "/Read/ReadVariableOp:0")
 
 
 def get_index_from_tensor_name(tensor_name):

@@ -1,5 +1,4 @@
 """A collection of useful functions used by Replicator."""
-from collections import defaultdict
 
 from tensorflow.core.framework import graph_pb2, variable_pb2
 from tensorflow.core.protobuf import meta_graph_pb2, queue_runner_pb2
@@ -9,52 +8,8 @@ from tensorflow.python.framework.device_spec import DeviceSpecV2
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
 from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
-from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, update_consumers, replica_prefix
-
-
-class ResourceVariableDistributor:
-    """Resource Variable Distributor."""
-
-    def __init__(self, resource_var, mirror_vars):
-        self._this = resource_var
-        self._read_var_ops = {consumer for consumer in get_consumers(resource_var.op)
-                              if consumer.type == "ReadVariableOp"}
-        self._consumer_to_read_var_op = {c: o for o in self._read_var_ops for c in get_consumers(o)}
-        self._read_var_op_to_consumers = {o: get_consumers(o) for o in self._read_var_ops}
-        self._mirror_vars = mirror_vars
-        self._read_var_ops_mappings = defaultdict(dict)
-
-    def mirror_read_var_ops(self, other):
-        """
-        Mirror read var ops.
-
-        Args:
-            other: Other resource var op.
-        """
-        assert other in self._mirror_vars
-        for old_read_var_op in self._read_var_ops:
-            if old_read_var_op == self._this._graph_element.op:
-                new_read_var_op = other._graph_element.op
-            else:
-                new_read_var_op = other.value().op
-            self._read_var_ops_mappings[other][old_read_var_op] = new_read_var_op
-
-    def update_consumer(self, other, consumer_op):
-        """
-        Update consumer.
-
-        Args:
-            other: Other resource var op.
-            consumer_op: The new consumer.
-        """
-        old_read_var_op = self._consumer_to_read_var_op[consumer_op]
-        new_read_var_op = self._read_var_ops_mappings[other][old_read_var_op]
-        update_consumers(
-            [consumer_op],
-            old_tensor=old_read_var_op._outputs[0],
-            new_tensor=new_read_var_op._outputs[0]
-        )
-
+from autodist.kernel.common.utils import get_op_name, get_ancestors, replica_prefix
+from autodist.kernel.common.resource_variable import get_read_var_ops
 
 def get_ops_to_replicate(graph_item):
     """
@@ -90,7 +45,7 @@ def get_ops_to_replicate(graph_item):
         # tf2.0, refer to tag:icml autodist/patch.py:
         # global_var_related_ops.add(global_var._graph_element.op)
         # search all read_var_ops
-        read_variable_ops = {consumer for consumer in get_consumers(global_var.op) if consumer.type == "ReadVariableOp"}
+        read_variable_ops = get_read_var_ops(global_var.op)
         global_var_related_ops.update(read_variable_ops)
 
     table_related_ops = set()

@@ -1,27 +1,30 @@
 """PS Synchronizer."""
-from tensorflow.core.framework import attr_value_pb2
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
-from tensorflow.python.ops import math_ops, data_flow_ops, variable_scope, state_ops, gen_control_flow_ops, \
+from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
     control_flow_ops
 from tensorflow.python.platform import tf_logging as logging
-from tensorflow.python.util.compat import as_bytes
 
-from autodist.const import MAX_INT64, COLOCATION_PREFIX, BINARY_ENCODED_COLOCATION_PREFIX, MIRROR_VARIABLE_INIT_OP, \
-    UPDATE_OP_VAR_POS
-from autodist.kernel.common import utils
+from autodist.const import MAX_INT64, UPDATE_OP_VAR_POS
+from autodist.kernel.common import utils, resource_variable
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, update_consumers, \
-    update_control_consumers, replica_prefix, AUTODIST_PREFIX, AUTODIST_REPLICA_PREFIX
-from autodist.kernel.experimental.helpers import ResourceVariableDistributor
+    update_control_consumers, replica_prefix, AUTODIST_PREFIX
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 
 
 class PSSynchronizer(Synchronizer):
     """PS Synchronizer."""
 
-    def __init__(self, reduction_destinations=None):
+    def __init__(
+            self,
+            reduction_destinations=None,
+            local_replication=True,
+            sync=True
+    ):
         # TODO: partitions
         self.target_device = reduction_destinations[0] if reduction_destinations else ""
+        self._local_replication = local_replication
+        # self._sync = sync # TODO: switch for add sync op
 
         self._var_op_to_agg_grad = {}
         self._var_op_to_accum_apply_op = {}
@@ -182,16 +185,19 @@ class PSSynchronizer(Synchronizer):
         Returns:
             (dict, dict, dict)
         """
-        master_var_op_to_mirror_vars = self._replicate_variable_to_devices(graph_item, gradient, target, worker_device,
-                                                                           num_replicas_per_worker)
+        variable_replicator = None
+        if self._local_replication:
+            variable_replicator = self._replicate_variable_to_devices(
+                graph_item, gradient, target, worker_device, num_replicas_per_worker
+            )
 
         var_op_to_agg_grad, var_op_to_accum_apply_op = self._get_accumulation_ops(graph_item, gradient, target,
                                                                                   num_workers)
         self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = var_op_to_agg_grad, var_op_to_accum_apply_op
-        return master_var_op_to_mirror_vars
+        return variable_replicator
 
     def add_sync_op(self, graph_item, var_update_op, worker_id, worker_device, num_workers,
-                    master_var_op_to_mirror_vars):
+                    variable_replicator):
         """
         Adds additional ops needed for synchronous distributed training into current graph.
 
@@ -204,7 +210,7 @@ class PSSynchronizer(Synchronizer):
             graph_item (GraphItem): the graph
             worker_id: The worker id
             num_workers: Total number of workers to synchronize
-            master_var_op_to_mirror_vars: The dictionary of master variable op name
+            variable_replicator: The dictionary of master variable op name
                 -> list of replicated variables, could be None
             worker_device (str): The worker device string
 
@@ -212,17 +218,6 @@ class PSSynchronizer(Synchronizer):
             None
         """
         var_op_to_agg_grad, var_op_to_accum_apply_op = self._var_op_to_agg_grad, self._var_op_to_accum_apply_op
-
-        def _get_mirror_variable_update_ops(master_var_op_to_mirror_vars,
-                                            grad_apply_finished, var):
-            with ops.device(this_worker_cpu):
-                with ops.control_dependencies(grad_apply_finished):
-                    updated_value = var.read_value()
-            update_ops = []
-            for mirror_var in master_var_op_to_mirror_vars[var.op]:
-                with ops.device(mirror_var.device):
-                    update_ops.append(mirror_var.assign(updated_value))
-            return update_ops
 
         # def _replace_update_op_with_read_op(var_op, var_update_op, finish_op):
         #     # TODO REFACTOR: Does this function do anything for us??
@@ -302,11 +297,11 @@ class PSSynchronizer(Synchronizer):
                 queue_ops.append(dequeue)
 
             # Only dense trainable variables are replicated locally
-            if master_var_op_to_mirror_vars and var_op in master_var_op_to_mirror_vars:
-                mirror_variable_update_ops = _get_mirror_variable_update_ops(
-                    master_var_op_to_mirror_vars,
+            if variable_replicator:
+                mirror_variable_update_ops = variable_replicator.get_all_update_ops(
                     queue_ops,
-                    graph_item.trainable_vars[var_op])
+                    worker_device=this_worker_cpu
+                )
                 with ops.device(this_worker_cpu):
                     finish_op = control_flow_ops.group(*mirror_variable_update_ops)
             else:
@@ -336,129 +331,27 @@ class PSSynchronizer(Synchronizer):
 
     @staticmethod
     def _replicate_variable_to_devices(graph_item, gradient, target, worker_device, num_replicas_per_worker):
-        var_op_name_to_original_device_str = {}
-        for node in graph_item.meta_graph.graph_def.node:
-            if 'VarHandleOp' in node.op:
-                var_op_name_to_original_device_str[node.name] = node.device
 
         if not isinstance(gradient, ops.Tensor):
             # Do not replicate sparse variables
-            return {}
+            return None
 
         worker_device = device_spec.DeviceSpecV2.from_string(worker_device)
-        master_var_op_to_mirror_vars = {}
-        mirror_variable_init_ops = []
-
         master_var = graph_item.trainable_var_op_to_var.get(target.op)
-        master_var_op_to_mirror_vars[master_var.op] = []
-        original_var_device = device_spec.DeviceSpecV2.from_string(
-            var_op_name_to_original_device_str[master_var.op.name])
         mirror_var_device = device_spec.DeviceSpecV2(job=worker_device.job,
                                                      replica=worker_device.replica,
                                                      task=worker_device.task)
-        if original_var_device.device_type.upper() == 'CPU':
-            # place replicated variable on CPU
-            mirror_var_device = mirror_var_device.replace(device_type='CPU', device_index=0)
-            with ops.device(mirror_var_device):
-                mirror_var = variable_scope.get_variable(
-                    ops.prepend_name_scope(master_var.op.name, replica_prefix('cpu')),  # TODO: Why is this lowercase?
-                    dtype=master_var.dtype.base_dtype,
-                    initializer=master_var.initial_value,
-                    trainable=False,
-                    collections=[ops.GraphKeys.LOCAL_VARIABLES]
-                )
-                master_var_op_to_mirror_vars[master_var.op].append(mirror_var)
-                mirror_variable_init_ops.append(state_ops.assign(mirror_var, master_var))
-        else:
-            for i in range(num_replicas_per_worker):
-                # place replicated variable on each device (GPU)
-                mirror_var_device = mirror_var_device.replace(device_type='GPU', device_index=i)
-                with ops.device(mirror_var_device):
-                    mirror_var = variable_scope.get_variable(
-                        ops.prepend_name_scope(master_var.op.name, replica_prefix(i)),
-                        dtype=master_var.dtype.base_dtype,
-                        initializer=master_var.initial_value,
-                        trainable=False,
-                        collections=[ops.GraphKeys.LOCAL_VARIABLES]
-                    )
-                master_var_op_to_mirror_vars[master_var.op].append(mirror_var)
-                mirror_variable_init_ops.append(state_ops.assign(mirror_var, master_var))
+        resource_var_replicator = resource_variable.ResourceVariableReplicator(
+            master_var
+        ).build_mirror_vars(mirror_var_device, num_replicas_per_worker)
 
-        # Make all consumers of the value of master variable
-        # use the mirror variable.
-
-        # tf2.0, refer to tag:icml autodist/patch.py:
-        # global_var_related_ops.add(global_var._graph_element.op)
-        # search all read_var_ops
-        read_variable_ops = {consumer for consumer in get_consumers(master_var.op) if
-                             consumer.type == "ReadVariableOp"}
-        # Get a copy of consumers list to avoid incorrect list iteration.
-        master_var_consumers = {c: o for o in read_variable_ops for c in get_consumers(o)}
-
-        test = ResourceVariableDistributor(
-            master_var,
-            master_var_op_to_mirror_vars[master_var.op]
-        )
-        for mv in master_var_op_to_mirror_vars[master_var.op]:
-            test.mirror_read_var_ops(mv)
-
-        # TODO: Attention: ReadVarOp consumers include the "save".
-        for consumer_op in master_var_consumers:
-            if consumer_op in mirror_variable_init_ops:
-                continue
-            elif consumer_op.name.startswith(AUTODIST_REPLICA_PREFIX):
-                # replica_index = 0
-                if len(master_var_op_to_mirror_vars[master_var.op]) > 1:
-                    # Mirror variables are created on GPU,
-                    # find one on the same GPU.
-                    replica_index = int(consumer_op.name.split(
-                        AUTODIST_REPLICA_PREFIX)[1].split('/')[0])
-
-                    test.update_consumer(master_var_op_to_mirror_vars[master_var.op][replica_index], consumer_op)
-                    # update_consumers(
-                    #     [consumer_op],
-                    #     old_tensor=master_var_consumers[consumer_op],
-                    #     new_tensor=master_var_op_to_mirror_vars[master_var.op][replica_index].value())
-            else:
-                logging.debug(
-                    "Consumer %s of value of variable %s is a shared node, "
-                    "do not change to mirror variable"
-                    % (consumer_op.name, master_var.op.name))
-
-        # Update operations colocated with master variables to be colocated
-        # with mirror variables
-        for op in graph_item.graph.get_operations():
-            # Do not update shared node
-            if not op.name.startswith(AUTODIST_REPLICA_PREFIX):
-                continue
-            new_colocation_group = []
-            for colocation_group in op.colocation_groups():
-                assert colocation_group.startswith(BINARY_ENCODED_COLOCATION_PREFIX)
-                current_binding_op_name = colocation_group[len(BINARY_ENCODED_COLOCATION_PREFIX):].decode("ascii")
-                current_binding_op = graph_item.graph.get_operation_by_name(current_binding_op_name)
-                if current_binding_op in master_var_op_to_mirror_vars:
-                    replica_index = 0
-                    if len(master_var_op_to_mirror_vars[current_binding_op]) > 1:
-                        # Mirror variables are created on GPU, find one one the
-                        # same GPU
-                        replica_index = int(op.name.split(AUTODIST_REPLICA_PREFIX)[1].split('/')[0])
-                    op_name_to_bind_to = (COLOCATION_PREFIX +
-                                          master_var_op_to_mirror_vars[current_binding_op][replica_index].op.name)
-                    new_colocation_group.append(as_bytes(op_name_to_bind_to))
-                else:
-                    new_colocation_group.append(colocation_group)
-            op._set_attr("_class",
-                         attr_value_pb2.AttrValue(list=attr_value_pb2.AttrValue.ListValue(s=new_colocation_group)))
-
-        with ops.control_dependencies(mirror_variable_init_ops):
-            gen_control_flow_ops.no_op(name=MIRROR_VARIABLE_INIT_OP)
-        return master_var_op_to_mirror_vars
+        return resource_var_replicator
 
     @staticmethod
     def _get_accumulation_ops(graph_item, gradient, target, num_workers):
         def _get_accum_apply_and_agg_grad(var_op, grad, indices, dense_shape):
             if indices is None:
-                tensor = [op for op in get_consumers(var_op) if op.type == "ReadVariableOp"][0].outputs[0]
+                tensor = resource_variable.get_read_var_tensor(var_op)
                 grad_accum = data_flow_ops.ConditionalAccumulator(
                     grad.dtype,
                     shape=tensor.get_shape(),
