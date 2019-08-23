@@ -8,9 +8,9 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import global_variables_initializer, local_variables_initializer, Variable
 from tensorflow.python.ops.lookup_ops import tables_initializer
 from tensorflow.python.summary.writer import writer
-from tensorflow.python.training.saver import import_meta_graph
 
-from autodist.kernel.common import utils
+import autodist.const
+from autodist.kernel.common import resource_variable
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.replication.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
@@ -69,8 +69,20 @@ class Runner:
         return self
 
     def _finialize_build(self, graph_item):
-        with self.transformed_graph.as_default():
-            import_meta_graph(graph_item.meta_graph)
+        self.transformed_graph = graph_item.graph
+        # with self.transformed_graph.as_default():
+        #     import_meta_graph(graph_item.meta_graph)
+
+    def _run_by_name(self, name, session=None):
+        """Run graph by op or tensor name."""
+        session = self.session if not session else session
+        graph = session.graph
+        try:
+            op = graph.get_operation_by_name(name)
+            print('######\nRun by name:\n{}######'.format(op))
+            session.run(op)
+        except KeyError:
+            pass
 
     def run(self, fetches, feed=None):
         """Execute distributed graph."""
@@ -81,10 +93,16 @@ class Runner:
                     allow_soft_placement=True,
                     # log_device_placement=True
                 ))
+                # TensorFlow default initializations
+                # TODO: Rethink. Should we do this?
                 self.session.run(global_variables_initializer())
                 self.session.run(local_variables_initializer())
                 if ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
                     self.session.run(tables_initializer())
+
+                # AutoDist initializations
+                for op in autodist.const.InitOps:
+                    self._run_by_name(op.value)
 
             new_fetches = []
             for f in fetches:
@@ -96,7 +114,7 @@ class Runner:
                     handle = graph.get_tensor_by_name(f.name)
                     if handle.dtype is dtypes.resource:
                         # Resource Var
-                        new_fetch = utils.get_resource_read_variable_tensor(handle)
+                        new_fetch = resource_variable.get_read_var_tensor(handle.op)
                     else:
                         # Ref Var
                         new_fetch = handle

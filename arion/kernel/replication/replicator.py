@@ -7,6 +7,7 @@ from tensorflow.python.training.saver import import_meta_graph
 
 from autodist.const import BINARY_ENCODED_COLOCATION_PREFIX
 from autodist.graph_item import GraphItem
+from autodist.kernel.common import resource_variable
 from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.device.setter import ReplicaDeviceSetter
 from autodist.kernel.experimental.helpers import get_ops_to_replicate, \
@@ -127,6 +128,8 @@ class Replicator:
                         self._num_local_replicas
                     )
 
+                resource_variable.gen_mirror_var_init_op(mirror_vars.values())
+
                 # TODO: why we have a separate FOR loops compared with the above one?
                 for update_op, (_, target) in item.update_op_to_grad_target.items():
                     self._synchronizers[target.name].add_sync_op(
@@ -135,7 +138,7 @@ class Replicator:
                         self._local_worker_id,
                         local_worker_device,
                         self._num_workers,
-                        master_var_op_to_mirror_vars=mirror_vars[update_op],
+                        variable_replicator=mirror_vars[update_op],
                     )
 
                 for global_step_op in item.global_step_ops:
@@ -145,7 +148,7 @@ class Replicator:
                         self._local_worker_id,
                         local_worker_device,
                         self._num_workers,
-                        master_var_op_to_mirror_vars={}
+                        variable_replicator={}
                     )
 
             self._optimize_colocation(graph)

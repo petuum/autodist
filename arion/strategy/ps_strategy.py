@@ -34,7 +34,9 @@ class PS(StrategyBuilder):
             'synchronizer': {
                 'type': 'PSSynchronizer',
                 'config': {
-                    'reduction_destinations': reduction_destinations
+                    'reduction_destinations': reduction_destinations,
+                    'local_replication': True,
+                    'sync': True
                 }
             }
         }
