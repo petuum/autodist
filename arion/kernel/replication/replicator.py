@@ -151,7 +151,8 @@ class Replicator:
                     )
 
                 for variable_replicator in mirrored_vars.values():
-                    variable_replicator.update_colocation_group(item.get_colocation_op)
+                    if variable_replicator:
+                        variable_replicator.update_colocation_group(item.get_colocation_op)
 
                 self.__prune_colocation_groups(item)
 
