@@ -4,6 +4,7 @@ from tensorflow.core.framework import graph_pb2, variable_pb2
 from tensorflow.core.protobuf import meta_graph_pb2, queue_runner_pb2
 from tensorflow.python.framework import ops
 from tensorflow.python.framework.device_spec import DeviceSpecV2
+from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
@@ -92,23 +93,19 @@ def construct_multi_gpu_graph_def(single_gpu_graph_def, op_names_to_replicate, o
             return
         class_list = node.attr['_class'].list
         to_delete = []
-        for i in range(len(class_list.s)):
-            s = class_list.s[i].decode('utf-8')
+        for idx, s in enumerate(class_list.s):
             if s.startswith(COLOCATION_PREFIX):
-                op_name_to_bind_to = s[len(COLOCATION_PREFIX):]
+                op_name_to_bind_to = s[len(COLOCATION_PREFIX):].decode('utf-8')
                 if op_name_to_bind_to in op_names_to_replicate:
                     # delete colocation constraint if shared op needs to be
                     # colocated with replica op
                     if replica_id is None:
                         to_delete.append(s)
                     else:
-                        new_op_name_to_bind_to = \
-                            ops.prepend_name_scope(
-                                op_name_to_bind_to,
-                                replica_prefix(replica_id))
-                        class_list.s[i] = ('%s%s' % (COLOCATION_PREFIX, new_op_name_to_bind_to)).encode('utf-8')
+                        new_op_name_to_bind_to = ops.prepend_name_scope(op_name_to_bind_to, replica_prefix(replica_id))
+                        class_list.s[idx] = COLOCATION_PREFIX + as_bytes(new_op_name_to_bind_to)
         for item in to_delete:
-            class_list.s.remove(item.encode('utf-8'))
+            class_list.s.remove(item)
 
     # TODO(Hao): this function is tricky, should infer the cpu device corresponding
     # to this GPU using DeviceSpec

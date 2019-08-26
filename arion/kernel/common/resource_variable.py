@@ -2,12 +2,14 @@
 
 from collections import defaultdict
 
+from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.python import ops
-from tensorflow.python.ops import variable_scope, state_ops
 from tensorflow.python.framework import device_spec
 from tensorflow.python.ops import gen_control_flow_ops
+from tensorflow.python.ops import variable_scope, state_ops
+from tensorflow.python.util.compat import as_bytes
 
-from autodist.const import InitOps
+from autodist.const import InitOps, COLOCATION_PREFIX
 from autodist.kernel.common.utils import get_consumers, update_consumers, replica_prefix, AUTODIST_REPLICA_PREFIX
 
 
@@ -87,6 +89,25 @@ class ResourceVariableReplicator:
             with ops.device(mirror_var.device):
                 update_ops.append(mirror_var.assign(updated_value))
         return update_ops
+
+    def update_colocation_group(self, get_colocation_op):
+        """Update operations colocated with master variables to be colocated with mirror variables."""
+        # Do not update shared node
+        if not self._this.op.name.startswith(AUTODIST_REPLICA_PREFIX):
+            return
+        new_colocation_group = []
+        for colocation_group in self._this.op.colocation_groups():
+            current_binding_op = get_colocation_op(colocation_group)
+            if current_binding_op in self._mirror_vars:
+                replica_index = 0
+                if len(self._mirror_vars) > 1:
+                    # Mirror variables are created on GPU, find one on the same GPU
+                    replica_index = int(self._this.op.name.split(AUTODIST_REPLICA_PREFIX)[1].split('/')[0])
+                op_name_to_bind_to = (COLOCATION_PREFIX + as_bytes(self._mirror_vars[replica_index].op.name))
+                new_colocation_group.append(op_name_to_bind_to)
+            else:
+                new_colocation_group.append(colocation_group)
+        self._this.op._set_attr("_class", pb2_AttrValue(list=pb2_AttrValue.ListValue(s=new_colocation_group)))
 
     def _mirror_read_var_ops(self, other):
         """

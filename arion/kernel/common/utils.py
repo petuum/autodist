@@ -1,10 +1,8 @@
 """A collection of useful functions for the kernel submodule."""
 from collections import defaultdict
 
+from autodist.const import AUTODIST_REPLICA_PREFIX
 from autodist.kernel.common.op_info import STAGE_OP_TYPES
-
-AUTODIST_PREFIX = u"AutoDist-Magic-"
-AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX
 
 
 def get_op_name(tensor_name):

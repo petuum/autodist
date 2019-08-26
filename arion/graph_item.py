@@ -9,7 +9,7 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
-from autodist.const import BINARY_ENCODED_COLOCATION_PREFIX
+from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
 from autodist.kernel.common.utils import get_ancestors, get_consumers
 
@@ -299,7 +299,7 @@ class GraphItem:
                         stage_enqueue_iterator_ops_queue.append(stage_op)
                     # Handle colocation groups of unstage op (NoOp)
                     assert len(curr_op.colocation_groups()) == 1
-                    stage_no_op_name = curr_op.colocation_groups()[0][len(BINARY_ENCODED_COLOCATION_PREFIX):]
+                    stage_no_op_name = curr_op.colocation_groups()[0][len(COLOCATION_PREFIX):]
                     pipeline_ops.add(self._graph.get_operation_by_name(stage_no_op_name))
                 elif curr_op.type in op_info.DEQUEUE_OP_TYPES:
                     queue_ops = [input.op for input in curr_op.inputs
@@ -331,3 +331,18 @@ class GraphItem:
                             + op_info.DEQUEUE_OP_TYPES + op_info.ITERATOR_OP_TYPES:
                         unstage_dequeue_iterator_queue.append(ancestor_op)
         return pipeline_ops
+
+    def get_colocation_op(self, colocation_group):
+        """
+        Get the binding op for a given colocation group.
+
+        Args:
+            graph_item: The current graph
+            colocation_group: The colocation group
+
+        Returns:
+            Op
+        """
+        assert colocation_group.startswith(COLOCATION_PREFIX)
+        binding_op_name = colocation_group[len(COLOCATION_PREFIX):].decode('utf-8')
+        return self.graph.get_operation_by_name(binding_op_name)
