@@ -1,13 +1,14 @@
 """PS Synchronizer."""
+from functools import partial
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
 from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
     control_flow_ops
 from tensorflow.python.platform import tf_logging as logging
 
-from autodist.const import MAX_INT64, UPDATE_OP_VAR_POS, AUTODIST_PREFIX, AUTODIST_REPLICA_PREFIX
+from autodist.const import MAX_INT64, UPDATE_OP_VAR_POS, AUTODIST_PREFIX
 from autodist.kernel.common import utils, resource_variable
-from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, update_consumers, \
+from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
     update_control_consumers, replica_prefix
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 
@@ -265,11 +266,8 @@ class PSSynchronizer(Synchronizer):
         with ops.device(var_op.device), ops.name_scope(""):
             var_update_sync_queues = \
                 [data_flow_ops.FIFOQueue(1, [dtypes.bool], shapes=[[]],
-                                         name='auto_parallel_%s_update_sync_queue_%d'
-                                              % (var_op.name, i),
-                                         shared_name='auto_parallel_%s'
-                                                     '_update_sync_queue_%d'
-                                                     % (var_op.name, i))
+                                         name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i),
+                                         shared_name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i))
                  for i in range(num_workers)]
 
             queue_ops = []
@@ -318,6 +316,9 @@ class PSSynchronizer(Synchronizer):
             var_op_to_finish_op[var_op] = finish_op
 
         # Place computation ops of aggregated gradients on PS
+        # Note that even though this is doing a graph traversal, it is called in such a way that it
+        # only traverses from a gradient aggregator op to a gradient application op (or vice versa) --
+        # these corresponding ops should always be adjacent in the graph.
         self._place_post_grad_agg_ops(device_spec.DeviceSpecV2.from_string(self.target_device),
                                       var_op_to_agg_grad, trainable_var_op_to_update_op)
 
@@ -429,115 +430,6 @@ class PSSynchronizer(Synchronizer):
 
     @staticmethod
     def _place_post_grad_agg_ops(ps_device, var_op_to_agg_grad, var_op_to_apply_grad_op):
-        def _find_agg_grad_descendant_ops(agg_grad_ops, apply_grad_ops):
-            agg_grad_descendant_ops = set()
-            queue = []
-            queue.extend(agg_grad_ops)
-
-            while queue:
-                curr_op = queue.pop()
-                if curr_op in agg_grad_descendant_ops:
-                    continue
-                agg_grad_descendant_ops.add(curr_op)
-                if curr_op in apply_grad_ops:
-                    continue
-                curr_op_consumers = get_consumers(curr_op)
-                queue.extend(curr_op_consumers)
-            return agg_grad_descendant_ops
-
-        shared = -1
-
-        def _assign(op_to_task, agg_grad_ops, apply_grad_ops,
-                    apply_grad_ancestor_ops, ancestors_diff_descendants, ps_device,
-                    is_parent_to_child):
-            queue = []
-            stop = set()
-            if is_parent_to_child:
-                queue.extend(agg_grad_ops)
-                stop.update(apply_grad_ops)
-            else:
-                queue.extend(apply_grad_ops)
-                stop.update(agg_grad_ops)
-
-            visited = set()
-            while queue:
-                curr_op = queue.pop(0)
-                if curr_op in visited:
-                    continue
-                visited.add(curr_op)
-                # already assigned to a task,
-                # so skip computing placement and then add next ops to the queue
-                if curr_op in op_to_task and curr_op not in stop:
-                    if is_parent_to_child:
-                        # do not care about ops not required for applying gradients
-                        queue.extend(
-                            [consumer for consumer in get_consumers(curr_op)
-                             if consumer in apply_grad_ancestor_ops])
-                    else:
-                        queue.extend([input.op for input in curr_op.inputs])
-                    continue
-
-                if is_parent_to_child:
-                    placement_reference_ops = {input_tensor.op for input_tensor in curr_op.inputs}
-                    placement_reference_ops = placement_reference_ops.difference(ancestors_diff_descendants)
-                else:
-                    placement_reference_ops = set(get_consumers(curr_op))
-                    placement_reference_ops = placement_reference_ops.intersection(apply_grad_ancestor_ops)
-
-                is_ready = True
-                for ref_op in placement_reference_ops:
-                    if ref_op not in op_to_task:
-                        is_ready = False
-                        break
-
-                if is_ready:
-                    placement_reference_tasks = \
-                        [op_to_task[ref_op] for ref_op in placement_reference_ops]
-                else:
-                    # requeue and wait for references
-                    queue.append(curr_op)
-                    continue
-
-                unique_tasks = set(placement_reference_tasks)
-                if not unique_tasks:
-                    raise RuntimeError(
-                        "Should have placement reference for operation %s"
-                        % curr_op.name)
-                elif len(unique_tasks) == 1:
-                    curr_op_task = unique_tasks.pop()
-                    op_to_task[curr_op] = curr_op_task
-                else:
-                    # priority: assigned placement > shared
-                    if shared in unique_tasks:
-                        unique_tasks.remove(shared)
-                    if len(unique_tasks) == 1:
-                        curr_op_task = unique_tasks.pop()
-                        op_to_task[curr_op] = curr_op_task
-                    else:
-                        # multiple device placement -> shared
-                        assert len(unique_tasks) > 1
-                        curr_op_task = shared
-                        op_to_task[curr_op] = shared
-                logging.debug('post_grad_agg_op %s is assigned to ps task %d'
-                              % (curr_op.name, curr_op_task))
-
-                if curr_op_task == shared:
-                    # TODO: do not assign all shared ops to task 0
-                    # - we can do better
-                    curr_op_task = 0
-                # ps_device.task = curr_op_task
-                ps_device = ps_device.replace(task=curr_op_task)
-                curr_op._set_device(ps_device)
-
-                if curr_op not in stop:
-                    if is_parent_to_child:
-                        # do not care about ops not required for applying gradients
-                        queue.extend(
-                            [consumer for consumer in get_consumers(curr_op)
-                             if consumer in apply_grad_ancestor_ops])
-                    else:
-                        queue.extend([input.op for input in curr_op.inputs])
-
         op_to_task = {}
         agg_grad_ops = []
         for var_op, agg_grad in var_op_to_agg_grad.items():
@@ -556,24 +448,109 @@ class PSSynchronizer(Synchronizer):
             apply_grad_op._set_device(var_device)
             op_to_task[apply_grad_op] = var_device.task
 
+        # Make sure that the agg_grad_ops and apply_grad_ops are assigned the same task, if possible
+        PSGradientTaskAssigner(op_to_task, agg_grad_ops, apply_grad_ops, ps_device).assign()
+
+
+class PSGradientTaskAssigner:
+    """Make sure that all corresponding PS gradient ops are assigned to the same task."""
+
+    SHARED_TASK_ID = -1  # Default value to use when marking a task as shared across devices
+
+    def __init__(self, op_to_task, agg_grad_ops, apply_grad_ops, ps_device):
+        self._op_to_task = op_to_task
+        self._agg_grad_ops = agg_grad_ops
+        self._apply_grad_ops = apply_grad_ops
+        self._ps_device = ps_device
+
         # Note(gyeongin): Need to include control dependency ops in ancestors and
         # descendants or not?
-        apply_grad_ancestor_ops = get_ancestors(apply_grad_ops, agg_grad_ops)
-        agg_grad_descendant_ops = _find_agg_grad_descendant_ops(agg_grad_ops,
-                                                                apply_grad_ops)
-        ancestors_diff_descendants = \
-            apply_grad_ancestor_ops.difference(agg_grad_descendant_ops)
-        logging.debug(
-            "apply_grad_ancestor_ops: %d" % len(apply_grad_ancestor_ops))
-        logging.debug(
-            "agg_grad_descendant_ops: %d" % len(agg_grad_descendant_ops))
-        logging.debug(
-            "ancestors diff descendants: %d" % len(ancestors_diff_descendants))
-        logging.debug(
-            "descendants diff ancestors: %d"
-            % len(agg_grad_descendant_ops.difference(apply_grad_ancestor_ops)))
+        self._apply_grad_ancestor_ops = get_ancestors(self._apply_grad_ops, self._agg_grad_ops)
+        self._agg_grad_descendant_ops = traverse(self._agg_grad_ops, end_ops=self._apply_grad_ops)
+        self._ancestors_diff_descendants = self._apply_grad_ancestor_ops.difference(self._agg_grad_descendant_ops)
 
-        _assign(op_to_task, agg_grad_ops, apply_grad_ops, apply_grad_ancestor_ops,
-                ancestors_diff_descendants, ps_device, is_parent_to_child=True)
-        _assign(op_to_task, agg_grad_ops, apply_grad_ops, apply_grad_ancestor_ops,
-                ancestors_diff_descendants, ps_device, is_parent_to_child=False)
+        logging.debug(f"apply_grad_ancestor_ops: {len(self._apply_grad_ancestor_ops)}")
+        logging.debug(f"agg_grad_descendant_ops: {len(self._agg_grad_descendant_ops)}")
+        logging.debug(f"ancestors diff descendants: {len(self._ancestors_diff_descendants)}")
+
+    def assign(self):
+        """Bi-directionally traverse the graph and assign tasks to ops."""
+        # Parent-to-child traversal
+        fn = partial(self.__assign_forward, end_ops=self._apply_grad_ops)
+        traverse(self._agg_grad_ops, end_ops=self._apply_grad_ops, neighbors_fn=fn)
+        # Child-to-parent traversal
+        fn = partial(self.__assign_backward, end_ops=self._agg_grad_ops)
+        traverse(self._apply_grad_ops, self._agg_grad_ops, neighbors_fn=fn)
+
+    def __assign_forward(self, curr_op, end_ops=None):
+        """Get children of and assign a task for `curr_op`. To be used as the `neighbors_fn` for `traverse`."""
+        end_ops = end_ops or set()
+        if curr_op in self._op_to_task and curr_op not in end_ops:
+            return [consumer for consumer in get_consumers(curr_op) if consumer in self._apply_grad_ancestor_ops]
+
+        placement_reference_ops = {input_tensor.op for input_tensor in curr_op.inputs}.\
+            difference(self._ancestors_diff_descendants)
+
+        if not all(ref_op in self._op_to_task for ref_op in placement_reference_ops):
+            # At least one of `placement_reference_ops` doesn't have a task assigned yet,
+            # so re-add `curr_op` to the queue and wait for them to all have tasks
+            return [curr_op]
+
+        self.__assign_task(curr_op, placement_reference_ops)
+
+        if curr_op not in end_ops:
+            return [consumer for consumer in get_consumers(curr_op) if consumer in self._apply_grad_ancestor_ops]
+
+        return []
+
+    def __assign_backward(self, curr_op, end_ops=None):
+        """Get parents of and assign a task for `curr_op`. To be used as the `neighbors_fn` for `traverse`."""
+        end_ops = end_ops or set()
+        if curr_op in self._op_to_task and curr_op not in end_ops:
+            return [input_tensor.op for input_tensor in curr_op.inputs]
+
+        placement_reference_ops = set(get_consumers(curr_op)).intersection(self._apply_grad_ancestor_ops)
+
+        if not all(ref_op in self._op_to_task for ref_op in placement_reference_ops):
+            # At least one of `placement_reference_ops` doesn't have a task assigned yet,
+            # so re-add `curr_op` to the queue and wait for them to all have tasks
+            return [curr_op]
+
+        self.__assign_task(curr_op, placement_reference_ops)
+
+        if curr_op not in end_ops:
+            return [input_tensor.op for input_tensor in curr_op.inputs]
+
+        return []
+
+    def __assign_task(self, curr_op, placement_reference_ops):
+        """Given an op, assign it a task based on the task assignments of its reference ops."""
+        placement_reference_tasks = [self._op_to_task[ref_op] for ref_op in placement_reference_ops]
+        unique_tasks = set(placement_reference_tasks)
+
+        if not unique_tasks:
+            raise RuntimeError(f"Should have placement reference for operation {curr_op.name}")
+        elif len(unique_tasks) == 1:
+            curr_op_task = unique_tasks.pop()
+            self._op_to_task[curr_op] = curr_op_task
+        else:
+            # priority: assigned placement > shared
+            if self.SHARED_TASK_ID in unique_tasks:
+                unique_tasks.remove(self.SHARED_TASK_ID)
+            if len(unique_tasks) == 1:
+                curr_op_task = unique_tasks.pop()
+                self._op_to_task[curr_op] = curr_op_task
+            else:
+                # multiple device placement -> shared
+                assert len(unique_tasks) > 1
+                curr_op_task = self.SHARED_TASK_ID
+                self._op_to_task[curr_op] = self.SHARED_TASK_ID
+
+        logging.debug(f"post_grad_agg_op {curr_op.name} is assigned to ps task {curr_op_task}")
+        if curr_op_task == self.SHARED_TASK_ID:
+            # TODO: do not assign all shared ops to task 0
+            # - we can do better
+            curr_op_task = 0
+
+        ps_device = self._ps_device.replace(task=curr_op_task)
+        curr_op._set_device(ps_device)

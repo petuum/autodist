@@ -1,5 +1,5 @@
 """A collection of useful functions for the kernel submodule."""
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from autodist.const import AUTODIST_REPLICA_PREFIX
 from autodist.kernel.common.op_info import STAGE_OP_TYPES
@@ -30,7 +30,7 @@ def replica_prefix(replica_id):
 
     Returns: str
     """
-    return '%s%s' % (AUTODIST_REPLICA_PREFIX, str(replica_id))
+    return f"{AUTODIST_REPLICA_PREFIX}{replica_id}"
 
 
 def get_consumers(op):
@@ -43,6 +43,38 @@ def get_consumers(op):
     Returns: List
     """
     return [consumer for output in op.outputs for consumer in output.consumers()]
+
+
+def traverse(start_ops, end_ops=None, neighbors_fn=None):
+    """
+    Traverse a graph and output the visited nodes.
+
+    Args:
+        start_ops (iter): The nodes to start the traversal from.
+        end_ops (iter): Optional. The nodes at which to stop traversing.
+        neighbors_fn (func): Optional. Function from Op -> Iter[Op] that provides the neighbors of an op.
+            Defaults to `get_consumers`.
+
+    Returns:
+        Set[Op]
+    """
+    end_ops = end_ops or set()
+    neighbors_fn = neighbors_fn or get_consumers
+
+    visited = set()
+    queue = deque()
+    queue.extend(start_ops)
+
+    while queue:
+        curr_op = queue.popleft()
+        if curr_op in visited:
+            continue
+        visited.add(curr_op)
+        if curr_op in end_ops:
+            continue
+        queue.extend(neighbors_fn(curr_op))
+
+    return visited
 
 
 def get_ancestors(start_ops, end_ops=None, include_control_inputs=False):
@@ -62,21 +94,12 @@ def get_ancestors(start_ops, end_ops=None, include_control_inputs=False):
     Returns:
         Set
     """
-    ancestor_ops = set()
-    queue = []
-    queue.extend(start_ops)
-
-    while queue:
-        curr_op = queue.pop()
-        if curr_op in ancestor_ops:
-            continue
-        ancestor_ops.add(curr_op)
-        if end_ops and curr_op in end_ops:
-            continue
-        queue.extend([input_tensor.op for input_tensor in curr_op.inputs])
+    def get_neighbors(op):
+        out = [input_tensor.op for input_tensor in op.inputs]
         if include_control_inputs:
-            queue.extend(curr_op.control_inputs)
-    return ancestor_ops
+            out.extend(op.control_inputs)
+        return out
+    return traverse(start_ops, end_ops=end_ops, neighbors_fn=get_neighbors)
 
 
 def update_consumers(consumers, old_tensor, new_tensor):

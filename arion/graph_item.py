@@ -278,8 +278,7 @@ class GraphItem:
                 shared_name_to_stage_ops[shared_name].append(stage_op)
             return shared_name_to_stage_ops
 
-        shared_name_to_stage_ops = _get_shared_name_to_stage_ops(
-            self._graph.get_operations())
+        shared_name_to_stage_ops = _get_shared_name_to_stage_ops(self._graph.get_operations())
         queue_name_to_queue_runner = {}
         for queue_runner in ops.get_collection(ops.GraphKeys.QUEUE_RUNNERS):
             queue_name_to_queue_runner[queue_runner.name] = queue_runner
@@ -302,8 +301,7 @@ class GraphItem:
                     stage_no_op_name = curr_op.colocation_groups()[0][len(COLOCATION_PREFIX):]
                     pipeline_ops.add(self._graph.get_operation_by_name(stage_no_op_name))
                 elif curr_op.type in op_info.DEQUEUE_OP_TYPES:
-                    queue_ops = [input.op for input in curr_op.inputs
-                                 if input.op.type in op_info.QUEUE_OP_TYPES]
+                    queue_ops = [input.op for input in curr_op.inputs if input.op.type in op_info.QUEUE_OP_TYPES]
                     assert len(queue_ops) == 1
                     queue_op = queue_ops[0]
                     queue_runner = queue_name_to_queue_runner[queue_op.name]
