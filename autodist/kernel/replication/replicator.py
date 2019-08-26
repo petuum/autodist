@@ -1,11 +1,10 @@
 """Replicator."""
-from tensorflow.core.framework import attr_value_pb2
+from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.core.protobuf import meta_graph_pb2
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
 from tensorflow.python.training.saver import import_meta_graph
 
-from autodist.const import BINARY_ENCODED_COLOCATION_PREFIX
 from autodist.graph_item import GraphItem
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.utils import get_op_name
@@ -116,10 +115,10 @@ class Replicator:
                 import_meta_graph(multi_gpu_graph_item.meta_graph)
                 item = GraphItem(graph=graph)  # For access to update_ops, grad_list, and target_list
 
-                mirror_vars = {}
+                mirrored_vars = {}
                 for update_op, (gradient, target) in item.update_op_to_grad_target.items():
                     # TODO REFACTOR: Clean up this signature?
-                    mirror_vars[update_op] = self._synchronizers[target.name].between_graph_apply(
+                    mirrored_vars[update_op] = self._synchronizers[target.name].between_graph_apply(
                         item,
                         gradient,
                         target,
@@ -128,7 +127,7 @@ class Replicator:
                         self._num_local_replicas
                     )
 
-                resource_variable.gen_mirror_var_init_op(mirror_vars.values())
+                resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
 
                 # TODO: why we have a separate FOR loops compared with the above one?
                 for update_op, (_, target) in item.update_op_to_grad_target.items():
@@ -138,7 +137,7 @@ class Replicator:
                         self._local_worker_id,
                         local_worker_device,
                         self._num_workers,
-                        variable_replicator=mirror_vars[update_op],
+                        variable_replicator=mirrored_vars[update_op],
                     )
 
                 for global_step_op in item.global_step_ops:
@@ -151,7 +150,10 @@ class Replicator:
                         variable_replicator={}
                     )
 
-            self._optimize_colocation(graph)
+                for variable_replicator in mirrored_vars.values():
+                    variable_replicator.update_colocation_group(item.get_colocation_op)
+
+                self.__prune_colocation_groups(item)
 
             # TODO: make this work
             # update_shard_values_for_worker(num_workers, worker_id)
@@ -159,35 +161,14 @@ class Replicator:
         return item
 
     @staticmethod
-    def _optimize_colocation(graph):
-        # Now prune the graph to have the right colocation constraints
-        for op in graph.get_operations():
-            op_to_bind_to_device = ""
-            for colocation_group in op.colocation_groups():
-                assert colocation_group.startswith(BINARY_ENCODED_COLOCATION_PREFIX)
-                op_name_to_bind_to = colocation_group[len(BINARY_ENCODED_COLOCATION_PREFIX):].decode("ascii")
-                op_to_bind_to = graph.get_operation_by_name(op_name_to_bind_to)
-                # Apply colocation constraints explicitly
-                if op_to_bind_to == op:
-                    continue
-
-                # TODO REFACTOR: Just remove this? It doesn't really do anything
-                if op_to_bind_to_device and op_to_bind_to_device != op_to_bind_to.device:
-                    # Follow worker device if devices are conflicted.
-                    if 'ps' in op_to_bind_to_device:
-                        assert 'ps' not in op_to_bind_to.device
-                    else:
-                        assert 'ps' in op_to_bind_to.device
-                op_to_bind_to_device = op_to_bind_to.device
-
-            if op_to_bind_to_device:
-                op._set_device(op_to_bind_to_device)
-                new_col_groups = []
-                for colocation_group in op.colocation_groups():
-                    op_name_to_bind_to = colocation_group[len(BINARY_ENCODED_COLOCATION_PREFIX):].decode("ascii")
-                    op_to_bind_to = ops.get_default_graph().get_operation_by_name(op_name_to_bind_to)
-                    if op_to_bind_to.device == op_to_bind_to_device:
-                        # TODO REFACTOR: This should always be true, right? (see above)
-                        new_col_groups.append(colocation_group)
-                op._set_attr("_class", attr_value_pb2.AttrValue(
-                    list=attr_value_pb2.AttrValue.ListValue(s=new_col_groups)))
+    def __prune_colocation_groups(graph_item):
+        for op in graph_item.graph.get_operations():
+            # Now prune the graph to have the right colocation constraints
+            colocation_groups = [(c, graph_item.get_colocation_op(c)) for c in op.colocation_groups()]
+            # We don't want any colocation groups that are just this `op`
+            colocation_groups = [(c, bind_op) for (c, bind_op) in colocation_groups if bind_op != op]
+            if colocation_groups:
+                device_to_bind_to = colocation_groups[-1][1].device
+                new_colocation_groups = [c for (c, op) in colocation_groups if op.device == device_to_bind_to]
+                op._set_device(device_to_bind_to)
+                op._set_attr("_class", pb2_AttrValue(list=pb2_AttrValue.ListValue(s=new_colocation_groups)))

@@ -1,8 +1,8 @@
 """Constants."""
 
-import os
 from enum import Enum, auto
 
+import os
 
 DEFAULT_WORKING_DIR = '/tmp/autodist'
 DEFAULT_SERIALIZATION_DIR = os.path.join(DEFAULT_WORKING_DIR, 'strategies')
@@ -17,11 +17,12 @@ class Env(Enum):
 
 
 MAX_INT64 = int(2 ** 63 - 1)
-COLOCATION_PREFIX = 'loc:@'
-BINARY_ENCODED_COLOCATION_PREFIX = b"loc:@"
+COLOCATION_PREFIX = b"loc:@"
 UPDATE_OP_VAR_POS = 0
 SPARSE_AVERAGE_BY_COUNTER = 1
 SPARSE_NO_AVERAGE = 3
+AUTODIST_PREFIX = u"AutoDist-Magic-"
+AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX
 
 
 class InitOps(Enum):
