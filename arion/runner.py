@@ -1,5 +1,7 @@
 """Runner."""
+import os
 from datetime import datetime
+import yaml
 
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import ops
@@ -8,6 +10,7 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import global_variables_initializer, local_variables_initializer, Variable
 from tensorflow.python.ops.lookup_ops import tables_initializer
 from tensorflow.python.summary.writer import writer
+from tensorflow.python.client import timeline
 
 import autodist.const
 from autodist.kernel.common import resource_variable
@@ -15,17 +18,59 @@ from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.replication.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.strategy.base import StrategyCompiler
+from autodist.utils import logging  # pylint: disable=useless-import-alias
+
+logging.set_verbosity('DEBUG')
+
+
+# TODO(Hao): could extend this to use tfprof (though I don't 
+# see immediate benefit now)
+def _log_timeline(run_metadata):
+    fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+    chrome_trace = fetched_timeline.generate_chrome_trace_format()
+    # TODO(Hao): add a runner step count and use it here.
+    with open(os.path.join(autodist.const.DEFAULT_WORKING_DIR, "traces_timeline.json"), "w") as f:
+        f.write(chrome_trace)
+
+
+# Future: convert this to protobuf
+class RunnerConfig():
+    """Meta configurations of the runner."""
+
+    def __init__(self, config_file=None):
+        """
+        Read runner configurations from a config file.
+
+        Be default, no trace will be captured and the log level is set to INFO.
+        It is fine to not provide a config file on non-chief nodes; in that case, those nodes will
+        adopt the default RunnerConfig.
+
+
+        Args:AutoDist
+            config_file (string, optional): file path to the config file . Defaults to None.
+        """
+        self.trace_level = autodist.const.TraceLevel.NO_TRACE
+        self.log_graph = True
+        if config_file and os.path.isfile(config_file):
+            self._from_config_file(config_file)
+
+    def _from_config_file(self, config_file):
+        config = yaml.safe_load(open(config_file, 'r'))
+        if 'trace_level' in config:
+            self.trace_level = autodist.const.TraceLevel(config.pop('trace_level'))
+        self.log_graph = config.pop('log_graph', False)
 
 
 class Runner:
     """Runner in worker process."""
 
-    def __init__(self, strategy, cluster):
+    def __init__(self, strategy, cluster, config=None):
         self._strategy = strategy
         self.c = cluster
         self.transformed_graph = ops.Graph()
         self._is_built = False
         self.session = None
+        self.config = config or RunnerConfig()
 
     def build(self, item):
         """
@@ -38,15 +83,16 @@ class Runner:
             graph_name = datetime.now().strftime("%Y%m%d-%H%M%S")
             writer.FileWriter('./logs/{}'.format(graph_name + name), graph=graph)
 
-        log_graph('original', graph=item.graph)
+        if self.config.log_graph:
+            log_graph('original', graph=item.graph)
         # open('./graphdefs/{}'.format(graph_name+'original'), 'w+').write(str(item._graph.as_graph_def()))
 
         # Compile Strategy
-        print('# Raw strategy:', self._strategy)
+        logging.info('# Raw strategy: %s' % self._strategy)
         device_resolver = DeviceResolver(self.c)
         strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str).compile(self._strategy)
         # strategy = self._strategy
-        print('# Compiled strategy:', strategy)
+        logging.info('# Compiled strategy: %s' % strategy)
 
         # Create Synchronizers for each node in the strategy
         synchronizers = {
@@ -64,7 +110,8 @@ class Runner:
         final_item = r.apply(item)
 
         self._finalize_build(final_item)
-        log_graph('transformed', graph=self.transformed_graph)
+        if self.config.log_graph:
+            log_graph('transformed', graph=self.transformed_graph)
 
         return self
 
@@ -79,7 +126,7 @@ class Runner:
         graph = session.graph
         try:
             op = graph.get_operation_by_name(name)
-            print('######\nRun by name:\n{}######'.format(op))
+            logging.info('######\nRun by name:\n{}######'.format(op))
             session.run(op)
         except KeyError:
             pass
@@ -123,7 +170,17 @@ class Runner:
                 assert graph.is_fetchable(new_fetch)
                 new_fetches.append(new_fetch)
 
-            p = self.session.run(new_fetches)
+            if self.config.trace_level is autodist.const.TraceLevel.FULL_TRACE:
+                options = config_pb2.RunOptions(
+                    trace_level=config_pb2.RunOptions.FULL_TRACE
+                )
+                run_metadata = config_pb2.RunMetadata()
+                p = self.session.run(new_fetches,
+                                     options=options,
+                                     run_metadata=run_metadata)
+                _log_timeline(run_metadata)
+            else:
+                p = self.session.run(new_fetches)
 
             # TODO: if people wants to run it eagerly
             # to_func(self.distributed_graph)()

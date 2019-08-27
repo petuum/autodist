@@ -100,6 +100,9 @@ class Strategy:
     def __str__(self):
         return str(self.as_dict())
 
+    def __repr__(self):
+        return self.__str__()
+
     def copy(self):
         """Return a deepcopy of the strategy."""
         return self.from_dict(deepcopy(self.as_dict()))

@@ -34,3 +34,12 @@ class InitOps(Enum):
     """
 
     MIRROR_VARIABLE_INIT_OP = 'mirror_variable_init_op'
+
+
+class TraceLevel(Enum):
+    """The trace level to be applied in RunnerOption"""
+
+    NO_TRACE = 0
+    # SOFTWARE_TRACE = 1
+    # HARDWARE_TRACE = 2
+    FULL_TRACE = 3
