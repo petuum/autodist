@@ -32,6 +32,11 @@ class Replicator:
         self._num_local_replicas = len(self._local_canonical_replica_devices)
 
         self._local_worker_id = self._cluster.get_local_worker_task_index()
+        self._local_worker_device = '/job:worker/task:{}'.format(self._local_worker_id)
+
+        for synchronizer in self._synchronizers.values():
+            synchronizer.assign_cluster_information(self._num_workers, self._num_local_replicas,
+                                                    self._local_worker_device, self._local_worker_id)
 
     def apply(self, graph_item):
         """
@@ -87,8 +92,7 @@ class Replicator:
                     graph_item,
                     new_graph_item,
                     gradient,
-                    target,
-                    self._num_local_replicas,
+                    target
                 )
 
         return new_graph_item
@@ -117,37 +121,24 @@ class Replicator:
 
                 mirrored_vars = {}
                 for update_op, (gradient, target) in item.update_op_to_grad_target.items():
-                    # TODO REFACTOR: Clean up this signature?
                     mirrored_vars[update_op] = self._synchronizers[target.name].between_graph_apply(
                         item,
+                        update_op,
                         gradient,
-                        target,
-                        local_worker_device,
-                        self._num_workers,
-                        self._num_local_replicas
+                        target
                     )
 
                 resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
 
-                # TODO: why we have a separate FOR loops compared with the above one?
-                for update_op, (_, target) in item.update_op_to_grad_target.items():
-                    self._synchronizers[target.name].add_sync_op(
-                        item,
-                        update_op,
-                        self._local_worker_id,
-                        local_worker_device,
-                        self._num_workers,
-                        variable_replicator=mirrored_vars[update_op],
-                    )
-
                 for global_step_op in item.global_step_ops:
-                    PSSynchronizer().add_sync_op(
-                        item,
-                        global_step_op,
-                        self._local_worker_id,
-                        local_worker_device,
+                    PSSynchronizer().assign_cluster_information(
                         self._num_workers,
-                        variable_replicator={}
+                        self._num_local_replicas,
+                        self._local_worker_device,
+                        self._local_worker_id
+                    ).add_sync_op(
+                        item,
+                        global_step_op
                     )
 
                 for variable_replicator in mirrored_vars.values():
