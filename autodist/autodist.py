@@ -12,7 +12,7 @@ from autodist.const import Env
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
 from autodist.resource_spec import ResourceSpec
-from autodist.runner import Runner
+from autodist.runner import Runner, RunnerConfig
 from autodist.strategy.base import StrategyBuilder
 
 IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
@@ -30,10 +30,11 @@ class AutoDist:
 
     CacheKey = namedtuple('CacheKey', ['fn'])
 
-    def __init__(self, resource_spec_file, strategy_name=None):
+    def __init__(self, resource_spec_file, strategy_name=None, runner_config_file=None):
         self._graph = ops.Graph()
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
         self._strategy_name = strategy_name
+        self._runner_config = RunnerConfig(config_file=runner_config_file)
 
         self._cluster = None
         self._coordinator = None
@@ -64,7 +65,7 @@ class AutoDist:
 
         self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
 
-        runner = Runner(strategy=s, cluster=self._cluster).build(item)
+        runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
 
         def run_fn():
             return runner.run(fetches)
