@@ -12,8 +12,24 @@ class Synchronizer(ABC):
     # and make some adjustment when necessary
     context = {}
 
+    def __init__(self):
+        self.num_workers = None
+        self.num_replicas = None
+        self.worker_device = None
+        self.worker_id = None
+        self.var_op_to_agg_grad = None
+        self.var_op_to_accum_apply_op = None
+
+    def assign_cluster_information(self, num_workers, num_replicas, worker_device, worker_id):
+        """Store cluster information in the synchronizer."""
+        self.num_workers = num_workers
+        self.num_replicas = num_replicas
+        self.worker_device = worker_device
+        self.worker_id = worker_id
+        return self
+
     @abstractmethod
-    def in_graph_apply(self, old_graph_item, curr_graph_item, grad, target, num_replicas):
+    def in_graph_apply(self, old_graph_item, curr_graph_item, grad, target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
@@ -22,7 +38,6 @@ class Synchronizer(ABC):
             curr_graph_item (GraphItem): The graph to put the new ops in.
             grad: The gradient object.
             target: The target tensor.
-            num_replicas: The number of replicas to create.
 
         Returns:
             GraphItem

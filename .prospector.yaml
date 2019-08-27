@@ -5,8 +5,6 @@ doc-warnings: true
 member-warnings: false
 
 ignore-paths:
-  - autodist/kernel/experimental
-  - autodist/kernel/synchronization/ps_synchronizer.py
   - build
   - docker
   - docs
@@ -42,10 +40,7 @@ pylint:
   options:
     max-line-length: 120
     ignored-argument-names: arg|args|kwargs
-    max-args: 8
-    max-attributes: 8
-    max-locals: 16
-    max-branches: 18
+    max-attributes: 9
     docstring-min-length: 5
 
 dodgy:
@@ -66,8 +61,6 @@ pep257:
 
 mccabe:
   run: true
-  disable:
-    - MC0001  # {Method} is too complex
 
 mypy:
   run: false

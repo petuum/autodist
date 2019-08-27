@@ -12,6 +12,7 @@ from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
 from autodist.kernel.common.utils import get_op_name, get_ancestors, replica_prefix
 from autodist.kernel.common.resource_variable import get_read_var_ops
 
+
 def get_ops_to_replicate(graph_item):
     """
     Get ops to be replicated.
@@ -73,8 +74,9 @@ def get_ops_to_replicate(graph_item):
     return ops_to_replicate
 
 
-def construct_multi_gpu_graph_def(single_gpu_graph_def, op_names_to_replicate, op_names_to_share, num_replicas,
-                                  replica_devices):
+# pylint: disable=too-many-branches
+def construct_multi_gpu_graph_def(single_gpu_graph_def, op_names_to_replicate, op_names_to_share,  # noqa: MC0001
+                                  num_replicas, replica_devices):
     """
     Given a single GPU graph def, construct the graph for multiple GPUs / replicas.
 

@@ -63,12 +63,12 @@ class Runner:
 
         final_item = r.apply(item)
 
-        self._finialize_build(final_item)
+        self._finalize_build(final_item)
         log_graph('transformed', graph=self.transformed_graph)
 
         return self
 
-    def _finialize_build(self, graph_item):
+    def _finalize_build(self, graph_item):
         self.transformed_graph = graph_item.graph
         # with self.transformed_graph.as_default():
         #     import_meta_graph(graph_item.meta_graph)

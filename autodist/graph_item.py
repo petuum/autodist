@@ -255,7 +255,8 @@ class GraphItem:
             output = {var.op: var for var in ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES)}
         return output
 
-    def pipeline_ops(self, in_ops):  # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals
+    def pipeline_ops(self, in_ops):  # noqa: MC0001
         """[summary]"""
         unstage_dequeue_iterator_queue = [
             op for op in in_ops
