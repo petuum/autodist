@@ -1,8 +1,11 @@
+import sys
 
 import numpy as np
+import os
 import tensorflow as tf
-from tensorflow.python.training.training_util import get_or_create_global_step
 
+from autodist import AutoDist
+from tensorflow.python.training.training_util import get_or_create_global_step
 
 def main(autodist):
 
@@ -12,30 +15,18 @@ def main(autodist):
 
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
-    train_images = train_images[:512, :, :, None]
-    test_images = test_images[:512, :, :, None]
-    train_labels = train_labels[:512]
-    test_labels = test_labels[:512]
-    print(train_images.shape, train_labels.shape)
+    train_images = train_images[:, :, :, None]
+    test_images = test_images[:, :, :, None]
 
     train_images = train_images / np.float32(255)
     test_images = test_images / np.float32(255)
 
-    BUFFER_SIZE = len(train_images)
-
-    BATCH_SIZE = 32
+    BATCH_SIZE = 128
 
     EPOCHS = 1
-    train_steps_per_epoch = 8
+    train_steps_per_epoch = min(100, len(train_images) // BATCH_SIZE)
 
     with d.scope():
-
-        train_dataset = tf.data.Dataset.from_tensor_slices(
-            (train_images, train_labels)).shuffle(
-            BUFFER_SIZE).batch(BATCH_SIZE)
-
-        train_iterator = tf.compat.v1.data.make_one_shot_iterator(train_dataset).get_next()
-
         model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, 3, activation='relu'),
             tf.keras.layers.MaxPooling2D(),
@@ -45,23 +36,23 @@ def main(autodist):
         ])
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
         optimizer = tf.keras.optimizers.SGD()
-        optimizer.iterations = get_or_create_global_step()
 
-        def train_step(inputs):
-            x, y = inputs
+        def train_step(x, y):
             with tf.GradientTape() as tape:
                 y_hat = model(x, training=True)
                 loss = loss_fn(y, y_hat)
                 all_vars = []
                 for v in model.trainable_variables:
                     all_vars.append(v)
-                # grads = tape.gradient(loss, all_vars)
                 grads = tf.gradients(loss, all_vars)
             update = optimizer.apply_gradients(zip(grads, all_vars))
 
-            return loss, update
+            return loss, update, optimizer.iterations
 
         for epoch in range(EPOCHS):
+            j = 0
             for _ in range(train_steps_per_epoch):
-                loss, _ = d.run(train_step, train_iterator)
-                print(f"train_loss: {loss}")
+                loss, _, i = d.run(train_step, train_images[j:j+BATCH_SIZE], train_labels[j:j+BATCH_SIZE])
+                print(f"step: {i}, train_loss: {loss}")
+                j += BATCH_SIZE
+
