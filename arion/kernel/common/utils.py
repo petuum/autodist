@@ -45,6 +45,23 @@ def get_consumers(op):
     return [consumer for output in op.outputs for consumer in output.consumers()]
 
 
+# def get_control_consumers(op):
+#     """
+#     Get a flat list of the control-dependency consumers ([B]) of the op (A):
+#
+#     A: [B]
+#     A --> B
+#     B depends on A
+#
+#     Args:
+#         op: TensorFlow Operator
+#
+#     Returns:
+#         List
+#     """
+#     return op._control_outputs
+
+
 def traverse(start_ops, end_ops=None, neighbors_fn=None):
     """
     Traverse a graph and output the visited nodes.
