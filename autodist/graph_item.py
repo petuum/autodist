@@ -1,11 +1,11 @@
 """GraphItem as metagraph wrapper."""
 
+import functools
 from collections import defaultdict
 
-import functools
+from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import resource_variable_ops
-from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
@@ -33,30 +33,22 @@ def cached_property(fn, *args, **kwargs):
 
 
 class GraphItem:
-    """GraphItem as MetaGraph wrapper."""
+    """
+    GraphItem as TensorFlow Graph wrapper.
+
+    It represents the states in-between consecutive AutoDist kernel graph transformations.
+    Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.
+    """
 
     def __init__(self, graph=None, meta_graph=None):
         if graph:
-            self._meta_graph_def = export_meta_graph(graph=graph)
             self._graph = graph
         elif meta_graph:
-            self._meta_graph_def = meta_graph
             self._graph = ops.Graph()
             with self._graph.as_default():
-                import_meta_graph(self._meta_graph_def)
+                import_meta_graph(meta_graph)
         else:
-            raise ValueError("Need to specify one of graph or metagraph.")
-        self._feeds = {}
-        self._fetches = {}
-
-        self._initialize()
-
-    def _initialize(self):
-        """All property functions that result in altering _graph shall be called once here during construction."""
-        _ = self.grad_list
-
-        # resync graph and meta_graph
-        self._meta_graph_def = export_meta_graph(graph=self._graph)
+            self._graph = ops.Graph()
 
     def get_variables_to_sync(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -73,15 +65,14 @@ class GraphItem:
         """
         return self._graph
 
-    @property
-    def meta_graph(self):
+    def export_meta_graph(self):
         """
         Returns the MetaGraph associated with this GraphItem.
 
         Returns:
             MetaGraph
         """
-        return self._meta_graph_def
+        return export_meta_graph(graph=self._graph)
 
     @cached_property
     def all_update_ops(self):
@@ -171,7 +162,7 @@ class GraphItem:
         Return:
              List
         """
-        return [(g, t) for g, t in zip(self.grad_list, self.target_list)]
+        return list(zip(self.grad_list, self.target_list))
 
     @cached_property
     def update_op_to_grad_target(self):
@@ -260,9 +251,9 @@ class GraphItem:
         """[summary]"""
         unstage_dequeue_iterator_queue = [
             op for op in in_ops
-            if op.type in op_info.UNSTAGE_OP_TYPES or
-            op.type in op_info.DEQUEUE_OP_TYPES or
-            op.type in op_info.ITERATOR_OP_TYPES
+            if op.type in op_info.UNSTAGE_OP_TYPES
+            or op.type in op_info.DEQUEUE_OP_TYPES
+            or op.type in op_info.ITERATOR_OP_TYPES
         ]
 
         stage_enqueue_iterator_ops_queue = []

@@ -55,7 +55,7 @@ class ResourceVariableReplicator:
         mv_mapping = self._mirror_vars
         init_ops = self.mirror_var_init_ops
 
-        is_gpu = original_var_device.device_type.upper() == 'GPU'
+        is_gpu = original_var_device.device_type.upper() == 'GPU' if original_var_device.device_type else False
         if not is_gpu:
             num_replicas = 1
         for i in range(num_replicas):

@@ -48,7 +48,9 @@ class Replicator:
         Returns:
             GraphItem
         """
-        return self.between_graph_apply(self.in_graph_apply(graph_item))
+        new_graph_item = self.in_graph_apply(graph_item)
+        new_graph_item = self.between_graph_apply(new_graph_item)
+        return new_graph_item
 
     def in_graph_apply(self, graph_item):
         """
@@ -74,11 +76,11 @@ class Replicator:
             op_names_to_share = {op.name for op in ops_to_share}
 
         multi_gpu_graph_def = \
-            construct_multi_gpu_graph_def(graph_item.meta_graph.graph_def, op_names_to_replicate, op_names_to_share,
+            construct_multi_gpu_graph_def(graph_item.graph.as_graph_def(), op_names_to_replicate, op_names_to_share,
                                           num_replicas=self._num_local_replicas,
                                           replica_devices=self._local_canonical_replica_devices)
         multi_gpu_meta_graph_def = meta_graph_pb2.MetaGraphDef()
-        multi_gpu_meta_graph_def.CopyFrom(graph_item.meta_graph)
+        multi_gpu_meta_graph_def.CopyFrom(graph_item.export_meta_graph())
         multi_gpu_meta_graph_def.graph_def.Clear()
         multi_gpu_meta_graph_def.graph_def.CopyFrom(multi_gpu_graph_def)
 
@@ -109,16 +111,15 @@ class Replicator:
         """
         local_worker_device = '/job:worker/task:{}'.format(self._local_worker_id)
 
-        with ops.Graph().as_default() as graph:
+        item = GraphItem()
+        with item.graph.as_default():
             with ops.device(
                     ReplicaDeviceSetter(
                         worker_device=local_worker_device,
                         synchronizers=self._synchronizers
                     )
             ):
-                import_meta_graph(multi_gpu_graph_item.meta_graph)
-                item = GraphItem(graph=graph)  # For access to update_ops, grad_list, and target_list
-
+                import_meta_graph(multi_gpu_graph_item.export_meta_graph())
                 mirrored_vars = {}
                 for update_op, (gradient, target) in item.update_op_to_grad_target.items():
                     mirrored_vars[update_op] = self._synchronizers[target.name].between_graph_apply(

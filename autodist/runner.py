@@ -66,9 +66,9 @@ class Runner:
 
     def __init__(self, strategy, cluster, config=None):
         self._strategy = strategy
-        self.c = cluster
-        self.transformed_graph = ops.Graph()
+        self._cluster = cluster
         self._is_built = False
+        self.transformed_graph = None
         self.session = None
         self.config = config or RunnerConfig()
 
@@ -89,7 +89,7 @@ class Runner:
 
         # Compile Strategy
         logging.info('# Raw strategy: %s' % self._strategy)
-        device_resolver = DeviceResolver(self.c)
+        device_resolver = DeviceResolver(self._cluster)
         strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str).compile(self._strategy)
         # strategy = self._strategy
         logging.info('# Compiled strategy: %s' % strategy)
@@ -103,7 +103,7 @@ class Runner:
         # Replicate the graph (both in-graph and between-graph)
         r = Replicator(
             config=strategy.graph_config.get('replicas'),
-            cluster=self.c,
+            cluster=self._cluster,
             synchronizers=synchronizers
         )
 
@@ -117,8 +117,7 @@ class Runner:
 
     def _finalize_build(self, graph_item):
         self.transformed_graph = graph_item.graph
-        # with self.transformed_graph.as_default():
-        #     import_meta_graph(graph_item.meta_graph)
+        self._is_built = self.transformed_graph is not None
 
     def _run_by_name(self, name, session=None):
         """Run graph by op or tensor name."""
@@ -133,9 +132,10 @@ class Runner:
 
     def run(self, fetches, feed=None):
         """Execute distributed graph."""
+        assert self._is_built
         with self.transformed_graph.as_default() as graph:
             if not self.session:
-                target = self.c.get_local_session_target()
+                target = self._cluster.get_local_session_target()
                 self.session = Session(target=target, config=config_pb2.ConfigProto(
                     allow_soft_placement=True,
                     # log_device_placement=True
