@@ -23,7 +23,7 @@ from autodist.utils import logging  # pylint: disable=useless-import-alias
 logging.set_verbosity('DEBUG')
 
 
-# TODO(Hao): could extend this to use tfprof (though I don't 
+# TODO(Hao): could extend this to use tfprof (though I don't
 # see immediate benefit now)
 def _log_timeline(run_metadata):
     fetched_timeline = timeline.Timeline(run_metadata.step_stats)
@@ -70,6 +70,8 @@ class Runner:
         self._is_built = False
         self.transformed_graph = None
         self.session = None
+        self._fd = {}
+        self._ph_feed_index = {}
         self.config = config or RunnerConfig()
 
     def build(self, item):
@@ -130,7 +132,30 @@ class Runner:
         except KeyError:
             pass
 
-    def run(self, fetches, feed=None):
+    # We have to remap the inputs (args and kwargs) to the right placeholder
+    # created in the *replicated* graph. args_ph_map holds a map of placeholder
+    # *names* to the argument tensor. Note that there are N copies of a
+    # placeholder for N replicas and we have to feed all of them with tensors.
+    # The mapping looks like original graph -> replicated graph -> argument
+    # index
+    def _create_feed_dict(self, graph, args_ph_map):
+        for op in graph.get_operations():
+            if op.type == "Placeholder":
+                ph = op.outputs[0]
+                self._fd[ph] = None
+                ph_name = op.name.split('/')[-1]
+                self._ph_feed_index[ph] = args_ph_map[ph_name]
+
+    # use the index populated in _ph_feed_index to quickly assign the right
+    # argument to the right placeholder
+    def _refill_fd(self, args, kwargs):
+        for x in self._fd:
+            if isinstance(self._ph_feed_index[x], int):
+                self._fd[x] = args[self._ph_feed_index[x]]
+            else:
+                self._fd[x] = kwargs[self._ph_feed_index[x]]
+
+    def run(self, fetches, args=None, kwargs=None, args_ph_map=None):
         """Execute distributed graph."""
         assert self._is_built
         with self.transformed_graph.as_default() as graph:
@@ -144,6 +169,7 @@ class Runner:
                 # TODO: Rethink. Should we do this?
                 self.session.run(global_variables_initializer())
                 self.session.run(local_variables_initializer())
+                self._create_feed_dict(graph, args_ph_map)
                 if ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
                     self.session.run(tables_initializer())
 
@@ -170,6 +196,9 @@ class Runner:
                 assert graph.is_fetchable(new_fetch)
                 new_fetches.append(new_fetch)
 
+            # fill out the feed_dict with new batch
+            self._refill_fd(args, kwargs)
+
             if self.config.trace_level is autodist.const.TraceLevel.FULL_TRACE:
                 options = config_pb2.RunOptions(
                     trace_level=config_pb2.RunOptions.FULL_TRACE
@@ -177,10 +206,11 @@ class Runner:
                 run_metadata = config_pb2.RunMetadata()
                 p = self.session.run(new_fetches,
                                      options=options,
-                                     run_metadata=run_metadata)
+                                     run_metadata=run_metadata,
+                                     feed_dict=self._fd)
                 _log_timeline(run_metadata)
             else:
-                p = self.session.run(new_fetches)
+                p = self.session.run(new_fetches, feed_dict=self._fd)
 
             # TODO: if people wants to run it eagerly
             # to_func(self.distributed_graph)()

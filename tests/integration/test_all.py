@@ -2,9 +2,9 @@ import itertools
 import os
 
 from autodist import AutoDist
-from .cases import c0, c1, c2
+from .cases import c0, c1, c2, c3
 
-cases = [c0, c1]
+cases = [c0, c1, c3]
 
 
 # pytest integration mark

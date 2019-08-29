@@ -28,8 +28,8 @@ def main(autodist):
     with autodist.scope():
         # x = placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
 
-        W = tf.Variable(5.0, name='W')
-        b = tf.Variable(0.0, name='b')
+        W = tf.Variable(5.0, name='W', dtype=tf.float64)
+        b = tf.Variable(0.0, name='b', dtype=tf.float64)
 
         @autodist.function
         def train_step(input):

@@ -3,8 +3,10 @@
 import os
 from collections import namedtuple
 
+import numpy as np
 from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
+from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
 from autodist.cluster import Cluster
@@ -14,6 +16,7 @@ from autodist.graph_item import GraphItem
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig
 from autodist.strategy.base import StrategyBuilder
+from autodist.kernel.common.utils import get_op_name
 
 IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
@@ -39,6 +42,7 @@ class AutoDist:
         self._cluster = None
         self._coordinator = None
         self._cache = {}
+        self._args_ph_map = {}
 
     @tf_contextlib.contextmanager
     def scope(self):
@@ -67,8 +71,8 @@ class AutoDist:
 
         runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
 
-        def run_fn():
-            return runner.run(fetches)
+        def run_fn(args, kwargs, args_ph_map):
+            return runner.run(fetches, args, kwargs, args_ph_map)
 
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
@@ -79,6 +83,26 @@ class AutoDist:
 
         return run_fn
 
+    def _get_new_args(self, args, kwargs):
+        # Insert placeholders in place of ndarrays
+        args_with_ph = []
+        kwargs_with_ph = {}
+        for i, arg in enumerate(args):
+            if isinstance(arg, np.ndarray):
+                ph = array_ops.placeholder(dtype=arg.dtype, shape=arg.shape)
+                args_with_ph.append(ph)
+                self._args_ph_map[get_op_name(ph.name)] = i
+            else:
+                args_with_ph.append(arg)
+        for (k, v) in kwargs.items():
+            if isinstance(v, np.ndarray):
+                ph = array_ops.placeholder(dtype=v.dtype, shape=v.shape)
+                kwargs_with_ph[k] = ph
+                self._args_ph_map[get_op_name(ph.name)] = k  # note key name
+            else:
+                kwargs_with_ph[k] = v
+        return tuple(args_with_ph), kwargs_with_ph
+
     def _build_and_run(self, fn, *args, **kwargs):
         # we first assume one fn only build one type of graph
         cache_id = hash(self.CacheKey(fn))
@@ -87,7 +111,10 @@ class AutoDist:
         # At the first run of the training function
         if not cached:
             # Build the graph
-            fetches = fn(*args, **kwargs)
+            # Feed the args with placeholders
+            args_with_ph, kwargs_with_ph = self._get_new_args(args, kwargs)
+            fetches = fn(*args_with_ph, **kwargs_with_ph)
+
             # Build the strategy and get the runner with distributed graph
             run_fn = self._build(fetches)
             if IS_AUTODIST_CHIEF:
@@ -97,7 +124,7 @@ class AutoDist:
             self._cache[cache_id] = run_fn
 
         run_fn = self._cache[cache_id]
-        return run_fn()
+        return run_fn(args, kwargs, self._args_ph_map)
 
     def run(self, fn, *args, **kwargs):
         """
