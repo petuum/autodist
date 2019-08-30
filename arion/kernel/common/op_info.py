@@ -1,24 +1,26 @@
 """The information of TensorFlow operations for AutoDist."""
 
-# TODO: update all the mappings for update inference.
 DENSE_VAR_UPDATE_OP_TYPES = {
     # map from ops to the index of the update in op.inputs
-    "ResourceApplyGradientDescent": (2, 0),
+    "ResourceApplyAdaMax": (8, 0),
+    "ResourceApplyAdadelta": (6, 0),
+    "ResourceApplyAdagrad": (3, 0),
+    "ResourceApplyAdagradDA": (3, 0),
     "ResourceApplyAdam": (9, 0),
+    "ResourceApplyAdamWithAmsgrad": (10, 0),
+    "ResourceApplyAddSign": (6, 0),
+    "ResourceApplyCenteredRMSProp": (8, 0),
+    "ResourceApplyFtrl": (3, 0),
+    "ResourceApplyFtrlV2": (3, 0),
+    "ResourceApplyGradientDescent": (2, 0),
+    "ResourceApplyKerasMomentum": (3, 0),
+    "ResourceApplyMomentum": (3, 0),
+    "ResourceApplyPowerSign": (6, 0),
+    "ResourceApplyProximalAdagrad": (5, 0),
+    "ResourceApplyProximalGradientDescent": (4, 0),
+    "ResourceApplyRMSProp": (7, 0),
     "AssignAddVariableOp": (1, 0),
-    "ApplyGradientDescent": 2,
-    "ApplyProximalGradientDescent": 4,
-    "ApplyAdadelta": 6,
-    "ApplyAdagrad": 3,
-    "ApplyProximalAdagrad": 5,
-    "ApplyAdagradDA": 3,
-    "ApplyFtrl": 3,
-    "ApplyMomentum": 3,
-    "ApplyAdam": 9,
-    "ApplyRMSProp": 7,
-    "ApplyCenteredRMSProp": 8,
-    "AssignAdd": 1,
-    "AssignSub": 1
+    "AssignSubVariableOp": (1, 0),
 }
 
 # For sparse operations:
@@ -31,12 +33,22 @@ SPARSE_VAR_UPDATE_OP_TYPES = {
     "ResourceScatterSub": (1, 2, 0),
     "ResourceScatterMul": (1, 2, 0),
     "ResourceScatterDiv": (1, 2, 0),
-    "ScatterUpdate": (1, 2),
-    "ScatterAdd": (1, 2),
-    "ScatterSub": (1, 2),
-    "ScatterMul": (1, 2),
-    "ScatterDiv": (1, 2),
-    "SparseApplyAdagrad": (4, 3)
+    "ResourceScatterMax": (1, 2, 0),
+    "ResourceScatterMin": (1, 2, 0),
+    "ResourceScatterNdAdd": (1, 2, 0),
+    "ResourceScatterNdSub": (1, 2, 0),
+    "ResourceScatterNdUpdate": (1, 2, 0),
+    "ResourceSparseApplyAdadelta": (7, 6, 0),
+    "ResourceSparseApplyAdagrad": (4, 3, 0),
+    "ResourceSparseApplyAdagradDA": (4, 3, 0),
+    "ResourceSparseApplyCenteredRMSProp": (9, 8, 0),
+    "ResourceSparseApplyFtrl": (4, 3, 0),
+    "ResourceSparseApplyFtrlV2": (4, 3, 0),
+    "ResourceSparseApplyKerasMomentum": (4, 3, 0),
+    "ResourceSparseApplyMomentum": (4, 3, 0),
+    "ResourceSparseApplyProximalAdagrad": (6, 5, 0),
+    "ResourceSparseApplyProximalGradientDescent": (5, 4, 0),
+    "ResourceSparseApplyRMSProp": (8, 7, 0),
 }
 
 UNSTAGE_OP_TYPES = ["Unstage"]
@@ -60,10 +72,16 @@ DEQUEUE_OP_TYPES = [
 ]
 
 ITERATOR_OP_TYPES = [
-    "Iterator", "IteratorV2", "OneShotIterator"
+    "Iterator",
+    "IteratorV2",
+    "OneShotIterator",
+    "AnonymousIterator",
+    "AnonymousIteratorV2",
+    "MultiDeviceIterator",
+    "IteratorFromStringHandle",
+    "IteratorFromStringHandleV2",
+    "MultiDeviceIteratorFromStringHandle",
 ]
-
-CPU_ONLY_TYPES = ["OneShotIterator"]
 
 MUTABLE_STATE_OPS = {
     "Variable",
