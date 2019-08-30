@@ -7,7 +7,6 @@ from tensorflow.python.framework.device_spec import DeviceSpecV2
 from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import COLOCATION_PREFIX
-from autodist.kernel.common import op_info
 from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
 from autodist.kernel.common.utils import get_op_name, get_ancestors, replica_prefix
 from autodist.kernel.common.resource_variable import get_read_var_ops
@@ -109,15 +108,6 @@ def construct_multi_gpu_graph_def(single_gpu_graph_def, op_names_to_replicate, o
         for item in to_delete:
             class_list.s.remove(item)
 
-    # TODO(Hao): this function is tricky, should infer the cpu device corresponding
-    # to this GPU using DeviceSpec
-    def _get_cpu_device(device_string):
-        default_cpu_device_name = 'CPU:0'
-        if 'GPU' in device_string:
-            pos = device_string.rfind('/')
-            device_name = device_string[:pos] + '/' + default_cpu_device_name
-        return device_name
-
     multi_gpu_graph_def = graph_pb2.GraphDef()
     multi_gpu_graph_def.library.Clear()
     multi_gpu_graph_def.library.CopyFrom(single_gpu_graph_def.library)
@@ -140,10 +130,7 @@ def construct_multi_gpu_graph_def(single_gpu_graph_def, op_names_to_replicate, o
                                            replica_prefix(replica_id))
                 if 'CPU' not in new_node.device.upper():
                     old_device = DeviceSpecV2.from_string(new_node.device)
-                    if new_node.op in op_info.CPU_ONLY_TYPES:
-                        new_device = DeviceSpecV2.from_string(_get_cpu_device(replica_devices[replica_id]))
-                    else:
-                        new_device = DeviceSpecV2.from_string(replica_devices[replica_id])
+                    new_device = DeviceSpecV2.from_string(replica_devices[replica_id])
                     new_node.device = old_device.make_merged_spec(new_device).to_string()
                 for i in range(len(new_node.input)):
                     if get_op_name(new_node.input[i]) in op_names_to_replicate:
