@@ -31,19 +31,21 @@ class PSSynchronizer(Synchronizer):
         self._var_op_to_accum_apply_op = {}
         super().__init__()
 
-    def in_graph_apply(self, old_graph_item, curr_graph_item, grad, target):
+    def in_graph_apply(self, graph_item, grad, target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
-            curr_graph_item (GraphItem): The graph to put the new ops in.
+            graph_item (GraphItem): The graph to put the new ops in.
             grad: The gradient object.
             target: The target tensor.
-            num_replicas: The number of replicas to create.
 
         Returns:
             GraphItem
         """
+        def ctrl_consumers(op):
+            return op._control_outputs  # pylint: disable=protected-access
+
         # Hierarchical reduction at local node
         reduce_to_device = '/device:CPU:0'
         assert target.op.name in [var.op.name for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)]
@@ -52,32 +54,31 @@ class PSSynchronizer(Synchronizer):
         if isinstance(grad, ops.Tensor):
             # Dense gradient
             values_name = grad.name
-            agg_grad = self._get_aggregated_dense_grad(curr_graph_item, values_name, reduce_to_device)
+            agg_grad = self._get_aggregated_dense_grad(graph_item, values_name, reduce_to_device)
+            consumer_ops = graph_item.get_ops_in_graph(grad.consumers())
+            ctrl_consumer_ops = graph_item.get_ops_in_graph(ctrl_consumers(grad.op))
 
             # Make gradients consumers to consume the aggregated gradients.
-            self._update_gradient_consumers(curr_graph_item,
-                                            self._get_ops_in_new_graph(curr_graph_item, grad.consumers()),
-                                            self._get_ops_in_new_graph(curr_graph_item,
-                                                                       old_graph_item.control_consumers[grad.op]),
+            self._update_gradient_consumers(graph_item,
+                                            consumer_ops,
+                                            ctrl_consumer_ops,
                                             values_name,
                                             agg_grad)
         elif isinstance(grad, ops.IndexedSlices):
             # Sparse gradient
             agg_grad = self._get_aggregated_sparse_grad(target.op, grad, reduce_to_device)
 
-            indices_cc_ops = self._get_ops_in_new_graph(curr_graph_item,
-                                                        old_graph_item.control_consumers[grad.indices.op])
-            indices_c_ops = self._get_ops_in_new_graph(curr_graph_item, grad.indices.consumers())
-            values_cc_ops = self._get_ops_in_new_graph(curr_graph_item,
-                                                       old_graph_item.control_consumers[grad.values.op])
-            values_c_ops = self._get_ops_in_new_graph(curr_graph_item, grad.values.consumers())
+            indices_c_ops = graph_item.get_ops_in_graph(grad.indices.consumers())
+            indices_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(grad.indices.op))
+            values_c_ops = graph_item.get_ops_in_graph(grad.values.consumers())
+            values_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(grad.values.op))
 
-            self._update_gradient_consumers(curr_graph_item,
+            self._update_gradient_consumers(graph_item,
                                             indices_c_ops,
                                             indices_cc_ops,
                                             grad.indices.name,
                                             agg_grad.indices)
-            self._update_gradient_consumers(curr_graph_item,
+            self._update_gradient_consumers(graph_item,
                                             values_c_ops,
                                             list(set(values_cc_ops).difference(indices_cc_ops)),
                                             grad.values.name,
@@ -174,6 +175,8 @@ class PSSynchronizer(Synchronizer):
 
         # Replace variable update op with finish_op (control input)
         # or read_op (input)
+        # TODO: [SYM-9098] Make this work with .control_outputs
+        #   (currently, that breaks because it adds the new queue_ops to the list, causing a cycle)
         update_control_consumers(graph_item.control_consumers[var_update_op], var_update_op, finish_op)
 
     # pylint: disable=too-many-branches
@@ -247,49 +250,47 @@ class PSSynchronizer(Synchronizer):
                     dense_shape_op.outputs[utils.get_index_from_tensor_name(grad.dense_shape.name)])
             )
 
-        def _aggregate_gradients():
-            with ops.device(reduce_to_device):
-                grad_accum_op_name = \
-                    ops.prepend_name_scope(values_op_name,
-                                           u"%sAccum" % AUTODIST_PREFIX)
-                grad_accum = data_flow_ops.SparseConditionalAccumulator(
-                    dtype=indexed_slices_grads[0].values.dtype,
-                    shape=var_op.outputs[0].shape,
-                    shared_name=grad_accum_op_name,
-                    name=grad_accum_op_name)
-                accum_apply_ops = [grad_accum.apply_indexed_slices_grad(
-                    indexed_slices_grads[i],
-                    MAX_INT64,
+        return self._aggregate_sparse_gradients(var_op, reduce_to_device, indexed_slices_grads, values_op_name)
+
+    def _aggregate_sparse_gradients(self, var_op, reduce_to_device, indexed_slices_grads, values_op_name):
+        with ops.device(reduce_to_device):
+            grad_accum_op_name = ops.prepend_name_scope(values_op_name, u"%sAccum" % AUTODIST_PREFIX)
+            grad_accum = data_flow_ops.SparseConditionalAccumulator(
+                dtype=indexed_slices_grads[0].values.dtype,
+                shape=var_op.outputs[0].shape,
+                shared_name=grad_accum_op_name,
+                name=grad_accum_op_name)
+            accum_apply_ops = [grad_accum.apply_indexed_slices_grad(
+                indexed_slices_grads[i],
+                MAX_INT64,
+                name=ops.prepend_name_scope(
+                    values_op_name,
+                    u"%s-Accum-Apply" % replica_prefix(i)))
+                for i in range(self.num_replicas)]
+            take_grad_op_name = ops.prepend_name_scope(values_op_name, u"%sTake-Grad" % AUTODIST_PREFIX)
+            with ops.control_dependencies(accum_apply_ops):
+                take_grad = grad_accum.take_indexed_slices_grad(self.num_replicas, name=take_grad_op_name)
+
+            new_indices = take_grad.indices
+            new_values = take_grad.values
+            new_dense_shape = take_grad.dense_shape
+            if indexed_slices_grads[0].indices.dtype != new_indices.dtype:
+                new_indices = math_ops.cast(
+                    new_indices,
+                    indexed_slices_grads[0].indices.dtype,
                     name=ops.prepend_name_scope(
                         values_op_name,
-                        u"%s-Accum-Apply" % replica_prefix(i)))
-                    for i in range(self.num_replicas)]
-                take_grad_op_name = ops.prepend_name_scope(values_op_name, u"%sTake-Grad" % AUTODIST_PREFIX)
-                with ops.control_dependencies(accum_apply_ops):
-                    take_grad = grad_accum.take_indexed_slices_grad(self.num_replicas, name=take_grad_op_name)
-
-                new_indices = take_grad.indices
-                new_values = take_grad.values
-                new_dense_shape = take_grad.dense_shape
-                if indexed_slices_grads[0].indices.dtype != new_indices.dtype:
-                    new_indices = math_ops.cast(
-                        new_indices,
-                        indexed_slices_grads[0].indices.dtype,
-                        name=ops.prepend_name_scope(
-                            values_op_name,
-                            u"%sTake-Grad-Cast-Indices" % AUTODIST_PREFIX)
-                    )
-                if indexed_slices_grads[0].dense_shape.dtype != new_dense_shape.dtype:
-                    new_dense_shape = math_ops.cast(
-                        new_dense_shape,
-                        indexed_slices_grads[0].dense_shape.dtype,
-                        name=ops.prepend_name_scope(
-                            values_op_name,
-                            u"%sTake-Grad-Cast-Shape" % AUTODIST_PREFIX)
-                    )
-            return ops.IndexedSlices(new_values, new_indices, new_dense_shape)
-
-        return _aggregate_gradients()
+                        u"%sTake-Grad-Cast-Indices" % AUTODIST_PREFIX)
+                )
+            if indexed_slices_grads[0].dense_shape.dtype != new_dense_shape.dtype:
+                new_dense_shape = math_ops.cast(
+                    new_dense_shape,
+                    indexed_slices_grads[0].dense_shape.dtype,
+                    name=ops.prepend_name_scope(
+                        values_op_name,
+                        u"%sTake-Grad-Cast-Shape" % AUTODIST_PREFIX)
+                )
+        return ops.IndexedSlices(new_values, new_indices, new_dense_shape)
 
     @staticmethod
     def _replicate_variable_to_devices(graph_item, gradient, target, worker_device, num_replicas_per_worker):
