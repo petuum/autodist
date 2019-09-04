@@ -10,11 +10,11 @@ from tensorflow.python.training.training_util import get_or_create_global_step
 from autodist import AutoDist
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
-
+config_file = os.path.join(os.path.dirname(__file__), 'runner_config.yml')
 
 
 def main(_):
-    autodist = AutoDist(resource_spec_file, 'PS')
+    autodist = AutoDist(resource_spec_file, 'PS', runner_config_file=config_file)
 
     TRUE_W = 3.0
     TRUE_b = 2.0
@@ -39,8 +39,8 @@ def main(_):
     with autodist.scope():
         # x = placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
 
-        W = tf.Variable(5.0, name='W')
-        b = tf.Variable(0.0, name='b')
+        W = tf.Variable(5.0, name='W', dtype=tf.float64)
+        b = tf.Variable(0.0, name='b', dtype=tf.float64)
 
         @autodist.function
         def train_step(input):

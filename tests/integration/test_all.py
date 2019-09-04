@@ -4,7 +4,12 @@ import os
 from autodist import AutoDist
 from .cases import c0, c1, c2, c3
 
-cases = [c0, c1, c3]
+cases = [
+    c0,  # TensorFlow 2.0 basics
+    c1,  # Keras basics
+    c2,  # Sparse basics
+    c3   # Numpy basics
+]
 
 
 # pytest integration mark

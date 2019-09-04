@@ -12,7 +12,6 @@ All other nodes are added in the `known_host` of `NODE 0`.
 """
 
 import os
-import signal
 from multiprocessing import Process
 
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, Env
@@ -152,7 +151,5 @@ class Cluster:
 
     def terminate(self):
         """Terminate."""
-        for proc in self.subprocesses:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         for p in self.processes:
             p.terminate()

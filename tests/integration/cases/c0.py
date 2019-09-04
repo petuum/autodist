@@ -56,3 +56,4 @@ def main(autodist):
         for epoch in range(EPOCHS):
             l, t = train_step(input=inputs_iterator.get_next())
             print('loss:', l)
+            break

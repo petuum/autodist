@@ -72,7 +72,7 @@ def main(_):
                 elapsed_time = cur_time - prev_time
                 num_words = distribute_batch_size * FLAGS.log_frequency
                 wps = float(num_words) / elapsed_time
-                logging.info("Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" % (
+                print("Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" % (
                     local_step, cur_time - prev_time, wps, loss))
                 prev_time = cur_time
 

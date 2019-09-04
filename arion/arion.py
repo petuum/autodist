@@ -52,9 +52,15 @@ class AutoDist:
 
     def __del__(self):
         if IS_AUTODIST_CHIEF:
-            self._coordinator.join()
-            # TODO: active termination instead of passive termination
-            # self._cluster.terminate()
+            # Client
+            if self._coordinator:
+                self._coordinator.join()
+            # Client
+            if self._cache:
+                self._clear_cache()
+            # Server
+            if self._cluster:
+                self._cluster.terminate()
 
     def _build(self, fetches):
         """Core Logic."""
@@ -125,6 +131,10 @@ class AutoDist:
 
         run_fn = self._cache[cache_id]
         return run_fn(args, kwargs, self._args_ph_map)
+
+    def _clear_cache(self):
+        del self._cache
+        self._cache = {}
 
     def run(self, fn, *args, **kwargs):
         """
