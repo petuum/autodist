@@ -7,7 +7,7 @@ def main(autodist):
     vocab_size = 10000
     embedding_size = 16
     hidden_dim = 16
-    max_steps = 1000
+    max_steps = 200
     batch_size = 128
     log_frequency = 100
 
