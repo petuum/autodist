@@ -12,6 +12,7 @@ from tensorflow.python.training.saver import export_meta_graph, import_meta_grap
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
 from autodist.kernel.common.utils import get_ancestors, get_consumers
+from autodist.kernel.common.resource_variable import get_read_var_ops
 
 
 def cached_property(fn, *args, **kwargs):
@@ -246,6 +247,72 @@ class GraphItem:
             output = {var.op: var for var in ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES)}
         return output
 
+    @cached_property
+    def ops_to_replicate(self):
+        """Get ops to be replicated."""
+        grad_related = set()
+        for grad in self.grad_list:
+            if isinstance(grad, ops.IndexedSlices):
+                grad_related.add(grad.indices)
+                grad_related.add(grad.values)
+                grad_related.add(grad.dense_shape)
+            elif isinstance(grad, ops.Tensor):
+                grad_related.add(grad)
+            else:
+                raise RuntimeError("Incorrect grad.")
+
+        grads_ancestor_ops = get_ancestors([grad.op for grad in grad_related],
+                                           include_control_inputs=True)
+
+        pipeline_ops = self.pipeline_ops(grads_ancestor_ops)
+
+        global_var_related_ops = set()
+        for global_var in ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES):
+            global_var_related_ops.add(global_var.op)
+            global_var_related_ops.add(global_var.initializer)
+            if global_var.op.type == 'VarHandleOp':
+                # TF 2.x
+                read_variable_ops = get_read_var_ops(global_var.op)
+                global_var_related_ops.update(read_variable_ops)
+            else:
+                # TF 1.x
+                global_var_related_ops.add(global_var._snapshot.op)  # pylint: disable=protected-access
+
+        table_related_ops = set()
+        for table_init in ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
+            table_related_ops.add(table_init)
+            table_related_ops.add(table_init.inputs[0].op)
+
+        # Assume that all variables are member of either GLOBAL_VARIABLES
+        # or LOCAL_VARIABLES.
+        local_var_op_to_var = {var.op: var for var in ops.get_collection(ops.GraphKeys.LOCAL_VARIABLES)}
+        local_var_ops = set(local_var_op_to_var.keys())
+        local_var_ops.intersection_update(grads_ancestor_ops)
+
+        ops_to_replicate = grads_ancestor_ops.copy()
+        ops_to_replicate.update(pipeline_ops)
+
+        # var_handles1 = [op for op in ops_to_replicate if op.type == "VarHandleOp"]
+        # var_handles2 = [op for op in global_var_related_ops if op.type == "VarHandleOp"]
+
+        ops_to_replicate.difference_update(global_var_related_ops)
+        ops_to_replicate.difference_update(table_related_ops)
+        ops_to_replicate.update([local_var_op_to_var[var_op].initializer for var_op in local_var_ops])
+
+        return ops_to_replicate
+
+    @cached_property
+    def op_names_to_replicate(self):
+        """Get the names of ops to be replicated."""
+        return {op.name for op in self.ops_to_replicate}
+
+    @cached_property
+    def op_names_to_share(self):
+        """Get the names of ops to be shared."""
+        # By default, share all ops not ancestors of the fetches (e.g. stateful ops)
+        # These won't be run by session.run, so they don't matter
+        return {op.name for op in set(self.graph.get_operations()).difference(self.ops_to_replicate)}
+
     # pylint: disable=too-many-locals
     def pipeline_ops(self, in_ops):  # noqa: MC0001
         """[summary]"""
@@ -336,3 +403,15 @@ class GraphItem:
         assert colocation_group.startswith(COLOCATION_PREFIX)
         binding_op_name = colocation_group[len(COLOCATION_PREFIX):].decode('utf-8')
         return self.graph.get_operation_by_name(binding_op_name)
+
+    def get_ops_in_graph(self, op_list):
+        """
+        Given a list of ops, return the corresponding Ops in this graph.
+
+        Args:
+            op_list (list): Ops
+
+        Returns:
+            List
+        """
+        return [self.graph.get_operation_by_name(op.name) for op in op_list]

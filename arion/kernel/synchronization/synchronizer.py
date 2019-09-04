@@ -29,7 +29,7 @@ class Synchronizer(ABC):
         return self
 
     @abstractmethod
-    def in_graph_apply(self, old_graph_item, graph_item, grad, target):
+    def in_graph_apply(self, graph_item, grad, target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
@@ -72,10 +72,6 @@ class Synchronizer(ABC):
         """
         subclass = next(subclass for subclass in cls.__subclasses__() if subclass.__name__ == name)
         return subclass(*args, **kwargs)
-
-    @staticmethod
-    def _get_ops_in_new_graph(new_graph_item, op_list):
-        return [new_graph_item.graph.get_operation_by_name(op.name) for op in op_list]
 
     @staticmethod
     def _update_gradient_consumers(new_graph_item, consumer_ops, control_consumer_ops,

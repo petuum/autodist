@@ -1,16 +1,20 @@
 """Replicator."""
+from tensorflow.core.framework import graph_pb2
 from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.core.protobuf import meta_graph_pb2
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
+from tensorflow.python.framework.device_spec import DeviceSpecV2
 from tensorflow.python.training.saver import import_meta_graph
+from tensorflow.python.util.compat import as_bytes
 
+from autodist.const import COLOCATION_PREFIX
 from autodist.graph_item import GraphItem
 from autodist.kernel.common import resource_variable
-from autodist.kernel.common.utils import get_op_name
+from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
+from autodist.kernel.common.utils import get_op_name, replica_prefix
 from autodist.kernel.device.setter import ReplicaDeviceSetter
-from autodist.kernel.experimental.helpers import get_ops_to_replicate, \
-    construct_multi_gpu_graph_def, handle_collection_def
+from autodist.kernel.experimental.helpers import handle_collection_def
 from autodist.kernel.synchronization.ps_synchronizer import PSSynchronizer
 
 
@@ -62,36 +66,21 @@ class Replicator:
         Returns:
             GraphItem
         """
-        with graph_item.graph.as_default() as graph:
-            ops_to_replicate = get_ops_to_replicate(graph_item)
-            op_names_to_replicate = {op.name for op in ops_to_replicate}
-
-            # Sanity check
-            assert all([get_op_name(g.name) in op_names_to_replicate for g in graph_item.grad_list])
-
-            # By default, share all ops not ancestors of the fetches (e.g. stateful ops)
-            # These won't be run by session.run, so they don't matter
-            ops_to_share = set(graph.get_operations())
-            ops_to_share.difference_update(ops_to_replicate)
-            op_names_to_share = {op.name for op in ops_to_share}
-
-        multi_gpu_graph_def = \
-            construct_multi_gpu_graph_def(graph_item.graph.as_graph_def(), op_names_to_replicate, op_names_to_share,
-                                          num_replicas=self._num_local_replicas,
-                                          replica_devices=self._local_canonical_replica_devices)
+        # Sanity check
+        assert all([get_op_name(g.name) in graph_item.op_names_to_replicate for g in graph_item.grad_list])
+        multi_gpu_graph_def = self.construct_multi_gpu_graph_def(graph_item)
         multi_gpu_meta_graph_def = meta_graph_pb2.MetaGraphDef()
         multi_gpu_meta_graph_def.CopyFrom(graph_item.export_meta_graph())
         multi_gpu_meta_graph_def.graph_def.Clear()
         multi_gpu_meta_graph_def.graph_def.CopyFrom(multi_gpu_graph_def)
 
-        handle_collection_def(multi_gpu_meta_graph_def, op_names_to_replicate,
+        handle_collection_def(multi_gpu_meta_graph_def, graph_item.op_names_to_replicate,
                               num_replicas=self._num_local_replicas)
 
         new_graph_item = GraphItem(meta_graph=multi_gpu_meta_graph_def)
         with new_graph_item.graph.as_default():
             for gradient, target in graph_item.grad_target_pairs:
                 self._synchronizers[target.name].in_graph_apply(
-                    graph_item,
                     new_graph_item,
                     gradient,
                     target
@@ -146,15 +135,97 @@ class Replicator:
                     if variable_replicator:
                         variable_replicator.update_colocation_group(item.get_colocation_op)
 
-                self.__prune_colocation_groups(item)
+                self._prune_colocation_groups(item)
 
             # TODO: make this work
             # update_shard_values_for_worker(num_workers, worker_id)
 
         return item
 
+    def construct_multi_gpu_graph_def(self, graph_item):
+        """
+        Given a single GPU GraphItem, construct the graph for multiple GPUs / replicas.
+
+        Args:
+            graph_item: The original, single-GPU GraphItem.
+
+        Returns:
+            GraphDef
+        """
+        single_gpu_graph_def = graph_item.graph.as_graph_def()
+
+        multi_gpu_graph_def = graph_pb2.GraphDef()
+        multi_gpu_graph_def.library.Clear()
+        multi_gpu_graph_def.library.CopyFrom(single_gpu_graph_def.library)
+
+        for node in single_gpu_graph_def.node:
+            if node.name in graph_item.op_names_to_share:
+                # Make a single copy of this op since it's being shared
+                multi_gpu_graph_def.node.append(node)
+                new_node = multi_gpu_graph_def.node[-1]
+                self._update_copied_node_properties(graph_item, new_node, replica_id=0, shared=True)
+            elif node.name in graph_item.op_names_to_replicate:
+                # Make a copy of this op for each replica
+                for replica_id in range(self._num_local_replicas):
+                    multi_gpu_graph_def.node.append(node)
+                    new_node = multi_gpu_graph_def.node[-1]
+                    self._update_copied_node_properties(graph_item, new_node, replica_id=replica_id, shared=False)
+            else:
+                raise RuntimeError("Should not reach here")
+
+        return multi_gpu_graph_def
+
+    def _update_copied_node_properties(self, graph_item, new_node, replica_id, shared=False):
+        if not shared:
+            new_node.name = ops.prepend_name_scope(new_node.name, replica_prefix(replica_id))
+            if 'CPU' not in new_node.device.upper():
+                old_device = DeviceSpecV2.from_string(new_node.device)
+                new_device = DeviceSpecV2.from_string(self._local_canonical_replica_devices[replica_id])
+                new_node.device = old_device.make_merged_spec(new_device).to_string()
+            if new_node.op in STAGE_OP_TYPES + UNSTAGE_OP_TYPES:
+                # Shared name is used to allow batching of elements on the same device
+                new_node.attr['shared_name'].s = (
+                    ops.prepend_name_scope(
+                        new_node.attr['shared_name'].s,
+                        replica_prefix(replica_id))).encode('utf-8')
+            if 'frame_name' in new_node.attr:
+                # Frame name identifies this node's computation frame for the TF Executor
+                new_node.attr['frame_name'].s = (
+                    ops.prepend_name_scope(
+                        new_node.attr['frame_name'].s,
+                        replica_prefix(replica_id))).encode('utf-8')
+        self._set_inputs_replica_id(graph_item, new_node, replica_id=0)
+        self._update_colocation(new_node, graph_item.op_names_to_replicate)
+
     @staticmethod
-    def __prune_colocation_groups(graph_item):
+    def _set_inputs_replica_id(graph_item, new_node, replica_id):
+        for idx, input_name in enumerate(new_node.input):
+            if get_op_name(input_name) in graph_item.op_names_to_replicate:
+                new_node.input[idx] = ops.prepend_name_scope(input_name, replica_prefix(replica_id))
+
+    @staticmethod
+    def _update_colocation(node, op_names_to_replicate, replica_id=None):
+        if '_class' not in node.attr:
+            return
+        class_list = node.attr['_class'].list
+        to_delete = []
+        for idx, s in enumerate(class_list.s):
+            if s.startswith(COLOCATION_PREFIX):
+                op_name_to_bind_to = s[len(COLOCATION_PREFIX):].decode('utf-8')
+                if op_name_to_bind_to in op_names_to_replicate:
+                    # delete colocation constraint if shared op needs to be
+                    # colocated with replica op
+                    if replica_id is None:
+                        to_delete.append(s)
+                    else:
+                        new_op_name_to_bind_to = ops.prepend_name_scope(op_name_to_bind_to,
+                                                                        replica_prefix(replica_id))
+                        class_list.s[idx] = COLOCATION_PREFIX + as_bytes(new_op_name_to_bind_to)
+        for item in to_delete:
+            class_list.s.remove(item)
+
+    @staticmethod
+    def _prune_colocation_groups(graph_item):
         for op in graph_item.graph.get_operations():
             # Now prune the graph to have the right colocation constraints
             colocation_groups = [(c, graph_item.get_colocation_op(c)) for c in op.colocation_groups()]
