@@ -131,7 +131,7 @@ class GraphItem:
                 # handle IndexSlices
                 indices = op.inputs[input_indices[0]]
                 values = op.inputs[input_indices[1]]
-                handle = op.inputs[input_indices[2]]
+                handle = op.inputs[op_info.UPDATE_OP_VAR_POS]
                 if handle.dtype is dtypes.resource:
                     dense_shape = resource_variable_ops.variable_shape(handle)
                 else:
@@ -149,10 +149,7 @@ class GraphItem:
         """
         targets = []
         for op in self.update_ops:
-            if op.type in op_info.DENSE_VAR_UPDATE_OP_TYPES:
-                targets.append(op.inputs[op_info.DENSE_VAR_UPDATE_OP_TYPES[op.type][1]])
-            else:
-                targets.append(op.inputs[op_info.SPARSE_VAR_UPDATE_OP_TYPES[op.type][2]])
+            targets.append(op.inputs[op_info.UPDATE_OP_VAR_POS])
         return targets
 
     @cached_property

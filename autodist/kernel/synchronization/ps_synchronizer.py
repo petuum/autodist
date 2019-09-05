@@ -6,7 +6,8 @@ from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops,
     control_flow_ops
 from tensorflow.python.platform import tf_logging as logging
 
-from autodist.const import MAX_INT64, UPDATE_OP_VAR_POS, AUTODIST_PREFIX
+from autodist.const import MAX_INT64, AUTODIST_PREFIX
+from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common import utils, resource_variable
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
     update_control_consumers, replica_prefix
