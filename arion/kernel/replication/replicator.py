@@ -194,7 +194,7 @@ class Replicator:
                     ops.prepend_name_scope(
                         new_node.attr['frame_name'].s,
                         replica_prefix(replica_id))).encode('utf-8')
-        self._set_inputs_replica_id(graph_item, new_node, replica_id=0)
+        self._set_inputs_replica_id(graph_item, new_node, replica_id=replica_id)
         self._update_colocation(new_node, graph_item.op_names_to_replicate)
 
     @staticmethod
