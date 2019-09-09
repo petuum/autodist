@@ -56,9 +56,12 @@ class Cluster:
             ]
         }
 
-    def is_chief(self, address):
+    def is_chief(self, address=None):
         """
         Check whether an address is chief or not.
+
+        If the argument `address` is not provided,
+        it will check whether the local address is chief.
 
         Args:
             address (str): node address e.g. ip
@@ -66,6 +69,7 @@ class Cluster:
         Returns:
             bool:
         """
+        address = address or self.get_local_address()
         return address == self._chief
 
     def get_address_from_task(self, job_name, task_index):

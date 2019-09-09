@@ -19,10 +19,10 @@ def main(_):
 
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
-    train_images = train_images[:512, :, :, None]
-    test_images = test_images[:512, :, :, None]
-    train_labels = train_labels[:512]
-    test_labels = test_labels[:512]
+    train_images = train_images[:, :, :, None]
+    test_images = test_images[:, :, :, None]
+    train_labels = train_labels[:]
+    test_labels = test_labels[:]
     print(train_images.shape, train_labels.shape)
 
     train_images = train_images / np.float32(255)
@@ -32,14 +32,13 @@ def main(_):
 
     BATCH_SIZE = 32
 
-    EPOCHS = 1
-    train_steps_per_epoch = 8
+    EPOCHS = 2
 
     with d.scope():
 
 
         train_dataset = tf.data.Dataset.from_tensor_slices(
-            (train_images, train_labels)).shuffle(
+            (train_images, train_labels)).repeat(EPOCHS).shuffle(
             BUFFER_SIZE).batch(BATCH_SIZE)
 
         train_iterator = tf.compat.v1.data.make_one_shot_iterator(train_dataset).get_next()
@@ -54,7 +53,7 @@ def main(_):
             tf.keras.layers.Dense(10, activation='softmax')
         ])
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
-        optimizer = tf.keras.optimizers.SGD()
+        optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
         # optimizer.iterations = get_or_create_global_step()
 
         def train_step(inputs):
@@ -72,10 +71,9 @@ def main(_):
 
             return loss, update, optimizer.iterations
 
-        for epoch in range(EPOCHS):
-            for _ in range(train_steps_per_epoch):
-                loss, _, i = d.run(train_step, train_iterator)
-                print(f"step: {i}, train_loss: {loss}")
+        while True:
+            loss, _, i = d.run(train_step, train_iterator)
+            print(f"step: {i}, train_loss: {loss}")
 
 
 main(sys.argv)

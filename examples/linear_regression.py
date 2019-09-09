@@ -1,6 +1,5 @@
 import sys
 import os
-import json
 
 import numpy as np
 import tensorflow as tf
@@ -63,13 +62,11 @@ def main(_):
 
                 train_op = optimizer.apply_gradients(zip(gradients, vs))
                 print(optimizer.iterations)
-            return loss, train_op, optimizer.iterations
+            return loss, train_op, optimizer.iterations, b
 
         for epoch in range(EPOCHS):
-            l, t, i = train_step(input=inputs_iterator.get_next())
-            print('step: {}, loss: {}'.format(i, l))
-            # print(l, t)
-            # break
+            l, t, i, b = train_step(input=inputs_iterator.get_next())
+            print('node: {}, step: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), i, l, b))
 
     print('I am out of scope')
 

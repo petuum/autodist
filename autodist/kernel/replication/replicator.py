@@ -3,9 +3,8 @@ from tensorflow.core.framework import graph_pb2
 from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.core.protobuf import meta_graph_pb2
 from tensorflow.python import ops
-from tensorflow.python.framework import device_spec
+from tensorflow.python.framework import device_spec, kernels
 from tensorflow.python.framework.device_spec import DeviceSpecV2
-from tensorflow.python.training.saver import import_meta_graph
 from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import COLOCATION_PREFIX
@@ -13,7 +12,6 @@ from autodist.graph_item import GraphItem
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
 from autodist.kernel.common.utils import get_op_name, replica_prefix
-from autodist.kernel.device.setter import ReplicaDeviceSetter
 from autodist.kernel.experimental.helpers import handle_collection_def
 from autodist.kernel.synchronization.ps_synchronizer import PSSynchronizer
 
@@ -40,7 +38,8 @@ class Replicator:
 
         for synchronizer in self._synchronizers.values():
             synchronizer.assign_cluster_information(self._num_workers, self._num_local_replicas,
-                                                    self._local_worker_device, self._local_worker_id)
+                                                    self._local_worker_device, self._local_worker_id,
+                                                    is_chief=self._cluster.is_chief())
 
     def apply(self, graph_item):
         """
@@ -79,9 +78,10 @@ class Replicator:
 
         new_graph_item = GraphItem(meta_graph=multi_gpu_meta_graph_def)
         with new_graph_item.graph.as_default():
-            for gradient, target in graph_item.grad_target_pairs:
+            for update_op, (gradient, target) in graph_item.update_op_to_grad_target.items():
                 self._synchronizers[target.name].in_graph_apply(
                     new_graph_item,
+                    update_op,
                     gradient,
                     target
                 )
@@ -98,17 +98,9 @@ class Replicator:
         Returns:
             GraphItem
         """
-        local_worker_device = '/job:worker/task:{}'.format(self._local_worker_id)
-
-        item = GraphItem()
+        item = GraphItem(meta_graph=multi_gpu_graph_item.export_meta_graph())
         with item.graph.as_default():
-            with ops.device(
-                    ReplicaDeviceSetter(
-                        worker_device=local_worker_device,
-                        synchronizers=self._synchronizers
-                    )
-            ):
-                import_meta_graph(multi_gpu_graph_item.export_meta_graph())
+            with ops.device(self._local_worker_device):
                 mirrored_vars = {}
                 for update_op, (gradient, target) in item.update_op_to_grad_target.items():
                     mirrored_vars[update_op] = self._synchronizers[target.name].between_graph_apply(
@@ -125,7 +117,8 @@ class Replicator:
                         self._num_workers,
                         self._num_local_replicas,
                         self._local_worker_device,
-                        self._local_worker_id
+                        self._local_worker_id,
+                        is_chief=self._cluster.is_chief()
                     ).add_sync_op(
                         item,
                         global_step_op
@@ -137,8 +130,8 @@ class Replicator:
 
                 self._prune_colocation_groups(item)
 
-            # TODO: make this work
-            # update_shard_values_for_worker(num_workers, worker_id)
+        # TODO: make this work
+        # update_shard_values_for_worker(num_workers, worker_id)
 
         return item
 
@@ -161,6 +154,7 @@ class Replicator:
         for node in single_gpu_graph_def.node:
             if node.name in graph_item.op_names_to_share:
                 # Make a single copy of this op since it's being shared
+                # Keep its original attrs
                 multi_gpu_graph_def.node.append(node)
                 new_node = multi_gpu_graph_def.node[-1]
                 self._update_copied_node_properties(graph_item, new_node, replica_id=0, shared=True)
@@ -178,10 +172,18 @@ class Replicator:
     def _update_copied_node_properties(self, graph_item, new_node, replica_id, shared=False):
         if not shared:
             new_node.name = ops.prepend_name_scope(new_node.name, replica_prefix(replica_id))
-            if 'CPU' not in new_node.device.upper():
-                old_device = DeviceSpecV2.from_string(new_node.device)
+
+            # strategy device `new_device` merges onto the original `old_device`
+            old_device = DeviceSpecV2.from_string(new_node.device)
+            if all(['CPU' in kernel_def.device_type
+                    for kernel_def in kernels.get_registered_kernels_for_op(new_node.op).kernel]):
+                # It assumes an op has a CPU kernel by default.
+                new_device = DeviceSpecV2.from_string(self._local_worker_device).\
+                    replace(device_type='CPU', device_index=0)
+            else:
                 new_device = DeviceSpecV2.from_string(self._local_canonical_replica_devices[replica_id])
-                new_node.device = old_device.make_merged_spec(new_device).to_string()
+            new_node.device = old_device.make_merged_spec(new_device).to_string()
+
             if new_node.op in STAGE_OP_TYPES + UNSTAGE_OP_TYPES:
                 # Shared name is used to allow batching of elements on the same device
                 new_node.attr['shared_name'].s = (

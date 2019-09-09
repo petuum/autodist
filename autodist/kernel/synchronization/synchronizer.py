@@ -19,22 +19,26 @@ class Synchronizer(ABC):
         self.worker_id = None
         self.var_op_to_agg_grad = None
         self.var_op_to_accum_apply_op = None
+        self.is_chief = None
 
-    def assign_cluster_information(self, num_workers, num_replicas, worker_device, worker_id):
+    # pylint: disable=too-many-arguments
+    def assign_cluster_information(self, num_workers, num_replicas, worker_device, worker_id, is_chief=False):
         """Store cluster information in the synchronizer."""
         self.num_workers = num_workers
         self.num_replicas = num_replicas
-        self.worker_device = worker_device
-        self.worker_id = worker_id
+        self.worker_device = worker_device  # local worker device
+        self.worker_id = worker_id  # local worker id
+        self.is_chief = is_chief
         return self
 
     @abstractmethod
-    def in_graph_apply(self, graph_item, grad, target):
+    def in_graph_apply(self, graph_item, update_op, grad, target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
             graph_item (GraphItem): The graph to put the new ops in.
+            update_op (Op): The update op corresponding to the grad and target.
             grad: The gradient object.
             target: The target tensor.
 

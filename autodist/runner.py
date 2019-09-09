@@ -68,7 +68,8 @@ class Runner:
         self._strategy = strategy
         self._cluster = cluster
         self._is_built = False
-        self.transformed_graph = None
+        self.original_graph_item = None
+        self.transformed_graph_item = None
         self.session = None
         self._fd = {}
         self._ph_feed_index = {}
@@ -81,6 +82,8 @@ class Runner:
         Args:
             item (GraphItem): wrapper of TensorFlow graph.
         """
+        self.original_graph_item = item
+
         def log_graph(name, graph):
             graph_name = datetime.now().strftime("%Y%m%d-%H%M%S")
             writer.FileWriter('./logs/{}'.format(graph_name + name), graph=graph)
@@ -113,13 +116,13 @@ class Runner:
 
         self._finalize_build(final_item)
         if self.config.log_graph:
-            log_graph('transformed', graph=self.transformed_graph)
+            log_graph('transformed', graph=self.transformed_graph_item.graph)
 
         return self
 
     def _finalize_build(self, graph_item):
-        self.transformed_graph = graph_item.graph
-        self._is_built = self.transformed_graph is not None
+        self.transformed_graph_item = graph_item
+        self._is_built = self.transformed_graph_item is not None
 
     def _run_by_name(self, name, session=None):
         """Run graph by op or tensor name."""
@@ -158,7 +161,7 @@ class Runner:
     def run(self, fetches, args=None, kwargs=None, args_ph_map=None):
         """Execute distributed graph."""
         assert self._is_built
-        with self.transformed_graph.as_default() as graph:
+        with self.transformed_graph_item.graph.as_default() as graph:
             if not self.session:
                 target = self._cluster.get_local_session_target()
                 self.session = Session(target=target, config=config_pb2.ConfigProto(
@@ -181,6 +184,11 @@ class Runner:
             for f in fetches:
                 if isinstance(f, ops.Tensor):
                     new_fetch = graph.get_tensor_by_name(f.name)
+                    # # TODO: make this a reasonable fetch for replicated tensors
+                    # new_fetch = {
+                    #     'Replica-0': ops.prepend_name_scope(f.name, replica_prefix(0)),
+                    #     'Replica-1': ops.prepend_name_scope(f.name, replica_prefix(1)),
+                    # }
                 elif isinstance(f, ops.Operation):
                     new_fetch = graph.get_operation_by_name(f.name)
                 elif isinstance(f, Variable):
@@ -193,7 +201,7 @@ class Runner:
                         new_fetch = handle
                 else:
                     raise TypeError('Fetch type {} not supported.'.format(type(f)))
-                assert graph.is_fetchable(new_fetch)
+                # assert graph.is_fetchable(new_fetch)
                 new_fetches.append(new_fetch)
 
             # fill out the feed_dict with new batch
