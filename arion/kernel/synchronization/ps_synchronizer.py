@@ -1,5 +1,6 @@
 """PS Synchronizer."""
 from functools import partial
+
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
 from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
@@ -7,8 +8,8 @@ from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops,
 from tensorflow.python.platform import tf_logging as logging
 
 from autodist.const import MAX_INT64, AUTODIST_PREFIX
-from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common import utils, resource_variable
+from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
     update_control_consumers, replica_prefix
 from autodist.kernel.synchronization.synchronizer import Synchronizer
@@ -32,14 +33,15 @@ class PSSynchronizer(Synchronizer):
         self._var_op_to_accum_apply_op = {}
         super().__init__()
 
-    def in_graph_apply(self, graph_item, grad, target):
+    def in_graph_apply(self, graph_item, old_update_op, old_grad, old_target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
             graph_item (GraphItem): The graph to put the new ops in.
-            grad: The gradient object.
-            target: The target tensor.
+            old_update_op (Op): The update op corresponding to the grad and target.
+            old_grad: The gradient object.
+            old_target: The target tensor.
 
         Returns:
             GraphItem
@@ -48,44 +50,46 @@ class PSSynchronizer(Synchronizer):
             return op._control_outputs  # pylint: disable=protected-access
 
         # Hierarchical reduction at local node
-        reduce_to_device = '/device:CPU:0'
-        assert target.op.name in [var.op.name for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)]
+        reduce_to_device = device_spec.DeviceSpecV2.from_string(self.worker_device). \
+            replace(device_type='CPU', device_index=0)
+        assert old_target.op.name in [var.op.name for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)]
+        graph_item.graph.get_operation_by_name(old_target.op.name)._set_device_from_string(self.target_device)
+        graph_item.graph.get_operation_by_name(old_update_op.name)._set_device_from_string(self.target_device)
 
-        # Aggregate grad
-        if isinstance(grad, ops.Tensor):
+        # Aggregate old_grad
+        if isinstance(old_grad, ops.Tensor):
             # Dense gradient
-            values_name = grad.name
-            agg_grad = self._get_aggregated_dense_grad(graph_item, values_name, reduce_to_device)
-            consumer_ops = graph_item.get_ops_in_graph(grad.consumers())
-            ctrl_consumer_ops = graph_item.get_ops_in_graph(ctrl_consumers(grad.op))
+            agg_grad = self._get_aggregated_dense_grad(graph_item, old_grad.name, reduce_to_device)
+            consumer_ops = graph_item.get_ops_in_graph(old_grad.consumers())
+            ctrl_consumer_ops = graph_item.get_ops_in_graph(ctrl_consumers(old_grad.op))
 
             # Make gradients consumers to consume the aggregated gradients.
             self._update_gradient_consumers(graph_item,
                                             consumer_ops,
                                             ctrl_consumer_ops,
-                                            values_name,
+                                            old_grad.name,
                                             agg_grad)
-        elif isinstance(grad, ops.IndexedSlices):
+        elif isinstance(old_grad, ops.IndexedSlices):
             # Sparse gradient
-            agg_grad = self._get_aggregated_sparse_grad(target.op, grad, reduce_to_device)
+            agg_grad = self._get_aggregated_sparse_grad(old_target.op, old_grad, reduce_to_device)
 
-            indices_c_ops = graph_item.get_ops_in_graph(grad.indices.consumers())
-            indices_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(grad.indices.op))
-            values_c_ops = graph_item.get_ops_in_graph(grad.values.consumers())
-            values_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(grad.values.op))
+            indices_c_ops = graph_item.get_ops_in_graph(old_grad.indices.consumers())
+            indices_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(old_grad.indices.op))
+            values_c_ops = graph_item.get_ops_in_graph(old_grad.values.consumers())
+            values_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(old_grad.values.op))
 
             self._update_gradient_consumers(graph_item,
                                             indices_c_ops,
                                             indices_cc_ops,
-                                            grad.indices.name,
+                                            old_grad.indices.name,
                                             agg_grad.indices)
             self._update_gradient_consumers(graph_item,
                                             values_c_ops,
                                             list(set(values_cc_ops).difference(indices_cc_ops)),
-                                            grad.values.name,
+                                            old_grad.values.name,
                                             agg_grad.values)
         else:
-            raise RuntimeError("Incorrect grad.")
+            raise RuntimeError("Incorrect old_grad.")
 
     # pylint: disable=arguments-differ
     def between_graph_apply(self, graph_item, update_op, gradient, target):
@@ -135,7 +139,6 @@ class PSSynchronizer(Synchronizer):
         """
         this_worker_cpu = device_spec.DeviceSpecV2.from_string(self.worker_device)
         this_worker_cpu = this_worker_cpu.replace(device_type='CPU', device_index=0)
-        is_chief = self.worker_id == 0
 
         global_step_op = ops.get_collection(ops.GraphKeys.GLOBAL_STEP)[0].op \
             if ops.get_collection(ops.GraphKeys.GLOBAL_STEP) else None
@@ -144,7 +147,7 @@ class PSSynchronizer(Synchronizer):
         is_trainable = var_op in graph_item.trainable_vars
 
         with ops.device(var_op.device), ops.name_scope(""):
-            queue_ops = self._get_queue_ops(var_update_op, is_chief, is_trainable)
+            queue_ops = self._get_queue_ops(var_update_op, self.is_chief, is_trainable)
 
             # Only dense trainable variables are replicated locally
             if variable_replicator:
@@ -160,7 +163,7 @@ class PSSynchronizer(Synchronizer):
             # Exceptional case: add additional dependencies for global_step
             if ops.get_collection(ops.GraphKeys.GLOBAL_STEP):
                 assert len(ops.get_collection(ops.GraphKeys.GLOBAL_STEP)) == 1
-                if var_op == global_step_op and not is_chief:
+                if var_op == global_step_op and not self.is_chief:
                     # Chief worker's finish_op already has update_op as control input
                     deps = [finish_op]
                     deps.extend([inp.op for inp in var_update_op.inputs])
@@ -451,7 +454,7 @@ class PSGradientTaskAssigner:
         if curr_op in self._op_to_task and curr_op not in end_ops:
             return [consumer for consumer in get_consumers(curr_op) if consumer in self._apply_grad_ancestor_ops]
 
-        placement_reference_ops = {input_tensor.op for input_tensor in curr_op.inputs}.\
+        placement_reference_ops = {input_tensor.op for input_tensor in curr_op.inputs}. \
             difference(self._ancestors_diff_descendants)
 
         if not all(ref_op in self._op_to_task for ref_op in placement_reference_ops):
