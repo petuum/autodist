@@ -4,6 +4,7 @@ stages:
   - lint
   - test
   - build
+  - release
 
 variables:
    TOOLCHAIN_IMAGE: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_latest
@@ -16,7 +17,7 @@ update-toolchain:
    before_script:
       - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
    script:
-      - ./toolchain/update_toolchain_image.sh
+      - ./docker/toolchain/update_toolchain_image.sh
 
 lint:
    stage: lint
@@ -41,9 +42,34 @@ test:
        - htmlcov
      expire_in: '1 day'
 
-build:
-  stage: build
-  tags:
-    - docker
-  script:
-    - sh GENVER --pep440
+build_wheel:
+   only:
+      - branches
+   except:
+      - master
+      - /^release-.+$/
+   stage: build
+   tags:
+      - docker
+   image: python:3.6-slim
+   script:
+      - apt-get update
+      - apt-get install -y git
+      - pip install wheel
+      - python setup.py bdist_wheel
+
+release_autodist_wheel:
+   only:
+      - master
+      - /^release-.+$/
+      - tags
+   stage: release
+   tags:
+      - docker
+   image: python:3.6-slim
+   script:
+      - apt-get update
+      - apt-get install -y git
+      - pip install wheel
+      # set HOME to the cwd so setuptools picks up the local .pypirc file
+      - VERSION=$(./GENVER --pep440) HOME=$(pwd) python setup.py bdist_wheel upload -r http://pypi.int.petuum.com:8080/

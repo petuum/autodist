@@ -34,7 +34,7 @@ class InitOps(Enum):
 
 
 class TraceLevel(Enum):
-    """The trace level to be applied in RunnerOption"""
+    """The trace level to be applied in RunnerOption."""
 
     NO_TRACE = 0
     # SOFTWARE_TRACE = 1

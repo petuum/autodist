@@ -132,11 +132,11 @@ class ResourceSpec:
             raise ValueError('Must provide "chief: true" in one of the nodes in resource spec.')
 
     def is_single_node(self):
-        """Return True if there is only a single node"""
+        """Return True if there is only a single node."""
         return self.num_cpus == 1
 
     def is_single_node_with_gpu(self):
-        """Return True if there is a single node with GPUs"""
+        """Return True if there is a single node with GPUs."""
         return self.is_single_node() and self.num_gpus > 0
 
 

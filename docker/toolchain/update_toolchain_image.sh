@@ -5,7 +5,8 @@
 #
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+# We have to do two `dirname`s because this script is two directories deep
+ROOT_DIR="$(dirname $(dirname "$SCRIPT_DIR"))"
 DOCKER_REGISTRY="registry.petuum.com/internal/scalable-ml/autodist/toolchain"
 HASH=$(find $ROOT_DIR -name requirements\*.txt | xargs cat | sort | uniq | md5sum | cut -d" " -f1)
 MD5TAG="md5-$HASH"
@@ -21,7 +22,7 @@ code=$?
 if [ $code -ne 0 ]; then
     # image does not exist. Build and push it
     echo "Image not found in $DOCKER_REGISTRY. Building it locally..."
-    docker build -t "$DOCKER_REGISTRY:$MD5TAG" -f $ROOT_DIR/toolchain/Dockerfile $ROOT_DIR
+    docker build -t "$DOCKER_REGISTRY:$MD5TAG" -f $ROOT_DIR/docker/toolchain/Dockerfile $ROOT_DIR
     docker push $DOCKER_REGISTRY:$MD5TAG
     docker tag "$DOCKER_REGISTRY:$MD5TAG" "$DOCKER_REGISTRY:ci_latest"
     docker push "$DOCKER_REGISTRY:ci_latest"

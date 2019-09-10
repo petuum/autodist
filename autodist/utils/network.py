@@ -10,7 +10,7 @@ warnings.filterwarnings(action='ignore', module=paramiko.__name__)
 
 
 class SSHConfig():
-    """Contains any necessary SSH information (e.g. passwords, keyfiles, etc.)"""
+    """Contains any necessary SSH information (e.g. passwords, keyfiles, etc.)."""
 
     def __init__(self, info):
         """
@@ -81,12 +81,7 @@ def remote_exec(args,
     Args:
         args (list): bash commands
         hostname (str): host name or address
-        username (str): host username
-        port (int): host ssh port
-        key_file (str): ssh key file path
-        env (dict): environment variables to use for the bash script
-        python_venv (str): command activating Python virtual environment
-            (e.g. "source /home/user/venv/bin/activate")
+        ssh_config (SSHConfig): object containing all ssh info
 
     Returns:
         Process: process handle
@@ -121,9 +116,7 @@ def remote_file_write(remote_path, data, hostname, ssh_config):
         remote_path (str): remote file path
         data (str): data to be written
         hostname (str): host name or address
-        username (str): host username
-        port (int): host ssh port
-        key_file (str): ssh keyfile
+        ssh_config (SSHConfig): object containing all ssh info
     """
     pkey = paramiko.RSAKey.from_private_key_file(
         os.path.expanduser(os.path.abspath(ssh_config.key_file))
@@ -145,9 +138,7 @@ def remote_copy(local_path, remote_path, hostname, ssh_config):
         local_path (str): local file path to be copied
         remote_path (str): remote directory path
         hostname (str): host name or address
-        username (str): host username
-        port (int): host ssh port
-        key_file (str): ssh keyfile
+        ssh_config (SSHConfig): object containing all ssh info
     """
     pkey = paramiko.RSAKey.from_private_key_file(
         os.path.expanduser(os.path.abspath(ssh_config.key_file))
@@ -178,8 +169,7 @@ def remote_pre_start_tf_server(working_dir, tf_server_starter_filepath, cluster_
         tf_server_starter_filepath (str): local starter file path
         cluster_spec (dict): TensorFlow ClusterSpec for servers
         hostname (str): host name or address
-        username (str): host username
-        key_file (str): ssh key file path
+        ssh_config (SSHConfig): object containing all ssh info
     """
     # TODO: handle all error messages to help user config the cluster
     remote_copy(

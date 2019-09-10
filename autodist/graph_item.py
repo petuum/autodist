@@ -17,7 +17,7 @@ from autodist.kernel.common.resource_variable import get_read_var_ops
 
 def cached_property(fn, *args, **kwargs):
     """
-    Decorator to make a function a "cached property."
+    Decorator to make a function a "cached property".
 
     This means that it is a property whose return value is cached after the
     first time it is called.
@@ -312,7 +312,7 @@ class GraphItem:
 
     # pylint: disable=too-many-locals
     def pipeline_ops(self, in_ops):  # noqa: MC0001
-        """[summary]"""
+        """[summary]."""
         unstage_dequeue_iterator_queue = [
             op for op in in_ops
             if op.type in op_info.UNSTAGE_OP_TYPES

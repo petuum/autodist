@@ -1,10 +1,12 @@
+# Development Requirements
 numpy==1.16.4
 paramiko==2.6.0
+protobuf==3.9.1
 pyyaml==5.1.1 
-tensorflow==2.0.0-beta1
+tensorflow-gpu==2.0.0-beta1
 
-# Dev Requirements
-pytest==5.0.1
-pytest-cov==2.7.1
-pydocstyle==3.0.0
-prospector==1.1.6.2
+# test
+pytest
+pytest-cov
+pydocstyle
+prospector

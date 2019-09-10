@@ -66,7 +66,7 @@ class Strategy:
         return self._id
 
     def as_dict(self):
-        """Strategy representation as dict"""
+        """Strategy representation as dict."""
         return {
             '_id': self._id,
             'node_config': self.node_config,

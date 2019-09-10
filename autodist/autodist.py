@@ -138,15 +138,15 @@ class AutoDist:
 
     def run(self, fn, *args, **kwargs):
         """
-        TFStrategy-like Interface
+        TFStrategy-like Interface.
 
         Args:
-            fn:
-            *args:
-            **kwargs:
+            fn: train step function
+            *args: any args for fn
+            **kwargs: any kwargs for fn
 
         Returns:
-
+            run function
         """
         return self._build_and_run(fn, *args, **kwargs)
 
