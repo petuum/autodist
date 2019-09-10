@@ -145,9 +145,10 @@ class Runner:
         for op in graph.get_operations():
             if op.type == "Placeholder":
                 ph = op.outputs[0]
-                self._fd[ph] = None
                 ph_name = op.name.split('/')[-1]
-                self._ph_feed_index[ph] = args_ph_map[ph_name]
+                if ph_name in args_ph_map:
+                    self._fd[ph] = None
+                    self._ph_feed_index[ph] = args_ph_map[ph_name]
 
     # use the index populated in _ph_feed_index to quickly assign the right
     # argument to the right placeholder
