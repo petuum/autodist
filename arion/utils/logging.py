@@ -93,40 +93,40 @@ def get_logger():
 
 
 def log(level, msg, *args, **kwargs):
-    """Log a message at a given level"""
+    """Log a message at a given level."""
     get_logger().log(level, msg, *args, **kwargs)
 
 
 def debug(msg, *args, **kwargs):
-    """Log a message at the DEBUG level"""
+    """Log a message at the DEBUG level."""
     get_logger().debug(msg, *args, **kwargs)
 
 
 def error(msg, *args, **kwargs):
-    """Log a message at the ERROR level"""
+    """Log a message at the ERROR level."""
     get_logger().error(msg, *args, **kwargs)
 
 
 def critical(msg, *args, **kwargs):
-    """Log a message at the CRITICAL level"""
+    """Log a message at the CRITICAL level."""
     get_logger().critical(msg, *args, **kwargs)
 
 
 def info(msg, *args, **kwargs):
-    """Log a message at the INFO level"""
+    """Log a message at the INFO level."""
     get_logger().info(msg, *args, **kwargs)
 
 
 def warning(msg, *args, **kwargs):
-    """Log a message at the WARNING level"""
+    """Log a message at the WARNING level."""
     get_logger().warning(msg, *args, **kwargs)
 
 
 def set_verbosity(v):
-    """Set the verbosity of autodist logger"""
+    """Set the verbosity of autodist logger."""
     get_logger().setLevel(v)
 
 
 def get_verbosity():
-    """Get the verbosity of autodist logger"""
+    """Get the verbosity of autodist logger."""
     return get_logger().getEffectiveLevel()

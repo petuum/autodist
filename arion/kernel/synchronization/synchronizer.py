@@ -45,7 +45,7 @@ class Synchronizer(ABC):
         Returns:
             GraphItem
         """
-        pass
+        return
 
     @abstractmethod
     def between_graph_apply(self, *args, **kwargs):
@@ -59,7 +59,7 @@ class Synchronizer(ABC):
         Returns:
             GraphItem
         """
-        pass
+        return
 
     @classmethod
     def create(cls, name, *args, **kwargs):

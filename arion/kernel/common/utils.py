@@ -35,7 +35,7 @@ def replica_prefix(replica_id):
 
 def get_consumers(op):
     """
-    Get a flat list from [output[0].consumers(), output[1].consumers(), ...]
+    Get a flat list from [output[0].consumers(), output[1].consumers(), ...].
 
     Args:
         op: TensorFlow Operator

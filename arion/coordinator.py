@@ -58,10 +58,6 @@ class Coordinator:
         for t in self.threads:
             t.join()
 
-    def terminate(self):
-        """Terminate."""
-        pass
-
     @staticmethod
     def _proc_wait_async(proc, on_exit=lambda: None):
         """Creates a thread to wait on the given proc finishing."""

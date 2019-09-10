@@ -11,17 +11,17 @@ setup(
     ],
     install_requires=[
         "numpy", 
-        "paramiko", 
-        "protobuf3",
-        "pyyaml", 
+        "paramiko",
+        "protobuf==3.9.1",
+        "pyyaml",
         "tensorflow-gpu==2.0.0-beta1",
     ],
     extras_require={
         'test': [
             'pytest',
             'pytest-cov',
-            'pydocstyle==3.0.0',
-            'prospector==1.1.6.2',
+            'pydocstyle',
+            'prospector',
         ]
     },
     packages=find_packages(),

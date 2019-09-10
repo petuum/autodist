@@ -496,7 +496,8 @@ class PSGradientTaskAssigner:
 
         if not unique_tasks:
             raise RuntimeError(f"Should have placement reference for operation {curr_op.name}")
-        elif len(unique_tasks) == 1:
+
+        if len(unique_tasks) == 1:
             curr_op_task = unique_tasks.pop()
             self._op_to_task[curr_op] = curr_op_task
         else:
