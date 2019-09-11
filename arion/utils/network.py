@@ -24,7 +24,9 @@ class SSHConfig():
         self._python_venv = info.get('python_venv', '')
         self._key_file = info.get('key_file', None)
         self._env = dict(
+            # TODO: treat user envs better in SYM-9281
             TF_CPP_MIN_LOG_LEVEL=0,
+            AUTODIST_PATCH_TF=os.environ.get('AUTODIST_PATCH_TF', default=''),
             **info.get('env', {})
         )
 
