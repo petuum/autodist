@@ -6,6 +6,8 @@ import os
 
 from tensorflow.python.training.server_lib import ClusterSpec, Server
 
+from autodist.const import DEFAULT_WORKING_DIR
+
 
 def start_server(cluster_spec, job_name: str, task_index: int):
     """
@@ -48,7 +50,7 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
 
-    cluster_spec_path = os.path.join(os.path.dirname(__file__), FLAGS.cluster_spec_filename)
+    cluster_spec_path = os.path.join(DEFAULT_WORKING_DIR, FLAGS.cluster_spec_filename)
     cluster_spec_dict = json.load(open(cluster_spec_path))
 
     start_server(cluster_spec_dict, job_name=FLAGS.job_name, task_index=FLAGS.task_index)
