@@ -11,11 +11,13 @@ Prerequisite:
 All other nodes are added in the `known_host` of `NODE 0`.
 """
 
+import json
+import subprocess
 import os
 from multiprocessing import Process
+import sys
 
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, Env
-from autodist.utils import server_starter
 from autodist.utils.network import remote_pre_start_tf_server, remote_exec, is_local_address, colored
 
 
@@ -115,45 +117,52 @@ class Cluster:
 
     def start(self):
         """Start."""
+        import autodist.utils.server_starter
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
                 if is_local_address(address) or self.is_chief(address):  # TODO: more rigorous checking
-                    proc = Process(target=server_starter.start_server,
-                                   args=(self.cluster_spec, job_name, task_index), daemon=True)
-                    self.processes.append(proc)
-                    proc.start()
+                    json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
+
+                    module_name = autodist.utils.server_starter.__name__
+                    args = [
+                        '--job_name=%s' % job_name,
+                        '--task_index=%d' % task_index
+                    ]
+                    bash = ' '.join([sys.executable, '-m', module_name] + args)
+                    proc = subprocess.Popen(bash, shell=True)
+
+                    p = Process(target=proc.wait, daemon=True)
+                    p.start()
                     print(colored('$ local tf.server started at {}: job_name={} task_index={}'.format(
                         full_address, job_name, task_index
                     )))
                 else:  # remote
                     remote_pre_start_tf_server(
                         DEFAULT_WORKING_DIR,
-                        tf_server_starter_filepath=server_starter.__file__,
+                        tf_server_starter_filepath=autodist.utils.server_starter.__file__,
                         cluster_spec=self.cluster_spec,
                         hostname=address,
                         ssh_config=self.ssh_config
                     )
 
-                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(server_starter.__file__))
+                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(autodist.utils.server_starter.__file__))
                     args = [
                         '--job_name=%s' % job_name,
                         '--task_index=%d' % task_index
                     ]
                     bash = ['python', '-u', file] + args
-                    proc = remote_exec(
-                        bash,
-                        hostname=address,
-                        ssh_config=self.ssh_config
-                    )
+                    proc = remote_exec(bash, hostname=address, ssh_config=self.ssh_config)
 
                     p = Process(target=proc.wait, daemon=True)
                     p.start()
 
-                    self.subprocesses.append(proc)
-                    self.processes.append(p)
+                self.subprocesses.append(proc)
+                self.processes.append(p)
 
     def terminate(self):
         """Terminate."""
+        for p in self.subprocesses:
+            p.terminate()
         for p in self.processes:
             p.terminate()
