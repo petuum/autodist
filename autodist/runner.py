@@ -86,7 +86,9 @@ class Runner:
 
         def log_graph(name, graph):
             graph_name = datetime.now().strftime("%Y%m%d-%H%M%S")
-            writer.FileWriter('./logs/{}'.format(graph_name + name), graph=graph)
+            graph_default_path = os.path.join(autodist.const.DEFAULT_WORKING_DIR,
+                                              'logs/{}'.format(graph_name + name))
+            writer.FileWriter(graph_default_path, graph=graph)
 
         if self.config.log_graph:
             log_graph('original', graph=item.graph)
