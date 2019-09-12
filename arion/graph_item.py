@@ -95,13 +95,16 @@ class GraphItem:
             List
         """
         # Filter out `global_step` and `iter` ops
-        return [
+        variable_update_ops = [
             op for op in self.all_update_ops
             if not any((
                 'global_step' in input.name or 'iter' in input.name
                 for input in op.inputs
             ))
         ]
+        ops_to_sync = {var.op for var in self.get_variables_to_sync()}
+        update_ops = [op for op in variable_update_ops if op.inputs[op_info.UPDATE_OP_VAR_POS].op in ops_to_sync]
+        return update_ops
 
     @cached_property
     def global_step_ops(self):
