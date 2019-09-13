@@ -11,6 +11,7 @@ from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import InitOps, COLOCATION_PREFIX
 from autodist.kernel.common.utils import get_consumers, update_consumers, replica_prefix, AUTODIST_REPLICA_PREFIX
+from autodist.utils import logging
 
 
 def get_read_var_ops(var_handle_op):
@@ -160,5 +161,5 @@ class ResourceVariableReplicator:
                     self._update_consumer(self._mirror_vars[replica_index], consumer_op)
             else:
                 # TODO: Attention: ReadVarOp consumers include the "save".
-                print("Consumer %s of value of variable %s is a shared node, do not change to mirror variable"
-                      % (consumer_op.name, self._this.op.name))
+                logging.warning("Consumer %s of value of variable %s is a shared node, do not change to mirror variable"
+                                % (consumer_op.name, self._this.op.name))

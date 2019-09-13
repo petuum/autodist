@@ -9,6 +9,7 @@ from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.graph_item import GraphItem
+from autodist.utils import logging
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
 from autodist.kernel.common.utils import get_op_name, replica_prefix
@@ -30,7 +31,7 @@ class Replicator:
             d.to_string() for d in self._replica_devices
             if self._cluster.get_local_address() == cluster.get_address_from_task(d.job, d.task)
         })
-        print('# Local replicas:', self._local_canonical_replica_devices)
+        logging.debug('Local replicas: {}'.format(self._local_canonical_replica_devices))
         self._num_local_replicas = len(self._local_canonical_replica_devices)
 
         self._local_worker_id = self._cluster.get_local_worker_task_index()

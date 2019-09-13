@@ -95,11 +95,11 @@ class Runner:
         # open('./graphdefs/{}'.format(graph_name+'original'), 'w+').write(str(item._graph.as_graph_def()))
 
         # Compile Strategy
-        logging.info('# Raw strategy: %s' % self._strategy)
+        logging.info('Raw strategy: %s' % self._strategy)
         device_resolver = DeviceResolver(self._cluster)
         strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str).compile(self._strategy)
         # strategy = self._strategy
-        logging.info('# Compiled strategy: %s' % strategy)
+        logging.info('Compiled strategy: %s' % strategy)
 
         # Create Synchronizers for each node in the strategy
         synchronizers = {
