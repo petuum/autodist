@@ -88,6 +88,8 @@ tags
 # project-specifc
 **/data
 **/logs*
+docs/_build/
+docs/api/
 
 ### OS ###
 **/.DS_Store
