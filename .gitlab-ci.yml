@@ -8,6 +8,7 @@ stages:
 
 variables:
    TOOLCHAIN_IMAGE: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_latest
+   ARTIFACT_ROOT: /data/artifacts
 
 update-toolchain:
    stage: toolchain
@@ -57,6 +58,31 @@ build_wheel:
       - apt-get install -y git
       - pip install wheel
       - python setup.py bdist_wheel
+
+release_docs:
+   only:
+      - master
+      - /^release-.+$/
+      - tags
+   stage: release
+   image: '${TOOLCHAIN_IMAGE}'
+   tags:
+      - docker
+      - nfs
+   script:
+      - apt-get update
+      - apt-get install -y git make rsync
+      - pip install -r docs/requirements-docgen.txt
+      - cd docs
+      - make apidoc
+      - make html
+      - mkdir -p ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
+      - rsync -r --delete _build/html ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
+   artifacts:
+     name: "docs"
+     paths:
+       - docs/_build/html
+     expire_in: 3 days
 
 release_autodist_wheel:
    only:
