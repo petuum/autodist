@@ -51,13 +51,14 @@ class AutoDist:
             yield
 
     def __del__(self):
+        #logging.debug("Destructing {}...".format(self))
+        # Client
+        if self._cache:
+            self._clear_cache()
         if IS_AUTODIST_CHIEF:
             # Client
             if self._coordinator:
                 self._coordinator.join()
-            # Client
-            if self._cache:
-                self._clear_cache()
             # Server
             if self._cluster:
                 self._cluster.terminate()

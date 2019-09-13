@@ -16,9 +16,11 @@ import subprocess
 import os
 from multiprocessing import Process
 import sys
+import signal
 
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, Env
 from autodist.utils.network import remote_pre_start_tf_server, remote_exec, is_local_address, colored
+from autodist.utils import logging
 
 
 class Cluster:
@@ -42,7 +44,7 @@ class Cluster:
         self.ssh_config = resource_spec.ssh_config
         self.subprocesses = []
         self.processes = []
-        print('# ClusterSpec:', self.cluster_spec)
+        logging.info('ClusterSpec: {}'.format(self.cluster_spec))
 
     @staticmethod
     def _get_default_cluster_spec(resource_spec):
@@ -130,7 +132,9 @@ class Cluster:
                         '--task_index=%d' % task_index
                     ]
                     bash = ' '.join([sys.executable, '-m', module_name] + args)
-                    proc = subprocess.Popen(bash, shell=True)
+
+                    # pylint: disable=subprocess-popen-preexec-fn
+                    proc = subprocess.Popen(bash, shell=True, preexec_fn=os.setsid)
 
                     p = Process(target=proc.wait, daemon=True)
                     p.start()
@@ -163,6 +167,6 @@ class Cluster:
     def terminate(self):
         """Terminate."""
         for p in self.subprocesses:
-            p.terminate()
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
         for p in self.processes:
             p.terminate()

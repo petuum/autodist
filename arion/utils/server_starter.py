@@ -23,7 +23,6 @@ def start_server(cluster_spec, job_name: str, task_index: int):
         job_name=job_name,
         task_index=task_index
     )
-    print('# Local session target:', s.target)
     s.join()
 
 
