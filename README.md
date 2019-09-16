@@ -1,5 +1,4 @@
-AutoDist: Automated Distributed Deep Learning
-==============================================
+# AutoDist: Automated Distributed Deep Learning
 
 [![pipeline status](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/pipeline.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
 [![coverage report](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/coverage.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
@@ -9,32 +8,38 @@ AutoDist: Automated Distributed Deep Learning
 [Releases](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tags)
 
 **AutoDist** is Petuum's new scalable ML engine. 
-AutoDist provides user-friendly interfaces for users to distribute their single-node deep learning code to run on multiple GPUs and distributed GPU clusters, with scalability and little code modification. 
+AutoDist provides user-friendly interfaces to distribute local deep-learning model training across multiple processing units (for example, distributed GPU clusters) with scalability and minimal code changes. 
 
 
 AutoDist currently supports [TensorFlow 2.0](https://www.tensorflow.org/beta/).
 
 
-Installation
--------
+## Installation
 
-### Install from released binaries 
-Download the latest autodist wheel file from [Petuum Pypi](http://pypi.int.petuum.com:8080/#/package/autodist).
+#### Install from released binaries 
+
+Download the latest autodist wheel file from [Petuum PyPI](http://pypi.int.petuum.com:8080/#/package/autodist).
 ```bash
 pip install <path/to/wheel.whl>
 ```
 
 
-### Install from latest source, or develop locally
+#### Install from latest source and develop locally
+
 ```bash
 git clone https://gitlab.int.petuum.com/internal/scalable-ml/autodist.git
 cd autodist
-pip install .
+pip install -e .
 ```
 
+## Issue Report
 
-Acknowledgement
----------------
+AutoDist is still in the early stages of developement. We'd really appreciate any feedback! 
+If you find any issues, please report them on JIRA under the `Symphony` project with `component=AutoDist`.   
+
+
+## Reference & Acknowledgement
+
 We learned and borrowed insights from a few open source projects:
 
 - [tf.distribute.strategy](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute)

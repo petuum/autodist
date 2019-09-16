@@ -20,7 +20,6 @@ Getting Started
 .. toctree::
    :maxdepth: 1
 
-   usage/installation.md
    usage/quickstart.md
    usage/tutorial.md
 
