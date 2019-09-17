@@ -50,19 +50,6 @@ class AutoDist:
         with context.graph_mode(), self._graph.as_default():
             yield
 
-    def __del__(self):
-        #logging.debug("Destructing {}...".format(self))
-        # Client
-        if self._cache:
-            self._clear_cache()
-        if IS_AUTODIST_CHIEF:
-            # Client
-            if self._coordinator:
-                self._coordinator.join()
-            # Server
-            if self._cluster:
-                self._cluster.terminate()
-
     def _build(self, fetches):
         """Core Logic."""
         # this line will traverse the graph and generate necessary stats
@@ -132,10 +119,6 @@ class AutoDist:
 
         run_fn = self._cache[cache_id]
         return run_fn(args, kwargs, self._args_ph_map)
-
-    def _clear_cache(self):
-        del self._cache
-        self._cache = {}
 
     def run(self, fn, *args, **kwargs):
         """

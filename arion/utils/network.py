@@ -101,7 +101,8 @@ def remote_exec(args,
 
     print(colored('\n$ %s' % remote_cmd))
 
-    proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)  # pylint: disable=subprocess-popen-preexec-fn
+    # pylint: disable=subprocess-popen-preexec-fn
+    proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
     return proc
 
 

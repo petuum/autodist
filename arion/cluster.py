@@ -10,11 +10,10 @@ Prerequisite:
 * The open ssh private key to other nodes is accessible on `NODE 0` given a path.
 All other nodes are added in the `known_host` of `NODE 0`.
 """
-
+import atexit
 import json
 import subprocess
 import os
-from multiprocessing import Process
 import sys
 import signal
 
@@ -43,7 +42,6 @@ class Cluster:
 
         self.ssh_config = resource_spec.ssh_config
         self.subprocesses = []
-        self.processes = []
         logging.info('ClusterSpec: {}'.format(self.cluster_spec))
 
     @staticmethod
@@ -120,6 +118,16 @@ class Cluster:
     def start(self):
         """Start."""
         import autodist.utils.server_starter
+
+        # atexit registration should be placed
+        #   - before the beginning of the start
+        #   (to ensure the clean termination if the start fails in its half way); and
+        #   - at the same module as the start
+        #   (to follow the python assumption that
+        #   lower level modules will normally be imported
+        #   before higher level modules and thus must be cleaned up later).
+        atexit.register(self.terminate)
+
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
@@ -131,13 +139,13 @@ class Cluster:
                         '--job_name=%s' % job_name,
                         '--task_index=%d' % task_index
                     ]
-                    bash = ' '.join([sys.executable, '-m', module_name] + args)
+                    cmd = [sys.executable, '-m', module_name] + args
 
                     # pylint: disable=subprocess-popen-preexec-fn
-                    proc = subprocess.Popen(bash, shell=True, preexec_fn=os.setsid)
-
-                    p = Process(target=proc.wait, daemon=True)
-                    p.start()
+                    proc = subprocess.Popen(cmd, preexec_fn=os.setsid)
+                    self.subprocesses.append(proc)
+                    # The above line immediately follows the Popen
+                    # to ensure no gap for termination failure due to the empty proc list.
                     print(colored('$ local tf.server started at {}: job_name={} task_index={}'.format(
                         full_address, job_name, task_index
                     )))
@@ -149,7 +157,6 @@ class Cluster:
                         hostname=address,
                         ssh_config=self.ssh_config
                     )
-
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(autodist.utils.server_starter.__file__))
                     args = [
                         '--job_name=%s' % job_name,
@@ -157,16 +164,12 @@ class Cluster:
                     ]
                     bash = ['python', '-u', file] + args
                     proc = remote_exec(bash, hostname=address, ssh_config=self.ssh_config)
-
-                    p = Process(target=proc.wait, daemon=True)
-                    p.start()
-
-                self.subprocesses.append(proc)
-                self.processes.append(p)
+                    # The above line immediately follows the Popen
+                    # to ensure no gap for termination failure due to the empty proc list.
+                    self.subprocesses.append(proc)
 
     def terminate(self):
         """Terminate."""
+        logging.info('Terminating cluster...')
         for p in self.subprocesses:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-        for p in self.processes:
-            p.terminate()
