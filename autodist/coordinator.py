@@ -2,10 +2,12 @@
 
 import sys
 import threading
+import atexit
 
 from autodist.const import Env, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
 from autodist.utils.network import is_local_address, remote_exec, remote_copy
+from autodist.utils import logging
 
 
 class Coordinator:
@@ -19,6 +21,8 @@ class Coordinator:
 
     def launch_clients(self):
         """Launch."""
+        atexit.register(self.join)
+
         replica_devices = [
             DeviceSpec.from_string(device_string)
             for device_string in self._strategy.graph_config.get('replicas', {})
@@ -55,6 +59,7 @@ class Coordinator:
 
     def join(self):
         """Wait for all subprocesses of remote workers to be completed."""
+        logging.info('Joining workers...')
         for t in self.threads:
             t.join()
 

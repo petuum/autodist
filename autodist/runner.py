@@ -1,16 +1,17 @@
 """Runner."""
-import os
+import atexit
 from datetime import datetime
-import yaml
 
+import os
+import yaml
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import ops
+from tensorflow.python.client import timeline
 from tensorflow.python.client.session import Session
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops.variables import global_variables_initializer, local_variables_initializer, Variable
 from tensorflow.python.ops.lookup_ops import tables_initializer
+from tensorflow.python.ops.variables import global_variables_initializer, local_variables_initializer, Variable
 from tensorflow.python.summary.writer import writer
-from tensorflow.python.client import timeline
 
 import autodist.const
 from autodist.kernel.common import resource_variable
@@ -34,7 +35,7 @@ def _log_timeline(run_metadata):
 
 
 # Future: convert this to protobuf
-class RunnerConfig():
+class RunnerConfig:
     """Meta configurations of the runner."""
 
     def __init__(self, config_file=None):
@@ -74,6 +75,11 @@ class Runner:
         self._fd = {}
         self._ph_feed_index = {}
         self.config = config or RunnerConfig()
+
+    def _clean(self):
+        logging.info('Tearing down clients...')
+        # Resetting the variable reference triggers the garbage collection when it jumps out the local
+        self.session = None
 
     def build(self, item):
         """
@@ -171,6 +177,7 @@ class Runner:
                     allow_soft_placement=True,
                     # log_device_placement=True
                 ))
+                atexit.register(self._clean)
                 # TensorFlow default initializations
                 # TODO: Rethink. Should we do this?
                 self.session.run(global_variables_initializer())
@@ -206,10 +213,8 @@ class Runner:
                     raise TypeError('Fetch type {} not supported.'.format(type(f)))
                 # assert graph.is_fetchable(new_fetch)
                 new_fetches.append(new_fetch)
-
             # fill out the feed_dict with new batch
             self._refill_fd(args, kwargs)
-
             if self.config.trace_level is autodist.const.TraceLevel.FULL_TRACE:
                 options = config_pb2.RunOptions(
                     trace_level=config_pb2.RunOptions.FULL_TRACE

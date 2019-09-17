@@ -4,11 +4,11 @@ nodes:
     gpus: [0,1]
     chief: true
 
-  # multi-nodes experiment
-#  - address: 172.31.30.187
+#   # multi-nodes experiment
+#  - address: 10.1.101.178
 #    gpus: [0,1,2,3]
 #    chief: true
-#  - address: 172.31.18.140
+#  - address: 10.1.101.92
 #    gpus: [0,1,2,3]
 #ssh:
 #  username: 'ubuntu'
