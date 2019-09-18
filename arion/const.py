@@ -5,7 +5,9 @@ from enum import Enum, auto
 import os
 
 DEFAULT_WORKING_DIR = '/tmp/autodist'
+os.makedirs(DEFAULT_WORKING_DIR, exist_ok=True)
 DEFAULT_SERIALIZATION_DIR = os.path.join(DEFAULT_WORKING_DIR, 'strategies')
+os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
 DEFAULT_PORT_RANGE = iter(range(15000, 16000))
 
 
@@ -18,7 +20,7 @@ class Env(Enum):
 
 MAX_INT64 = int(2 ** 63 - 1)
 COLOCATION_PREFIX = b"loc:@"
-AUTODIST_PREFIX = u"AutoDist-Magic-"
+AUTODIST_PREFIX = u"AutoDist-"
 AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX
 
 
@@ -31,12 +33,3 @@ class InitOps(Enum):
     """
 
     MIRROR_VARIABLE_INIT_OP = 'mirror_variable_init_op'
-
-
-class TraceLevel(Enum):
-    """The trace level to be applied in RunnerOption."""
-
-    NO_TRACE = 0
-    # SOFTWARE_TRACE = 1
-    # HARDWARE_TRACE = 2
-    FULL_TRACE = 3

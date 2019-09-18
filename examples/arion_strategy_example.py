@@ -54,7 +54,8 @@ with d.scope():
         with tf.GradientTape() as tape:
             y_hat = model(x, training=True)
             loss = loss_fn(y, y_hat)
-            grads = tape.gradient(loss, model.trainable_variables)
+            # grads = tape.gradient(loss, model.trainable_variables)
+            grads = tf.gradients(loss, model.trainable_variables)
             #############################################################
             # Change 5: Return the Training Op
             # optimizer.apply_gradients(zip(grads, model.trainable_variables))  # original code
