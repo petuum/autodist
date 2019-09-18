@@ -10,11 +10,12 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
     ],
     install_requires=[
-        "numpy", 
+        "numpy",
         "paramiko",
         "protobuf==3.9.1",
         "pyyaml",
         "tensorflow-gpu==2.0.0-beta1",
+        "gast==0.2.2",
     ],
     extras_require={
         'test': [

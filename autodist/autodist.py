@@ -1,6 +1,7 @@
 """User Interface."""
 
 import os
+import types
 from collections import namedtuple
 
 import numpy as np
@@ -8,6 +9,7 @@ from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
+from tensorflow.python.data.ops import dataset_ops
 
 from autodist.cluster import Cluster
 from autodist.const import Env
@@ -17,6 +19,7 @@ from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig
 from autodist.strategy.base import StrategyBuilder
 from autodist.kernel.common.utils import get_op_name
+from autodist.utils.code_transformer import transform
 
 IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
@@ -43,6 +46,7 @@ class AutoDist:
         self._coordinator = None
         self._cache = {}
         self._args_ph_map = {}
+        self._iter_fd = None
 
     @tf_contextlib.contextmanager
     def scope(self):
@@ -65,8 +69,8 @@ class AutoDist:
 
         runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
 
-        def run_fn(args, kwargs, args_ph_map):
-            return runner.run(fetches, args, kwargs, args_ph_map)
+        def run_fn(args, kwargs, args_ph_map, iter_fd):
+            return runner.run(fetches, args, kwargs, args_ph_map, iter_fd)
 
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
@@ -118,7 +122,24 @@ class AutoDist:
             self._cache[cache_id] = run_fn
 
         run_fn = self._cache[cache_id]
-        return run_fn(args, kwargs, self._args_ph_map)
+        return run_fn(args, kwargs, self._args_ph_map, self._iter_fd)
+
+    def make_dataset_iterator(self, dataset):
+        """Takes a dataset or a function and returns an iterator."""
+        if isinstance(dataset, types.FunctionType):
+            dataset_fn_xform = transform(dataset)
+            ds, fd = dataset_fn_xform()
+            if fd:
+                # we found some tensors that we've replaced with placeholders
+                ds_iter = dataset_ops.make_initializable_iterator(ds)
+                self._iter_fd = fd
+                return ds_iter.get_next()
+            else:
+                ds_iter = dataset_ops.make_one_shot_iterator(ds)
+                return ds_iter.get_next()
+
+        ds_iter = dataset_ops.make_one_shot_iterator(dataset)
+        return ds_iter.get_next()
 
     def run(self, fn, *args, **kwargs):
         """

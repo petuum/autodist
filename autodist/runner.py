@@ -167,7 +167,27 @@ class Runner:
             else:
                 self._fd[x] = kwargs[self._ph_feed_index[x]]
 
-    def run(self, fetches, args=None, kwargs=None, args_ph_map=None):
+    def _init_ds_iterator(self, iter_fd, graph):
+        if not iter_fd:
+            return
+
+        # we create new fd for the replicated graph
+        def remap(old_fd):
+            fd = {}
+            for op in graph.get_operations():
+                if op.type == "Placeholder":
+                    for k, v in old_fd.items():
+                        if op.name.split('/')[-1] == k.name.split(':')[0]:
+                            fd[op.outputs[0]] = v
+            return fd
+
+        remap_fd = remap(iter_fd)
+        # initialize the replicated iterators with the new fd
+        for op in graph.get_operations():
+            if op.type == "MakeIterator":
+                self.session.run(op, feed_dict=remap_fd)
+
+    def run(self, fetches, args=None, kwargs=None, args_ph_map=None, iter_fd=None):
         """Execute distributed graph."""
         assert self._is_built
         with self.transformed_graph_item.graph.as_default() as graph:
@@ -185,6 +205,8 @@ class Runner:
                 self._create_feed_dict(graph, args_ph_map)
                 if ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
                     self.session.run(tables_initializer())
+
+                self._init_ds_iterator(iter_fd, graph)
 
                 # AutoDist initializations
                 for op in autodist.const.InitOps:
