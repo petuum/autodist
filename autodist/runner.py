@@ -1,8 +1,7 @@
 """Runner."""
 import atexit
-from datetime import datetime
-
 import os
+
 import yaml
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import ops
@@ -15,23 +14,34 @@ from tensorflow.python.summary.writer import writer
 
 import autodist.const
 from autodist.kernel.common import resource_variable
+from autodist.kernel.common.utils import replica_prefix
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.replication.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.strategy.base import StrategyCompiler
-from autodist.utils import logging  # pylint: disable=useless-import-alias
-
-logging.set_verbosity('DEBUG')
+from autodist.utils import logging
 
 
 # TODO(Hao): could extend this to use tfprof (though I don't
 # see immediate benefit now)
-def _log_timeline(run_metadata):
+def _log_timeline(run_metadata, name='timeline', step=0):
     fetched_timeline = timeline.Timeline(run_metadata.step_stats)
     chrome_trace = fetched_timeline.generate_chrome_trace_format()
+    directory = os.path.join(autodist.const.DEFAULT_WORKING_DIR, "traces")
+    os.makedirs(directory, exist_ok=True)
     # TODO(Hao): add a runner step count and use it here.
-    with open(os.path.join(autodist.const.DEFAULT_WORKING_DIR, "traces_timeline.json"), "w") as f:
+    p = os.path.join(directory, "{}_{}.json".format(name, step))
+    with open(p, "w") as f:
         f.write(chrome_trace)
+        logging.info('Traced timeline written to: %s' % p)
+
+
+def _log_graph(graph, name):
+    directory = os.path.join(autodist.const.DEFAULT_WORKING_DIR, "graphs")
+    os.makedirs(directory, exist_ok=True)
+    p = os.path.join(directory, name)
+    writer.FileWriter(p, graph=graph)
+    logging.info('Graph summary written to: %s' % p)
 
 
 # Future: convert this to protobuf
@@ -50,15 +60,15 @@ class RunnerConfig:
         Args:AutoDist
             config_file (string, optional): file path to the config file . Defaults to None.
         """
-        self.trace_level = autodist.const.TraceLevel.NO_TRACE
+        self.trace_level = config_pb2.RunOptions.NO_TRACE
         self.log_graph = True
         if config_file and os.path.isfile(config_file):
             self._from_config_file(config_file)
 
     def _from_config_file(self, config_file):
         config = yaml.safe_load(open(config_file, 'r'))
-        if 'trace_level' in config:
-            self.trace_level = autodist.const.TraceLevel(config.pop('trace_level'))
+        self.trace_level = getattr(config_pb2.RunOptions.TraceLevel,
+                                   config.pop('trace_level', 'NO_TRACE'))
         self.log_graph = config.pop('log_graph', False)
 
 
@@ -69,17 +79,18 @@ class Runner:
         self._strategy = strategy
         self._cluster = cluster
         self._is_built = False
-        self.original_graph_item = None
-        self.transformed_graph_item = None
-        self.session = None
+        self._transformed_graph_item = None
+        self._config = config or RunnerConfig()
+
+        self._session = None
         self._fd = {}
         self._ph_feed_index = {}
-        self.config = config or RunnerConfig()
+        self._fetches = []
 
     def _clean(self):
-        logging.info('Tearing down clients...')
+        logging.debug('Tearing down clients...')
         # Resetting the variable reference triggers the garbage collection when it jumps out the local
-        self.session = None
+        self._session = None
 
     def build(self, item):
         """
@@ -88,23 +99,15 @@ class Runner:
         Args:
             item (GraphItem): wrapper of TensorFlow graph.
         """
-        self.original_graph_item = item
+        assert not self._is_built
 
-        def log_graph(name, graph):
-            graph_name = datetime.now().strftime("%Y%m%d-%H%M%S")
-            graph_default_path = os.path.join(autodist.const.DEFAULT_WORKING_DIR,
-                                              'logs/{}'.format(graph_name + name))
-            writer.FileWriter(graph_default_path, graph=graph)
-
-        if self.config.log_graph:
-            log_graph('original', graph=item.graph)
-        # open('./graphdefs/{}'.format(graph_name+'original'), 'w+').write(str(item._graph.as_graph_def()))
+        if self._config.log_graph:
+            _log_graph(graph=item.graph, name='original')
 
         # Compile Strategy
         logging.info('Raw strategy: %s' % self._strategy)
         device_resolver = DeviceResolver(self._cluster)
         strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str).compile(self._strategy)
-        # strategy = self._strategy
         logging.info('Compiled strategy: %s' % strategy)
 
         # Create Synchronizers for each node in the strategy
@@ -123,22 +126,24 @@ class Runner:
         final_item = r.apply(item)
 
         self._finalize_build(final_item)
-        if self.config.log_graph:
-            log_graph('transformed', graph=self.transformed_graph_item.graph)
+
+        if self._config.log_graph:
+            _log_graph(graph=self._transformed_graph_item.graph, name='transformed')
 
         return self
 
     def _finalize_build(self, graph_item):
-        self.transformed_graph_item = graph_item
-        self._is_built = self.transformed_graph_item is not None
+        self._transformed_graph_item = graph_item
+        self._is_built = self._transformed_graph_item is not None
+        logging.info('Successfully built transformed graph')
 
     def _run_by_name(self, name, session=None):
         """Run graph by op or tensor name."""
-        session = self.session if not session else session
+        session = self._session if not session else session
         graph = session.graph
         try:
             op = graph.get_operation_by_name(name)
-            logging.info('######\nRun by name:\n{}######'.format(op))
+            logging.info('Run by name:\n{}'.format(op))
             session.run(op)
         except KeyError:
             pass
@@ -167,6 +172,30 @@ class Runner:
             else:
                 self._fd[x] = kwargs[self._ph_feed_index[x]]
 
+    def _remap_fetches(self, graph, fetches):
+        for f in fetches:
+            if isinstance(f, ops.Tensor):
+                try:
+                    new_fetch = graph.get_tensor_by_name(f.name)
+                except KeyError:
+                    # TODO: make this a reasonable fetch for replicated tensors
+                    replica_f_name = ops.prepend_name_scope(f.name, replica_prefix(0))
+                    logging.warning('Fetching replicated tensor "{}" now gets: "{}"'.format(f.name, replica_f_name))
+                    new_fetch = graph.get_tensor_by_name(replica_f_name)
+            elif isinstance(f, ops.Operation):
+                new_fetch = graph.get_operation_by_name(f.name)
+            elif isinstance(f, Variable):
+                handle = graph.get_tensor_by_name(f.name)
+                if handle.dtype is dtypes.resource:
+                    # Resource Var
+                    new_fetch = resource_variable.get_read_var_tensor(handle.op)
+                else:
+                    # Ref Var
+                    new_fetch = handle
+            else:
+                raise TypeError('Fetch type {} not supported.'.format(type(f)))
+            self._fetches.append(new_fetch)
+
     def _init_ds_iterator(self, iter_fd, graph):
         if not iter_fd:
             return
@@ -185,71 +214,51 @@ class Runner:
         # initialize the replicated iterators with the new fd
         for op in graph.get_operations():
             if op.type == "MakeIterator":
-                self.session.run(op, feed_dict=remap_fd)
+                self._session.run(op, feed_dict=remap_fd)
 
     def run(self, fetches, args=None, kwargs=None, args_ph_map=None, iter_fd=None):
         """Execute distributed graph."""
         assert self._is_built
-        with self.transformed_graph_item.graph.as_default() as graph:
-            if not self.session:
+        with self._transformed_graph_item.graph.as_default() as graph:
+            if not self._session:
+                self._create_feed_dict(graph, args_ph_map)
+                self._remap_fetches(graph, fetches)
+
                 target = self._cluster.get_local_session_target()
-                self.session = Session(target=target, config=config_pb2.ConfigProto(
+                self._session = Session(target=target, config=config_pb2.ConfigProto(
                     allow_soft_placement=True,
                     # log_device_placement=True
                 ))
                 atexit.register(self._clean)
+
                 # TensorFlow default initializations
                 # TODO: Rethink. Should we do this?
-                self.session.run(global_variables_initializer())
-                self.session.run(local_variables_initializer())
-                self._create_feed_dict(graph, args_ph_map)
+                self._session.run(global_variables_initializer())
+                self._session.run(local_variables_initializer())
                 if ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
-                    self.session.run(tables_initializer())
-
+                    self._session.run(tables_initializer())
                 self._init_ds_iterator(iter_fd, graph)
-
                 # AutoDist initializations
                 for op in autodist.const.InitOps:
                     self._run_by_name(op.value)
 
-            new_fetches = []
-            for f in fetches:
-                if isinstance(f, ops.Tensor):
-                    new_fetch = graph.get_tensor_by_name(f.name)
-                    # # TODO: make this a reasonable fetch for replicated tensors
-                    # new_fetch = {
-                    #     'Replica-0': ops.prepend_name_scope(f.name, replica_prefix(0)),
-                    #     'Replica-1': ops.prepend_name_scope(f.name, replica_prefix(1)),
-                    # }
-                elif isinstance(f, ops.Operation):
-                    new_fetch = graph.get_operation_by_name(f.name)
-                elif isinstance(f, Variable):
-                    handle = graph.get_tensor_by_name(f.name)
-                    if handle.dtype is dtypes.resource:
-                        # Resource Var
-                        new_fetch = resource_variable.get_read_var_tensor(handle.op)
-                    else:
-                        # Ref Var
-                        new_fetch = handle
-                else:
-                    raise TypeError('Fetch type {} not supported.'.format(type(f)))
-                # assert graph.is_fetchable(new_fetch)
-                new_fetches.append(new_fetch)
             # fill out the feed_dict with new batch
             self._refill_fd(args, kwargs)
-            if self.config.trace_level is autodist.const.TraceLevel.FULL_TRACE:
+
+            if self._config.trace_level > config_pb2.RunOptions.NO_TRACE:
                 options = config_pb2.RunOptions(
-                    trace_level=config_pb2.RunOptions.FULL_TRACE
+                    trace_level=self._config.trace_level
                 )
                 run_metadata = config_pb2.RunMetadata()
-                p = self.session.run(new_fetches,
-                                     options=options,
-                                     run_metadata=run_metadata,
-                                     feed_dict=self._fd)
+                p = self._session.run(self._fetches,
+                                      options=options,
+                                      run_metadata=run_metadata,
+                                      feed_dict=self._fd)
                 _log_timeline(run_metadata)
             else:
-                p = self.session.run(new_fetches, feed_dict=self._fd)
-
-            # TODO: if people wants to run it eagerly
-            # to_func(self.distributed_graph)()
+                p = self._session.run(self._fetches, feed_dict=self._fd)
         return p
+
+    # TODO: v2 way of execution
+    # def run_v2():
+    # to_func(self.distributed_graph)()

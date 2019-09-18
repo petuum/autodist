@@ -31,7 +31,7 @@ class Replicator:
             d.to_string() for d in self._replica_devices
             if self._cluster.get_local_address() == cluster.get_address_from_task(d.job, d.task)
         })
-        logging.debug('Local replicas: {}'.format(self._local_canonical_replica_devices))
+        logging.debug('Local replica devices: {}'.format(self._local_canonical_replica_devices))
         self._num_local_replicas = len(self._local_canonical_replica_devices)
 
         self._local_worker_id = self._cluster.get_local_worker_task_index()
@@ -53,7 +53,9 @@ class Replicator:
             GraphItem
         """
         new_graph_item = self.in_graph_apply(graph_item)
+        logging.info('Successfully applied local in-graph replication')
         new_graph_item = self.between_graph_apply(new_graph_item)
+        logging.info('Successfully applied between-graph replication')
         return new_graph_item
 
     def in_graph_apply(self, graph_item):

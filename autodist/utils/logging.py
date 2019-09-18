@@ -12,10 +12,10 @@ import autodist.const
 _logger = None
 _logger_lock = threading.Lock()
 
-log_file_path = os.path.join(autodist.const.DEFAULT_WORKING_DIR,
+log_dir = os.path.join(autodist.const.DEFAULT_WORKING_DIR, 'logs')
+os.makedirs(log_dir, exist_ok=True)
+log_file_path = os.path.join(log_dir,
                              datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.log')
-if not os.path.exists(autodist.const.DEFAULT_WORKING_DIR):
-    os.makedirs(autodist.const.DEFAULT_WORKING_DIR)
 default_log_format = '[%(asctime)s:%(filename)s#L%(lineno)d:%(levelname)s]: %(message)s'
 
 

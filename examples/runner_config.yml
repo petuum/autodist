@@ -1,2 +1,2 @@
-trace_level: 0
+trace_level: NO_TRACE
 log_graph: True

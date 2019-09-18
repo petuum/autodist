@@ -86,7 +86,6 @@ class Strategy:
 
         TODO: Maybe protobuf later
         """
-        os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
         path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._id)
         yaml.safe_dump(self.as_dict(), stream=open(path, 'w+'))
         self.path = path
