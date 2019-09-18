@@ -3,7 +3,7 @@ numpy==1.16.4
 paramiko==2.6.0
 protobuf==3.9.1
 pyyaml==5.1.1
-tensorflow-gpu==2.0.0-beta1
+tensorflow-gpu==2.0.0-rc1
 gast==0.2.2
 
 # test
