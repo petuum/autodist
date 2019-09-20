@@ -30,13 +30,13 @@ lint:
    script:
       - prospector autodist
 
-test:
+tests:
    stage: test
    image: '${TOOLCHAIN_IMAGE}'
    tags:
-     - docker
+     - gpu_runner
    script:
-     - 'python3 -m pytest -s --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov tests/'
+     - 'python3 -m pytest -s --run-integration --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov tests/'
    artifacts:
      name: cov-report
      paths:
