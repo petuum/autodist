@@ -1,4 +1,8 @@
+import atexit
 import itertools
+from multiprocessing import Process
+import pytest
+
 import os
 
 from autodist import AutoDist
@@ -12,7 +16,7 @@ cases = [
 ]
 
 
-# pytest integration mark
+@pytest.mark.integration
 def test_all():
     resource_specs = [os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml')]
     strategies = ['PS']
@@ -21,7 +25,11 @@ def test_all():
         for c in cases:
             def run():
                 """This wrapper will handle the AutoDist destructor and garbage collections."""
+                atexit._clear()  # TensorFlow also uses atexit, but running its exitfuncs cause some issues
                 a = AutoDist(resource_spec_file=r, strategy_name=s)  # Fixtures in the future
                 c.main(a)
+                atexit._run_exitfuncs()
 
-            run()
+            p = Process(target=run)
+            p.start()
+            p.join()
