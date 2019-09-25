@@ -3,13 +3,39 @@ import time
 import json
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+import glob
 from absl import app
 from absl import flags
 from absl import logging
 import tensorflow as tf
 
-from data_utils import gen_lm1b_train_dataset
 import language_model
+
+
+def gen_lm1b_train_dataset(file_pattern, num_step):
+    """
+    Returns: The training dataset (tf.data.Dataset) that has been repeated
+    and shuffled
+    """
+    file_names = []
+    for file_name in glob.glob(file_pattern):
+        file_names.append(file_name)
+    if not file_names:
+        raise ValueError
+    # create dataset ops
+    BUFFER_SIZE = 100000
+
+    # TODO(Hao): have to use v1 APIs
+    d = tf.compat.v1.data.TextLineDataset(file_names) \
+        .map(lambda string: tf.strings.split([string]).values) \
+        .flat_map(lambda x: tf.data.Dataset.from_tensor_slices(x)) \
+        .window(num_step, 1, 1, True) \
+        .flat_map(lambda x: x.batch(num_step)) \
+        .window(2, 1, 1, True) \
+        .flat_map(lambda x: x.batch(2)) \
+        .shuffle(BUFFER_SIZE, reshuffle_each_iteration=True) \
+        .repeat()
+    return d
 
 
 FLAGS = flags.FLAGS

@@ -33,3 +33,4 @@ def test_all():
             p = Process(target=run)
             p.start()
             p.join()
+            assert p.exitcode == 0
