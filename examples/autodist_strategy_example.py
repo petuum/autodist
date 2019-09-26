@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import tensorflow as tf
 
@@ -12,7 +13,7 @@ d = AutoDist(resource_spec_file, 'PS')
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (train_images, train_labels), (_, _) = fashion_mnist.load_data()
 train_images = train_images[:, :, :, None]
-train_images = train_images / 255.0
+train_images = train_images / np.float32(255)
 
 BATCH_SIZE = 32
 STEPS_PER_EPOCH = len(train_images) // BATCH_SIZE
