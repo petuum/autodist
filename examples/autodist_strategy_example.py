@@ -9,15 +9,20 @@ resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml'
 d = AutoDist(resource_spec_file, 'PS')
 #############################################################
 
+NUM_DATAPOINTS = 100
 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (train_images, train_labels), (_, _) = fashion_mnist.load_data()
 train_images = train_images[:, :, :, None]
 train_images = train_images / np.float32(255)
 
+# Trim dataset for smaller graphdef size
+train_images = train_images[0:NUM_DATAPOINTS, :, :, :]
+train_labels = train_labels[0:NUM_DATAPOINTS]
+
 BATCH_SIZE = 32
 STEPS_PER_EPOCH = len(train_images) // BATCH_SIZE
-EPOCHS = 1
+EPOCHS = 100
 
 #############################################################
 # Change 2: Put Model under the Scope
@@ -26,7 +31,7 @@ with d.scope():
 
     train_dataset = tf.data.Dataset.from_tensor_slices(
         (train_images, train_labels)).repeat(EPOCHS).shuffle(
-        10000).batch(BATCH_SIZE)
+        NUM_DATAPOINTS).batch(BATCH_SIZE)
 
     #############################################################
     # Change 3.1: Construct Graph-Mode Iterator
