@@ -40,7 +40,7 @@ class SimpleModel():
                               name='b2',
                               trainable=True,
                               dtype=tf.float32)
-        self.optimizer = tf.optimizers.SGD(lr=0.0005)
+        self.optimizer = tf.optimizers.Adagrad(learning_rate=0.2, initial_accumulator_value=1.0)
 
     def forward(self, x, y):
         # embedding layer

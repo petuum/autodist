@@ -24,6 +24,7 @@ DENSE_VAR_UPDATE_OP_TYPES = {
     "ResourceApplyRMSProp": (7,),
     "AssignAddVariableOp": (1,),
     "AssignSubVariableOp": (1,),
+    "AssignVariableOp": (1,),
 }
 
 # For sparse operations:

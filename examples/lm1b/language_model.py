@@ -52,7 +52,7 @@ class LM:
                                trainable=True,
                                dtype=tf.float32)
         # self.optimizer = tf.optimizers.Adagrad(FLAGS.learning_rate, initial_accumulator_value=1.0)
-        self.optimizer = tf.optimizers.SGD(lr=0.01)
+        self.optimizer = tf.optimizers.SGD(lr=FLAGS.learning_rate)
         self.c = np.zeros([FLAGS.batch_size, self.state_size], dtype=np.float32)
         self.h = np.zeros([FLAGS.batch_size, self.projected_size], dtype=np.float32)
 

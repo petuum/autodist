@@ -1,18 +1,18 @@
 """GraphItem as metagraph wrapper."""
 
+import contextlib
 import functools
 from collections import defaultdict
 
-from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
-from tensorflow.python.ops import resource_variable_ops
 from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
 from autodist.const import COLOCATION_PREFIX
+from autodist.utils import logging
 from autodist.kernel.common import op_info
-from autodist.kernel.common.utils import get_ancestors, get_consumers
 from autodist.kernel.common.resource_variable import get_read_var_ops
+from autodist.kernel.common.utils import get_ancestors, get_consumers, parse_name_scope
 
 
 def cached_property(fn, *args, **kwargs):
@@ -33,6 +33,27 @@ def cached_property(fn, *args, **kwargs):
     return property(functools.lru_cache()(fn, *args, **kwargs))
 
 
+# Not a stack structure, thus not supporting nested graph item contexts.
+_default_graph_item = None
+
+
+def get_default_graph_item():
+    """Get the default graph item of the current scope."""
+    return _default_graph_item
+
+
+def wrap_gradients(fn):
+    """Wrapper for gradients functions in tensorflow.python.ops.gradients_impl."""
+    def wrapper(*args, **kwargs):
+        targets = kwargs.get('xs') or args[1]  # Keep kwargs optional as default
+        grads = fn(*args, **kwargs)
+        logging.debug('Registered grads: \n {} with targets: \n {}'.format(grads, targets))
+        if _default_graph_item:
+            _default_graph_item.extend_gradient_info(grads, targets)
+        return grads
+    return wrapper
+
+
 class GraphItem:
     """
     GraphItem as TensorFlow Graph wrapper.
@@ -51,10 +72,45 @@ class GraphItem:
         else:
             self._graph = ops.Graph()
 
-    def get_variables_to_sync(self):
+        self._grad_target_pairs = []
+
+    def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
         with self.graph.as_default():
             return trainable_variables()
+
+    @contextlib.contextmanager
+    def as_default(self):
+        """A context scope with current graph item as the default."""
+        global _default_graph_item
+        if _default_graph_item:
+            raise SyntaxError('GraphItem does not support nested contexts.')
+        _default_graph_item = self
+        # if global graph mode
+        with self._graph.as_default():  # enter graph mode
+            yield self
+        _default_graph_item = None
+
+    def extend_gradient_info(self, grads, targets):
+        """Add the detected grad-target pairs to the object."""
+        assert isinstance(grads, list)
+        assert isinstance(targets, list)
+        self._grad_target_pairs.extend(list(zip(grads, targets)))
+
+    def copy_gradient_info_from(self, other):
+        """Copy gradient info from the another GraphItem object."""
+        # TODO: Future export autodist-defined protobuf message
+        for _grad, _target in other.grad_target_pairs:
+            if isinstance(_grad, ops.IndexedSlices):
+                grad = ops.IndexedSlices(
+                    indices=self.graph.get_tensor_by_name(_grad.indices.name),
+                    values=self.graph.get_tensor_by_name(_grad.values.name),
+                    dense_shape=self.graph.get_tensor_by_name(_grad.dense_shape.name)
+                )
+            else:
+                grad = self.graph.get_tensor_by_name(_grad.name)
+            target = self.trainable_var_op_to_var[self.graph.get_operation_by_name(_target.op.name)]
+            self._grad_target_pairs.append((grad, target))
 
     @property
     def graph(self):
@@ -78,7 +134,7 @@ class GraphItem:
     @cached_property
     def all_update_ops(self):
         """
-        Get all ops in the graph that perform stateful operations, including GlobalStep ops.
+        Get all ops in the graph that perform stateful operations.
 
         Returns:
             List
@@ -87,34 +143,44 @@ class GraphItem:
                 op.type in op_info.DENSE_VAR_UPDATE_OP_TYPES.keys() | op_info.SPARSE_VAR_UPDATE_OP_TYPES.keys()]
 
     @cached_property
-    def update_ops(self):
+    def update_op_to_grad_target(self):
         """
-        Get all ops in the graph that perform stateful operations (updates).
+        Get all update ops.
+
+        Get all ops in the graph that perform stateful operations,
+        on trainable variables, excluding initialization (i.e. the first "update").
 
         Returns:
             List
         """
-        # Filter out `global_step` and `iter` ops
-        variable_update_ops = [
-            op for op in self.all_update_ops
-            if not any((
-                'global_step' in input.name or 'iter' in input.name
-                for input in op.inputs
-            ))
-        ]
-        ops_to_sync = {var.op for var in self.get_variables_to_sync()}
-        update_ops = [op for op in variable_update_ops if op.inputs[op_info.UPDATE_OP_VAR_POS].op in ops_to_sync]
+        expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs}
+        update_ops = {}
+        for op in self.all_update_ops:
+            var_op = op.inputs[op_info.UPDATE_OP_VAR_POS].op
+            on_trainable_variable = var_op in expected_var_ops
+            var_scope = var_op.name
+            update_op_scope = parse_name_scope(op.name)
+            is_initialization = update_op_scope == var_scope
+            is_saving = update_op_scope.startswith('save')
+            if on_trainable_variable and not is_initialization and not is_saving:
+                update_ops[op] = expected_var_ops[var_op]
         return update_ops
 
     @cached_property
-    def global_step_ops(self):
+    def global_step_update_ops(self):
         """
         Get all ops in the graph that are part of the global step.
 
         Returns:
             List
         """
-        return set(self.all_update_ops).difference(self.update_ops)
+        return [
+            op for op in self.all_update_ops
+            if any((
+                'global_step' in input.name or 'iter' in input.name
+                for input in op.inputs
+            ))
+        ]
 
     @cached_property
     def grad_list(self):
@@ -124,23 +190,7 @@ class GraphItem:
         Returns:
             List
         """
-        grads = []
-        for op in self.update_ops:
-            if op.type in op_info.DENSE_VAR_UPDATE_OP_TYPES:
-                input_indices = op_info.DENSE_VAR_UPDATE_OP_TYPES[op.type]
-                grads.append(op.inputs[input_indices[0]])
-            else:
-                input_indices = op_info.SPARSE_VAR_UPDATE_OP_TYPES[op.type]
-                # handle IndexSlices
-                indices = op.inputs[input_indices[0]]
-                values = op.inputs[input_indices[1]]
-                handle = op.inputs[op_info.UPDATE_OP_VAR_POS]
-                if handle.dtype is dtypes.resource:
-                    dense_shape = resource_variable_ops.variable_shape(handle)
-                else:
-                    dense_shape = handle.shape
-                grads.append(ops.IndexedSlices(values, indices, dense_shape))
-        return grads
+        return [grad for grad, _ in self._grad_target_pairs]
 
     @cached_property
     def target_list(self):
@@ -150,10 +200,7 @@ class GraphItem:
         Returns:
             List
         """
-        targets = []
-        for op in self.update_ops:
-            targets.append(op.inputs[op_info.UPDATE_OP_VAR_POS])
-        return targets
+        return [target for _, target in self._grad_target_pairs]
 
     @cached_property
     def grad_target_pairs(self):
@@ -163,44 +210,7 @@ class GraphItem:
         Return:
              List
         """
-        return list(zip(self.grad_list, self.target_list))
-
-    @cached_property
-    def update_op_to_grad_target(self):
-        """
-        Mapping from update ops to a tuple of the corresponding gradient and target.
-
-        Returns:
-            Dict
-        """
-        return {
-            update_op: self.grad_target_pairs[idx]
-            for idx, update_op in enumerate(self.update_ops)
-        }
-
-    @cached_property
-    def trainable_vars(self):
-        """
-        Mapping from ops to the corresponding trainable variables.
-
-        Returns:
-            Dict
-        """
-        with self.graph.as_default():
-            trainable_vars = {var.op: var for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)}
-        return trainable_vars
-
-    @cached_property
-    def global_vars(self):
-        """
-        Mapping from ops to the corresponding global variables.
-
-        Returns:
-            Dict
-        """
-        with self.graph.as_default():
-            global_vars = {var.op: var for var in ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES)}
-        return global_vars
+        return self._grad_target_pairs.copy()
 
     @cached_property
     def control_consumers(self):
@@ -233,18 +243,6 @@ class GraphItem:
         """
         with self.graph.as_default():
             output = {var.op: var for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)}
-        return output
-
-    @cached_property
-    def global_var_op_to_var(self):
-        """
-        Mapping from global variable ops (e.g. VarHandleOps) to the Variables.
-
-        Returns:
-            Dict
-        """
-        with self.graph.as_default():
-            output = {var.op: var for var in ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES)}
         return output
 
     @cached_property

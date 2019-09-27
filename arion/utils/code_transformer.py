@@ -70,6 +70,7 @@ def transform(dataset_fn):
     assert isinstance(dataset_fn, types.FunctionType)
 
     # parse, get ast
+    # pylint: disable=unexpected-keyword-arg
     node, _ = parser.parse_entity(dataset_fn, future_features=())
 
     # transform ast if we find required pattern
@@ -79,6 +80,7 @@ def transform(dataset_fn):
     gast.fix_missing_locations(xform_node)
 
     # convert it back to a callable
+    # pylint: disable=unbalanced-tuple-unpacking
     module, _, _ = compiler.ast_to_object(xform_node, include_source_map=True)
 
     globs = dataset_fn.__globals__

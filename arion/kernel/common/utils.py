@@ -18,6 +18,22 @@ def get_op_name(tensor_name):
     return tensor_name.replace('^', '').split(':')[0]
 
 
+def parse_name_scope(name):
+    """
+    Given a tensor or op name, return the name scope of the raw name.
+
+    Args:
+        name: The name of a tensor or an op.
+
+    Returns:
+        str
+    """
+    i = name.rfind('/')
+    if i != -1:
+        return name[:i]
+    return ''
+
+
 def replica_prefix(replica_id):
     """
     Generate replica prefix based on replica id.

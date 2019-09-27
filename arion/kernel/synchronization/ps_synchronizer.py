@@ -52,7 +52,6 @@ class PSSynchronizer(Synchronizer):
         # Hierarchical reduction at local node
         reduce_to_device = device_spec.DeviceSpecV2.from_string(self.worker_device). \
             replace(device_type='CPU', device_index=0)
-        assert old_target.op.name in [var.op.name for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)]
         graph_item.graph.get_operation_by_name(old_target.op.name)._set_device_from_string(self.target_device)
         graph_item.graph.get_operation_by_name(old_update_op.name)._set_device_from_string(self.target_device)
 
@@ -90,6 +89,10 @@ class PSSynchronizer(Synchronizer):
                                             agg_grad.values)
         else:
             raise RuntimeError("Incorrect old_grad.")
+        graph_item.extend_gradient_info(
+            grads=[agg_grad],
+            targets=[graph_item.trainable_var_op_to_var[graph_item.graph.get_operation_by_name(old_target.op.name)]]
+        )
 
     # pylint: disable=arguments-differ
     def between_graph_apply(self, graph_item, update_op, gradient, target):
@@ -144,7 +147,7 @@ class PSSynchronizer(Synchronizer):
             if ops.get_collection(ops.GraphKeys.GLOBAL_STEP) else None
 
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
-        is_trainable = var_op in graph_item.trainable_vars
+        is_trainable = var_op in graph_item.trainable_var_op_to_var
 
         with ops.device(var_op.device), ops.name_scope(""):
             queue_ops = self._get_queue_ops(var_update_op, self.is_chief, is_trainable)
@@ -368,8 +371,7 @@ class PSSynchronizer(Synchronizer):
         var_op_to_agg_grad = {}
         var_op_to_accum_apply_op = {}
 
-        trainable_var_op_to_var = {var.op: var for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)}
-        if target.op not in trainable_var_op_to_var:
+        if target.op not in graph_item.trainable_var_op_to_var:
             logging.debug(
                 "Gradient for non-trainable variable %s is created, "
                 "do not insert accumulator for aggregating this gradient"

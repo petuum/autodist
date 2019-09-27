@@ -102,6 +102,7 @@ class Replicator:
             GraphItem
         """
         item = GraphItem(meta_graph=multi_gpu_graph_item.export_meta_graph())
+        item.copy_gradient_info_from(multi_gpu_graph_item)
         with item.graph.as_default():
             with ops.device(self._local_worker_device):
                 mirrored_vars = {}
@@ -115,7 +116,7 @@ class Replicator:
 
                 resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
 
-                for global_step_op in item.global_step_ops:
+                for global_step_op in item.global_step_update_ops:
                     PSSynchronizer().assign_cluster_information(
                         self._num_workers,
                         self._num_local_replicas,
