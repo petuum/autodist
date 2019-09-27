@@ -8,7 +8,7 @@ body {
 h1, h2, .rst-content .toctree-wrapper p.caption, h3, h4, h5, h6, legend, p.caption {
     color: #2a2730;
     font-weight: 700;
-    font-family: "Lora","Times",serif;
+    font-family: "Lato","Times",serif;
     clear: both;
 }
 
