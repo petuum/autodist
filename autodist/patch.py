@@ -1,8 +1,9 @@
 """Experimental Patch on TF."""
-from tensorflow.python import ops
+from tensorflow.python.framework import ops
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 from autodist.utils import logging
+from autodist.graph_item import wrap_gradients
 
 
 class PatchTensorFlow:
@@ -23,3 +24,12 @@ class PatchTensorFlow:
         setattr(ResourceVariable, 'value', value)
         logging.warning('Resource variable is patched '
                         'to behave as ref (only on reading) to avoid multiple recv_tensor.')
+
+    @staticmethod
+    def init_gradient_handler():
+        """Wrap the apis for gradients."""
+        from tensorflow.python.ops import gradients_util
+        original_api = gradients_util._GradientsHelper
+        new_api = wrap_gradients(original_api)
+        gradients_util._GradientsHelper = new_api
+        # TODO: tape

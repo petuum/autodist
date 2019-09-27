@@ -5,7 +5,6 @@ import types
 from collections import namedtuple
 
 import numpy as np
-from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
@@ -37,7 +36,7 @@ class AutoDist:
     CacheKey = namedtuple('CacheKey', ['fn'])
 
     def __init__(self, resource_spec_file, strategy_name=None, runner_config_file=None):
-        self._graph = ops.Graph()
+        self._original_graph = GraphItem(graph=ops.Graph())
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
         self._strategy_name = strategy_name
         self._runner_config = RunnerConfig(config_file=runner_config_file)
@@ -51,13 +50,13 @@ class AutoDist:
     @tf_contextlib.contextmanager
     def scope(self):
         """Scope."""
-        with context.graph_mode(), self._graph.as_default():
+        with self._original_graph.as_default():
             yield
 
     def _build(self, fetches):
         """Core Logic."""
         # this line will traverse the graph and generate necessary stats
-        item = GraphItem(self._graph)
+        item = self._original_graph
 
         if IS_AUTODIST_CHIEF:
             s = StrategyBuilder.build(item, self._resource_spec, self._strategy_name)

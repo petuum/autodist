@@ -29,7 +29,7 @@ def parse_log_file(log_file):
     for matchNum, match in enumerate(matches, start=1):
         ops[match.group(1)].add(match.group(2))
 
-    for op, locations in ops.items():
+    for op, locations in sorted(ops.items()):
         print(f"{op}: {locations if len(locations) > 1 else next(iter(locations))}")
 
 

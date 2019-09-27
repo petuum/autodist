@@ -12,7 +12,7 @@ class PS(StrategyBuilder):
         # get each variable, generate variable synchronizer config
         expr.graph_config['replicas'] = {k for k, v in self._resource_spec.gpu_devices}
         # find all variables
-        variables = self._item.get_variables_to_sync()
+        variables = self._item.get_trainable_variables()
         reduction_device_names = [k for k, _ in self._resource_spec.cpu_devices][0:1]
 
         # Mark each variable to be synchronized with a Parameter Server
