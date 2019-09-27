@@ -13,7 +13,7 @@ config_file = os.path.join(os.path.dirname(__file__), 'runner_config.yml')
 
 
 def main(_):
-    autodist = AutoDist(resource_spec_file, 'PSLoadBalancing', runner_config_file=config_file)
+    autodist = AutoDist(resource_spec_file, 'PS', runner_config_file=config_file)
 
     TRUE_W = 3.0
     TRUE_b = 2.0
