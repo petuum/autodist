@@ -18,6 +18,7 @@ from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig
 from autodist.strategy.base import StrategyBuilder
 from autodist.kernel.common.utils import get_op_name
+from autodist.utils import logging
 from autodist.utils.code_transformer import transform
 
 IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
@@ -69,7 +70,11 @@ class AutoDist:
         runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
 
         def run_fn(args, kwargs, args_ph_map, iter_fd):
-            return runner.run(fetches, args, kwargs, args_ph_map, iter_fd)
+            try:
+                return runner.run(fetches, args, kwargs, args_ph_map, iter_fd)
+            except KeyboardInterrupt:
+                logging.info('KeyboardInterrupt')
+                exit(1)
 
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
