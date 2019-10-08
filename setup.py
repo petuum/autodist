@@ -14,7 +14,7 @@ setup(
         "paramiko",
         "protobuf==3.9.1",
         "pyyaml",
-        "tensorflow-gpu==2.0.0-rc1",
+        "tensorflow-gpu==2.0.0",
         "gast==0.2.2",
     ],
     extras_require={
