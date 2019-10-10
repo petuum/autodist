@@ -9,10 +9,10 @@ from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
 from autodist.const import COLOCATION_PREFIX
-from autodist.utils import logging
 from autodist.kernel.common import op_info
 from autodist.kernel.common.resource_variable import get_read_var_ops
 from autodist.kernel.common.utils import get_ancestors, get_consumers, parse_name_scope
+from autodist.utils import logging
 
 
 def cached_property(fn, *args, **kwargs):
@@ -45,11 +45,14 @@ def get_default_graph_item():
 def wrap_gradients(fn):
     """Wrapper for gradients functions in tensorflow.python.ops.gradients_impl."""
     def wrapper(*args, **kwargs):
-        targets = kwargs.get('xs') or args[1]  # Keep kwargs optional as default
+        if fn.__name__ == 'gradient':
+            targets = kwargs.get('sources') or args[2]
+        else:
+            targets = kwargs.get('xs') or args[1]  # Keep kwargs optional as default
         grads = fn(*args, **kwargs)
-        logging.debug('Registered grads: \n {} with targets: \n {}'.format(grads, targets))
         if _default_graph_item:
             _default_graph_item.extend_gradient_info(grads, targets)
+            logging.debug('Registered grads: \n {} with targets: \n {}'.format(grads, targets))
         return grads
     return wrapper
 
@@ -72,7 +75,8 @@ class GraphItem:
         else:
             self._graph = ops.Graph()
 
-        self._grad_target_pairs = []
+        # grad tensor name --> variable name  (state-delta tensor name --> stateful op name)
+        self._grad_target_pairs = {}
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -80,37 +84,31 @@ class GraphItem:
             return trainable_variables()
 
     @contextlib.contextmanager
-    def as_default(self):
+    def as_default(self, graph_mode=True):
         """A context scope with current graph item as the default."""
         global _default_graph_item
         if _default_graph_item:
             raise SyntaxError('GraphItem does not support nested contexts.')
         _default_graph_item = self
         # if global graph mode
-        with self._graph.as_default():  # enter graph mode
+        if graph_mode:
+            with self._graph.as_default():  # enter graph mode
+                yield self
+        else:
             yield self
         _default_graph_item = None
 
     def extend_gradient_info(self, grads, targets):
         """Add the detected grad-target pairs to the object."""
-        assert isinstance(grads, list)
-        assert isinstance(targets, list)
-        self._grad_target_pairs.extend(list(zip(grads, targets)))
+        for g, t in zip(grads, targets):
+            self._grad_target_pairs[
+                (g.indices.name, g.values.name, g.dense_shape.name) if isinstance(g, ops.IndexedSlices) else g.name
+            ] = t.name
 
     def copy_gradient_info_from(self, other):
         """Copy gradient info from the another GraphItem object."""
         # TODO: Future export autodist-defined protobuf message
-        for _grad, _target in other.grad_target_pairs:
-            if isinstance(_grad, ops.IndexedSlices):
-                grad = ops.IndexedSlices(
-                    indices=self.graph.get_tensor_by_name(_grad.indices.name),
-                    values=self.graph.get_tensor_by_name(_grad.values.name),
-                    dense_shape=self.graph.get_tensor_by_name(_grad.dense_shape.name)
-                )
-            else:
-                grad = self.graph.get_tensor_by_name(_grad.name)
-            target = self.trainable_var_op_to_var[self.graph.get_operation_by_name(_target.op.name)]
-            self._grad_target_pairs.append((grad, target))
+        self._grad_target_pairs = other._grad_target_pairs.copy()
 
     @property
     def graph(self):
@@ -190,7 +188,7 @@ class GraphItem:
         Returns:
             List
         """
-        return [grad for grad, _ in self._grad_target_pairs]
+        return [grad for grad, _ in self.grad_target_pairs]
 
     @cached_property
     def target_list(self):
@@ -200,7 +198,7 @@ class GraphItem:
         Returns:
             List
         """
-        return [target for _, target in self._grad_target_pairs]
+        return [target for _, target in self.grad_target_pairs]
 
     @cached_property
     def grad_target_pairs(self):
@@ -210,7 +208,14 @@ class GraphItem:
         Return:
              List
         """
-        return self._grad_target_pairs.copy()
+        return [(
+            ops.IndexedSlices(
+                indices=self.graph.get_tensor_by_name(g[0]),
+                values=self.graph.get_tensor_by_name(g[1]),
+                dense_shape=self.graph.get_tensor_by_name(g[2])
+            ) if isinstance(g, tuple) else self.graph.get_tensor_by_name(g),
+            self.graph.get_tensor_by_name(t)
+        ) for g, t in self._grad_target_pairs.items()]
 
     @cached_property
     def control_consumers(self):

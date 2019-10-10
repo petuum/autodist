@@ -32,4 +32,9 @@ class PatchTensorFlow:
         original_api = gradients_util._GradientsHelper
         new_api = wrap_gradients(original_api)
         gradients_util._GradientsHelper = new_api
+
+        from tensorflow.python.eager import backprop
+        original_api = backprop.GradientTape.gradient
+        new_api = wrap_gradients(original_api)
+        backprop.GradientTape.gradient = new_api
         # TODO: tape
