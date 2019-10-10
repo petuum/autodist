@@ -13,8 +13,6 @@ from autodist.utils import logging
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
 from autodist.kernel.common.utils import get_op_name, replica_prefix
-from autodist.kernel.experimental.helpers import handle_collection_def
-from autodist.kernel.synchronization.ps_synchronizer import PSSynchronizer
 
 
 class Replicator:
@@ -76,10 +74,8 @@ class Replicator:
         multi_gpu_meta_graph_def.graph_def.Clear()
         multi_gpu_meta_graph_def.graph_def.CopyFrom(multi_gpu_graph_def)
 
-        handle_collection_def(multi_gpu_meta_graph_def, graph_item.op_names_to_replicate,
-                              num_replicas=self._num_local_replicas)
-
         new_graph_item = GraphItem(meta_graph=multi_gpu_meta_graph_def)
+        new_graph_item.update_info(**graph_item._info.__dict__)
         with new_graph_item.graph.as_default():
             for update_op, (gradient, target) in graph_item.update_op_to_grad_target.items():
                 self._synchronizers[target.name].in_graph_apply(
@@ -103,6 +99,7 @@ class Replicator:
         """
         item = GraphItem(meta_graph=multi_gpu_graph_item.export_meta_graph())
         item.copy_gradient_info_from(multi_gpu_graph_item)
+        item.update_info(**multi_gpu_graph_item._info.__dict__)
         with item.graph.as_default():
             with ops.device(self._local_worker_device):
                 mirrored_vars = {}
@@ -115,18 +112,6 @@ class Replicator:
                     )
 
                 resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
-
-                for global_step_op in item.global_step_update_ops:
-                    PSSynchronizer().assign_cluster_information(
-                        self._num_workers,
-                        self._num_local_replicas,
-                        self._local_worker_device,
-                        self._local_worker_id,
-                        is_chief=self._cluster.is_chief()
-                    ).add_sync_op(
-                        item,
-                        global_step_op
-                    )
 
                 for variable_replicator in mirrored_vars.values():
                     if variable_replicator:
