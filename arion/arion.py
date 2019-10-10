@@ -5,19 +5,20 @@ import types
 from collections import namedtuple
 
 import numpy as np
+from tensorflow.python.data.ops import dataset_ops
+from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
-from tensorflow.python.data.ops import dataset_ops
 
 from autodist.cluster import Cluster
 from autodist.const import Env
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
+from autodist.kernel.common.utils import get_op_name
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig
 from autodist.strategy.base import StrategyBuilder
-from autodist.kernel.common.utils import get_op_name
 from autodist.utils import logging
 from autodist.utils.code_transformer import transform
 
@@ -49,9 +50,9 @@ class AutoDist:
         self._iter_fd = None
 
     @tf_contextlib.contextmanager
-    def scope(self):
+    def scope(self, graph_mode=True):
         """Scope."""
-        with self._original_graph.as_default():
+        with self._original_graph.as_default(graph_mode=graph_mode):
             yield
 
     def _build(self, fetches):
@@ -67,7 +68,8 @@ class AutoDist:
 
         self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
 
-        runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
+        with context.graph_mode():
+            runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
 
         def run_fn(args, kwargs, args_ph_map, iter_fd):
             try:
