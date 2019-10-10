@@ -8,11 +8,11 @@ from tensorflow.python import ops
 from tensorflow.python.client import timeline
 from tensorflow.python.client.session import Session
 from tensorflow.python.framework import dtypes
-from tensorflow.python.ops.lookup_ops import tables_initializer
-from tensorflow.python.ops.variables import global_variables_initializer, local_variables_initializer, Variable
+from tensorflow.python.ops.variables import Variable
 from tensorflow.python.summary.writer import writer
 
 import autodist.const
+from autodist.graph_item import GraphItem
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.utils import replica_prefix
 from autodist.kernel.device.resolver import DeviceResolver
@@ -92,7 +92,7 @@ class Runner:
         # Resetting the variable reference triggers the garbage collection when it jumps out the local
         self._session = None
 
-    def build(self, item):
+    def build(self, item: GraphItem):
         """
         Build distributed graph.
 
@@ -233,10 +233,9 @@ class Runner:
 
                 # TensorFlow default initializations
                 # TODO: Rethink. Should we do this?
-                self._session.run(global_variables_initializer())
-                self._session.run(local_variables_initializer())
-                if ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
-                    self._session.run(tables_initializer())
+                self._session.run(
+                    self._transformed_graph_item.get_ops_in_graph(self._transformed_graph_item._info.initializers)
+                )
                 self._init_ds_iterator(iter_fd, graph)
                 # AutoDist initializations
                 for op in autodist.const.InitOps:

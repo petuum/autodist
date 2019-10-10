@@ -3,9 +3,9 @@
 import contextlib
 import functools
 from collections import defaultdict
+from typing import List
 
 from tensorflow.python.framework import ops
-from tensorflow.python.ops.variables import trainable_variables
 from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
 
 from autodist.const import COLOCATION_PREFIX
@@ -57,6 +57,21 @@ def wrap_gradients(fn):
     return wrapper
 
 
+class Info:
+    """Temp GraphItem Info before RunnerV2."""
+
+    # v1 mode                   # v2 mode
+    trainable_variables: List  # variable_captures if trainable
+    variables: List  # variable_captures
+    table_initializers: List  # Deprecating
+    queue_runners: List  # Deprecating
+
+    @property
+    def initializers(self):
+        """Initializers."""
+        return [v.initializer for v in self.variables] + self.table_initializers
+
+
 class GraphItem:
     """
     GraphItem as TensorFlow Graph wrapper.
@@ -78,10 +93,22 @@ class GraphItem:
         # grad tensor name --> variable name  (state-delta tensor name --> stateful op name)
         self._grad_target_pairs = {}
 
+        ###################################
+        # Info
+        self._info = Info()
+
+    def update_info(self, **kwargs):
+        """Set info."""
+        replace = kwargs.pop('replace', True)
+        if not replace:
+            for k, v in kwargs.items():
+                getattr(self._info, k).extend(v)
+        else:
+            self._info.__dict__.update(**kwargs)
+
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
-        with self.graph.as_default():
-            return trainable_variables()
+        return [op.outputs[0] for op in self.trainable_var_op_to_var]
 
     @contextlib.contextmanager
     def as_default(self, graph_mode=True):
@@ -127,7 +154,7 @@ class GraphItem:
         Returns:
             MetaGraph
         """
-        return export_meta_graph(graph=self._graph)
+        return export_meta_graph(graph=self._graph, collection_list=[])
 
     @cached_property
     def all_update_ops(self):
@@ -246,9 +273,7 @@ class GraphItem:
         Returns:
             Dict
         """
-        with self.graph.as_default():
-            output = {var.op: var for var in ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)}
-        return output
+        return {self.graph.get_operation_by_name(var.op.name): var for var in self._info.trainable_variables}
 
     @cached_property
     def ops_to_replicate(self):
@@ -270,7 +295,7 @@ class GraphItem:
         pipeline_ops = self.pipeline_ops(grads_ancestor_ops)
 
         global_var_related_ops = set()
-        for global_var in ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES):
+        for global_var in self.trainable_var_op_to_var.values():
             global_var_related_ops.add(global_var.op)
             global_var_related_ops.add(global_var.initializer)
             if global_var.op.type == 'VarHandleOp':
@@ -280,27 +305,19 @@ class GraphItem:
             else:
                 # TF 1.x
                 global_var_related_ops.add(global_var._snapshot.op)  # pylint: disable=protected-access
+        global_var_related_ops = self.get_ops_in_graph(global_var_related_ops)
 
         table_related_ops = set()
-        for table_init in ops.get_collection(ops.GraphKeys.TABLE_INITIALIZERS):
+        for table_init in self._info.table_initializers:
             table_related_ops.add(table_init)
             table_related_ops.add(table_init.inputs[0].op)
-
-        # Assume that all variables are member of either GLOBAL_VARIABLES
-        # or LOCAL_VARIABLES.
-        local_var_op_to_var = {var.op: var for var in ops.get_collection(ops.GraphKeys.LOCAL_VARIABLES)}
-        local_var_ops = set(local_var_op_to_var.keys())
-        local_var_ops.intersection_update(grads_ancestor_ops)
+        table_related_ops = self.get_ops_in_graph(table_related_ops)
 
         ops_to_replicate = grads_ancestor_ops.copy()
         ops_to_replicate.update(pipeline_ops)
 
-        # var_handles1 = [op for op in ops_to_replicate if op.type == "VarHandleOp"]
-        # var_handles2 = [op for op in global_var_related_ops if op.type == "VarHandleOp"]
-
         ops_to_replicate.difference_update(global_var_related_ops)
         ops_to_replicate.difference_update(table_related_ops)
-        ops_to_replicate.update([local_var_op_to_var[var_op].initializer for var_op in local_var_ops])
 
         return ops_to_replicate
 
@@ -342,7 +359,7 @@ class GraphItem:
 
         shared_name_to_stage_ops = _get_shared_name_to_stage_ops(self._graph.get_operations())
         queue_name_to_queue_runner = {}
-        for queue_runner in ops.get_collection(ops.GraphKeys.QUEUE_RUNNERS):
+        for queue_runner in self.get_ops_in_graph(self._info.queue_runners):
             queue_name_to_queue_runner[queue_runner.name] = queue_runner
 
         while unstage_dequeue_iterator_queue or stage_enqueue_iterator_ops_queue:
@@ -407,14 +424,14 @@ class GraphItem:
         binding_op_name = colocation_group[len(COLOCATION_PREFIX):].decode('utf-8')
         return self.graph.get_operation_by_name(binding_op_name)
 
-    def get_ops_in_graph(self, op_list):
+    def get_ops_in_graph(self, op_iter):
         """
-        Given a list of ops, return the corresponding Ops in this graph.
+        Given an iterator of ops or op names, return the corresponding ops in self graph.
 
         Args:
-            op_list (list): Ops
+            op_iter (Iterable): Ops or ops names
 
         Returns:
-            List
+            Iterable
         """
-        return [self.graph.get_operation_by_name(op.name) for op in op_list]
+        return type(op_iter)((self.graph.get_operation_by_name(o if isinstance(o, str) else o.name) for o in op_iter))

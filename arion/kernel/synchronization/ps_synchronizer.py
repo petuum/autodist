@@ -143,9 +143,6 @@ class PSSynchronizer(Synchronizer):
         this_worker_cpu = device_spec.DeviceSpecV2.from_string(self.worker_device)
         this_worker_cpu = this_worker_cpu.replace(device_type='CPU', device_index=0)
 
-        global_step_op = ops.get_collection(ops.GraphKeys.GLOBAL_STEP)[0].op \
-            if ops.get_collection(ops.GraphKeys.GLOBAL_STEP) else None
-
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
         is_trainable = var_op in graph_item.trainable_var_op_to_var
 
@@ -162,16 +159,6 @@ class PSSynchronizer(Synchronizer):
                     finish_op = control_flow_ops.group(*mirror_variable_update_ops)
             else:
                 finish_op = control_flow_ops.group(*queue_ops)
-
-            # Exceptional case: add additional dependencies for global_step
-            if ops.get_collection(ops.GraphKeys.GLOBAL_STEP):
-                assert len(ops.get_collection(ops.GraphKeys.GLOBAL_STEP)) == 1
-                if var_op == global_step_op and not self.is_chief:
-                    # Chief worker's finish_op already has update_op as control input
-                    deps = [finish_op]
-                    deps.extend([inp.op for inp in var_update_op.inputs])
-                    deps.extend([inp for inp in var_update_op.control_inputs])
-                    finish_op = control_flow_ops.group(*deps)
 
         # Place computation ops of aggregated gradients on PS
         # Note that even though this is doing a graph traversal, it is called in such a way that it
@@ -312,7 +299,7 @@ class PSSynchronizer(Synchronizer):
                                                      replica=worker_device.replica,
                                                      task=worker_device.task)
         resource_var_replicator = resource_variable.ResourceVariableReplicator(
-            master_var
+            master_var, graph_item
         ).build_mirror_vars(mirror_var_device, num_replicas_per_worker)
 
         return resource_var_replicator
