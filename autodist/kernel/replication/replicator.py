@@ -1,7 +1,6 @@
 """Replicator."""
 from tensorflow.core.framework import graph_pb2
 from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
-from tensorflow.core.protobuf import meta_graph_pb2
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, kernels
 from tensorflow.python.framework.device_spec import DeviceSpecV2
@@ -69,12 +68,8 @@ class Replicator:
         # Sanity check
         assert all([get_op_name(g.name) in graph_item.op_names_to_replicate for g in graph_item.grad_list])
         multi_gpu_graph_def = self.construct_multi_gpu_graph_def(graph_item)
-        multi_gpu_meta_graph_def = meta_graph_pb2.MetaGraphDef()
-        multi_gpu_meta_graph_def.CopyFrom(graph_item.export_meta_graph())
-        multi_gpu_meta_graph_def.graph_def.Clear()
-        multi_gpu_meta_graph_def.graph_def.CopyFrom(multi_gpu_graph_def)
 
-        new_graph_item = GraphItem(meta_graph=multi_gpu_meta_graph_def)
+        new_graph_item = GraphItem(graph_def=multi_gpu_graph_def)
         new_graph_item.update_info(**graph_item._info.__dict__)
         with new_graph_item.graph.as_default():
             for update_op, (gradient, target) in graph_item.update_op_to_grad_target.items():
@@ -97,7 +92,7 @@ class Replicator:
         Returns:
             GraphItem
         """
-        item = GraphItem(meta_graph=multi_gpu_graph_item.export_meta_graph())
+        item = GraphItem(graph_def=multi_gpu_graph_item.graph.as_graph_def())
         item.copy_gradient_info_from(multi_gpu_graph_item)
         item.update_info(**multi_gpu_graph_item._info.__dict__)
         with item.graph.as_default():
