@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import List
 
 from tensorflow.python.framework import ops
-from tensorflow.python.training.saver import export_meta_graph, import_meta_graph
+from tensorflow.python.framework.importer import import_graph_def
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
@@ -80,13 +80,13 @@ class GraphItem:
     Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.
     """
 
-    def __init__(self, graph=None, meta_graph=None):
+    def __init__(self, graph=None, graph_def=None):
         if graph:
             self._graph = graph
-        elif meta_graph:
+        elif graph_def:
             self._graph = ops.Graph()
             with self._graph.as_default():
-                import_meta_graph(meta_graph)
+                import_graph_def(graph_def, name="")
         else:
             self._graph = ops.Graph()
 
@@ -146,15 +146,6 @@ class GraphItem:
             ops.Graph
         """
         return self._graph
-
-    def export_meta_graph(self):
-        """
-        Returns the MetaGraph associated with this GraphItem.
-
-        Returns:
-            MetaGraph
-        """
-        return export_meta_graph(graph=self._graph, collection_list=[])
 
     @cached_property
     def all_update_ops(self):
