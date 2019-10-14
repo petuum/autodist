@@ -26,9 +26,12 @@ class PS(StrategyBuilder):
         """
         Creates a NodeConfig specifying synchronization with Parameter Servers.
 
-        :param reduction_destinations: The location of the parameter servers.
-        :return:
-            Dict
+        Args:
+            reduction_destinations: The location of the parameter servers.
+
+        Returns:
+            dict: the config dict for the node.
+
         """
         node_config = {
             'synchronizer': {

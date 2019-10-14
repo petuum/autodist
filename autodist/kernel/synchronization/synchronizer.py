@@ -2,7 +2,8 @@
 from abc import ABC, abstractmethod
 from tensorflow.python import ops
 
-from autodist.kernel.common.utils import get_op_name, update_consumers, update_control_consumers, replica_prefix
+from autodist.kernel.common.utils import get_op_name, update_consumers, update_control_consumers, replica_prefix,\
+    strip_replica_prefix
 
 
 class Synchronizer(ABC):
@@ -82,7 +83,7 @@ class Synchronizer(ABC):
                                    old_tensor_name, new_tensor):
         """Make gradient's consumers consume the aggregated gradient instead of the original one of replica_0."""
         # Get the original tensor (the one from replica 0) to replace
-        old_op_name = get_op_name(old_tensor_name)
+        old_op_name = strip_replica_prefix(get_op_name(old_tensor_name))
         replica_0_op_name = ops.prepend_name_scope(old_op_name, replica_prefix(0))
         replica_0_op = new_graph_item.graph.get_operation_by_name(replica_0_op_name)
         output_idx = int(old_tensor_name.split(':')[1])

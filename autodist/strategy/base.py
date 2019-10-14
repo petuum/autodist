@@ -121,9 +121,9 @@ class StrategyCompiler:
     def _resolve_devices(self, strategy):
         s = strategy.copy()
         for n in s.node_config:
-            d = s.node_config[n]['synchronizer']['config']['reduction_destinations']
-            s.node_config[n]['synchronizer']['config']['reduction_destinations'] = self._device_resolver(d)
-
+            if 'reduction_destinations' in s.node_config[n]['synchronizer']['config']:
+                d = s.node_config[n]['synchronizer']['config']['reduction_destinations']
+                s.node_config[n]['synchronizer']['config']['reduction_destinations'] = self._device_resolver(d)
         d = s.graph_config['replicas']
         s.graph_config['replicas'] = self._device_resolver(d)
         return s
