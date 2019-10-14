@@ -11,7 +11,7 @@ from autodist.const import MAX_INT64, AUTODIST_PREFIX
 from autodist.kernel.common import utils, resource_variable
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
-    update_control_consumers, replica_prefix
+    update_control_consumers, replica_prefix, strip_replica_prefix
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 
 
@@ -209,7 +209,7 @@ class PSSynchronizer(Synchronizer):
         return queue_ops
 
     def _get_aggregated_dense_grad(self, graph_item, grad_name, reduce_to_device):
-        grad_op_name = get_op_name(grad_name)
+        grad_op_name = strip_replica_prefix(get_op_name(grad_name))
         output_idx = int(grad_name.split(':')[1])
         grad_ops = [
             graph_item.graph.get_operation_by_name(ops.prepend_name_scope(grad_op_name, replica_prefix(i)))
@@ -225,9 +225,9 @@ class PSSynchronizer(Synchronizer):
         return grad_avg
 
     def _get_aggregated_sparse_grad(self, var_op, grad, reduce_to_device):
-        indices_op_name = get_op_name(grad.indices.name)
-        values_op_name = get_op_name(grad.values.name)
-        dense_shape_op_name = get_op_name(grad.dense_shape.name)
+        indices_op_name = strip_replica_prefix(get_op_name(grad.indices.name))
+        values_op_name = strip_replica_prefix(get_op_name(grad.values.name))
+        dense_shape_op_name = strip_replica_prefix(get_op_name(grad.dense_shape.name))
 
         indexed_slices_grads = []
         for i in range(self.num_replicas):

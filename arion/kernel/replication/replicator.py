@@ -11,7 +11,7 @@ from autodist.graph_item import GraphItem
 from autodist.utils import logging
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.op_info import UNSTAGE_OP_TYPES, STAGE_OP_TYPES
-from autodist.kernel.common.utils import get_op_name, replica_prefix
+from autodist.kernel.common.utils import get_ancestors, get_op_name, replica_prefix
 
 
 class Replicator:
@@ -49,10 +49,20 @@ class Replicator:
         Returns:
             GraphItem
         """
-        new_graph_item = self.in_graph_apply(graph_item)
-        logging.info('Successfully applied local in-graph replication')
-        new_graph_item = self.between_graph_apply(new_graph_item)
-        logging.info('Successfully applied between-graph replication')
+        new_graph_item = graph_item
+        # At first, in-graph replicate the graph operations and variables
+        # in whatever cases, a replicator has to replicate operations
+        if self._num_local_replicas > 1:
+            new_graph_item = self.replicate_operations(graph_item)
+            logging.info('Successfully replicate operations')
+
+            # Apply synchronizers
+            new_graph_item = self.in_graph_apply(new_graph_item)
+            logging.info('Successfully applied local in-graph replication')
+
+        if self._num_workers > 1:
+            new_graph_item = self.between_graph_apply(new_graph_item)
+            logging.info('Successfully applied between-graph replication')
         return new_graph_item
 
     def in_graph_apply(self, graph_item):
@@ -65,22 +75,19 @@ class Replicator:
         Returns:
             GraphItem
         """
-        # Sanity check
-        assert all([get_op_name(g.name) in graph_item.op_names_to_replicate for g in graph_item.grad_list])
-        multi_gpu_graph_def = self.construct_multi_gpu_graph_def(graph_item)
+        # First, make a copy of the graph item as it is immutable
+        item = GraphItem(graph_def=graph_item.graph.as_graph_def())
+        item.update_info(**graph_item._info.__dict__)
 
-        new_graph_item = GraphItem(graph_def=multi_gpu_graph_def)
-        new_graph_item.update_info(**graph_item._info.__dict__)
-        with new_graph_item.graph.as_default():
+        with item.graph.as_default():
             for update_op, (gradient, target) in graph_item.update_op_to_grad_target.items():
                 self._synchronizers[target.name].in_graph_apply(
-                    new_graph_item,
+                    item,
                     update_op,
                     gradient,
                     target
                 )
-
-        return new_graph_item
+        return item
 
     def between_graph_apply(self, multi_gpu_graph_item):
         """
@@ -95,6 +102,7 @@ class Replicator:
         item = GraphItem(graph_def=multi_gpu_graph_item.graph.as_graph_def())
         item.copy_gradient_info_from(multi_gpu_graph_item)
         item.update_info(**multi_gpu_graph_item._info.__dict__)
+
         with item.graph.as_default():
             with ops.device(self._local_worker_device):
                 mirrored_vars = {}
@@ -119,41 +127,130 @@ class Replicator:
 
         return item
 
-    def construct_multi_gpu_graph_def(self, graph_item):
+    def replicate_operations(self, graph_item):
         """
-        Given a single GPU GraphItem, construct the graph for multiple GPUs / replicas.
+        Replicate all the operations following a PS architecture.
+
+        All variables are shared and the rest are replicated across
+        replica devices.
 
         Args:
-            graph_item: The original, single-GPU GraphItem.
+            graph_item (GraphItem)
 
         Returns:
-            GraphDef
-        """
-        single_gpu_graph_def = graph_item.graph.as_graph_def()
+            graph_item (GraphItem)
 
+        """
+        ops_to_replicate = self._get_ops_to_replicate(graph_item)
+        op_names_to_replicate = {op.name for op in ops_to_replicate}
+        op_names_to_share = {op.name for op in
+                             set(graph_item.graph.get_operations()).difference(ops_to_replicate)}
+        assert all([get_op_name(g.name) in op_names_to_replicate for g in graph_item.grad_list])
+        single_gpu_graph_def = graph_item.graph.as_graph_def()
         multi_gpu_graph_def = graph_pb2.GraphDef()
         multi_gpu_graph_def.library.Clear()
         multi_gpu_graph_def.library.CopyFrom(single_gpu_graph_def.library)
 
+        # replicate or share operations that are not related to vars_to_replicate
         for node in single_gpu_graph_def.node:
-            if node.name in graph_item.op_names_to_share:
+            if node.name in op_names_to_share:
                 # Make a single copy of this op since it's being shared
                 # Keep its original attrs
                 multi_gpu_graph_def.node.append(node)
                 new_node = multi_gpu_graph_def.node[-1]
-                self._update_copied_node_properties(graph_item, new_node, replica_id=0, shared=True)
-            elif node.name in graph_item.op_names_to_replicate:
+                self._update_copied_node_properties(op_names_to_replicate, new_node,
+                                                    replica_id=0, shared=True)
+            elif node.name in op_names_to_replicate:
                 # Make a copy of this op for each replica
                 for replica_id in range(self._num_local_replicas):
                     multi_gpu_graph_def.node.append(node)
                     new_node = multi_gpu_graph_def.node[-1]
-                    self._update_copied_node_properties(graph_item, new_node, replica_id=replica_id, shared=False)
+                    self._update_copied_node_properties(op_names_to_replicate, new_node,
+                                                        replica_id=replica_id, shared=False)
             else:
                 raise RuntimeError("Should not reach here")
 
-        return multi_gpu_graph_def
+        # create graph item
+        new_graph_item = GraphItem(graph_def=multi_gpu_graph_def)
+        new_graph_item.update_info(**graph_item._info.__dict__)
 
-    def _update_copied_node_properties(self, graph_item, new_node, replica_id, shared=False):
+        # update the gradient target pair.
+        # At this point, all gradients shall be gradients on replica0
+        for g_name, t_name in graph_item.grad_target_name_pairs.items():
+            if isinstance(g_name, tuple):
+                new_grad = ops.IndexedSlices(
+                    indices=new_graph_item.graph.get_tensor_by_name(
+                        ops.prepend_name_scope(g_name[0], replica_prefix(0))),
+                    values=new_graph_item.graph.get_tensor_by_name(
+                        ops.prepend_name_scope(g_name[1], replica_prefix(0))),
+                    dense_shape=new_graph_item.graph.get_tensor_by_name(
+                        ops.prepend_name_scope(g_name[2], replica_prefix(0)))
+                )
+            else:
+                new_grad = new_graph_item.graph.get_tensor_by_name(
+                    ops.prepend_name_scope(g_name, replica_prefix(0)))
+            new_graph_item.extend_gradient_info(
+                grads=[new_grad],
+                targets=[new_graph_item.graph.get_tensor_by_name(t_name)]
+            )
+        return new_graph_item
+
+    @staticmethod
+    def _get_ops_to_replicate(graph_item):
+        """
+        Get operations to be replicated.
+
+        It only works, and shall only work, with the original single-replica graphdef
+
+        Args:
+            graph_item
+
+        Returns:
+            ops_to_replicate (list): list of ops to be replicated in the graph
+        """
+        grad_related = set()
+        for grad in graph_item.grad_list:
+            if isinstance(grad, ops.IndexedSlices):
+                grad_related.add(grad.indices)
+                grad_related.add(grad.values)
+                grad_related.add(grad.dense_shape)
+            elif isinstance(grad, ops.Tensor):
+                grad_related.add(grad)
+            else:
+                raise RuntimeError("Incorrect grad.")
+
+        grads_ancestor_ops = get_ancestors([grad.op for grad in grad_related],
+                                           include_control_inputs=True)
+
+        pipeline_ops = graph_item.pipeline_ops(grads_ancestor_ops)
+        table_related_ops = set()
+        for table_init in graph_item._info.table_initializers:
+            table_related_ops.add(table_init)
+            table_related_ops.add(table_init.inputs[0].op)
+
+        var_related_ops = set()
+        for global_var in graph_item.trainable_var_op_to_var.values():
+            related_ops = set()
+            related_ops.add(global_var.op)
+            related_ops.add(global_var.initializer)
+            if global_var.op.type == 'VarHandleOp':
+                # TF 2.x
+                read_variable_ops = resource_variable.get_read_var_ops(global_var.op)
+                related_ops.update(read_variable_ops)
+            else:
+                # TF 1.x
+                related_ops.add(global_var._snapshot.op)  # pylint: disable=protected-access
+            var_related_ops.update(related_ops)
+
+        ops_to_replicate = grads_ancestor_ops.copy()
+        ops_to_replicate.update(pipeline_ops)
+
+        # exclude all var related ops
+        ops_to_replicate.difference_update(var_related_ops)
+        ops_to_replicate.difference_update(table_related_ops)
+        return ops_to_replicate
+
+    def _update_copied_node_properties(self, op_names_to_replicate, new_node, replica_id, shared=False):
         if not shared:
             new_node.name = ops.prepend_name_scope(new_node.name, replica_prefix(replica_id))
 
@@ -162,7 +259,7 @@ class Replicator:
             if all(['CPU' in kernel_def.device_type
                     for kernel_def in kernels.get_registered_kernels_for_op(new_node.op).kernel]):
                 # It assumes an op has a CPU kernel by default.
-                new_device = DeviceSpecV2.from_string(self._local_worker_device).\
+                new_device = DeviceSpecV2.from_string(self._local_worker_device). \
                     replace(device_type='CPU', device_index=0)
             else:
                 new_device = DeviceSpecV2.from_string(self._local_canonical_replica_devices[replica_id])
@@ -180,13 +277,13 @@ class Replicator:
                     ops.prepend_name_scope(
                         new_node.attr['frame_name'].s,
                         replica_prefix(replica_id))).encode('utf-8')
-        self._set_inputs_replica_id(graph_item, new_node, replica_id=replica_id)
-        self._update_colocation(new_node, graph_item.op_names_to_replicate)
+        self._set_inputs_replica_id(op_names_to_replicate, new_node, replica_id=replica_id)
+        self._update_colocation(new_node, op_names_to_replicate)
 
     @staticmethod
-    def _set_inputs_replica_id(graph_item, new_node, replica_id):
+    def _set_inputs_replica_id(op_names_to_replicate, new_node, replica_id):
         for idx, input_name in enumerate(new_node.input):
-            if get_op_name(input_name) in graph_item.op_names_to_replicate:
+            if get_op_name(input_name) in op_names_to_replicate:
                 new_node.input[idx] = ops.prepend_name_scope(input_name, replica_prefix(replica_id))
 
     @staticmethod

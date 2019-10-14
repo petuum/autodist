@@ -18,6 +18,23 @@ def get_op_name(tensor_name):
     return tensor_name.replace('^', '').split(':')[0]
 
 
+def strip_replica_prefix(name):
+    """
+    Given a tensor or op name, strip the AUTODIST-REPLICA prefix if there exists as the prefix.
+
+    Args:
+        name (string): op or tensor name
+
+    Returns:
+        str
+    """
+    i = name.find('/')
+    if i != -1:
+        if AUTODIST_REPLICA_PREFIX in name[:i]:
+            return name[i + 1:]
+    return name
+
+
 def parse_name_scope(name):
     """
     Given a tensor or op name, return the name scope of the raw name.

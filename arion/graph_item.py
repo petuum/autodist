@@ -10,7 +10,6 @@ from tensorflow.python.framework.importer import import_graph_def
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
-from autodist.kernel.common.resource_variable import get_read_var_ops
 from autodist.kernel.common.utils import get_ancestors, get_consumers, parse_name_scope
 from autodist.utils import logging
 
@@ -219,6 +218,16 @@ class GraphItem:
         return [target for _, target in self.grad_target_pairs]
 
     @cached_property
+    def grad_target_name_pairs(self):
+        """
+        List of names of grad and target variable pairs.
+
+        Return:
+            List
+        """
+        return self._grad_target_pairs
+
+    @cached_property
     def grad_target_pairs(self):
         """
         List of grad and target variable pairs.
@@ -265,64 +274,6 @@ class GraphItem:
             Dict
         """
         return {self.graph.get_operation_by_name(var.op.name): var for var in self._info.trainable_variables}
-
-    @cached_property
-    def ops_to_replicate(self):
-        """Get ops to be replicated."""
-        grad_related = set()
-        for grad in self.grad_list:
-            if isinstance(grad, ops.IndexedSlices):
-                grad_related.add(grad.indices)
-                grad_related.add(grad.values)
-                grad_related.add(grad.dense_shape)
-            elif isinstance(grad, ops.Tensor):
-                grad_related.add(grad)
-            else:
-                raise RuntimeError("Incorrect grad.")
-
-        grads_ancestor_ops = get_ancestors([grad.op for grad in grad_related],
-                                           include_control_inputs=True)
-
-        pipeline_ops = self.pipeline_ops(grads_ancestor_ops)
-
-        global_var_related_ops = set()
-        for global_var in self.trainable_var_op_to_var.values():
-            global_var_related_ops.add(global_var.op)
-            global_var_related_ops.add(global_var.initializer)
-            if global_var.op.type == 'VarHandleOp':
-                # TF 2.x
-                read_variable_ops = get_read_var_ops(global_var.op)
-                global_var_related_ops.update(read_variable_ops)
-            else:
-                # TF 1.x
-                global_var_related_ops.add(global_var._snapshot.op)  # pylint: disable=protected-access
-        global_var_related_ops = self.get_ops_in_graph(global_var_related_ops)
-
-        table_related_ops = set()
-        for table_init in self._info.table_initializers:
-            table_related_ops.add(table_init)
-            table_related_ops.add(table_init.inputs[0].op)
-        table_related_ops = self.get_ops_in_graph(table_related_ops)
-
-        ops_to_replicate = grads_ancestor_ops.copy()
-        ops_to_replicate.update(pipeline_ops)
-
-        ops_to_replicate.difference_update(global_var_related_ops)
-        ops_to_replicate.difference_update(table_related_ops)
-
-        return ops_to_replicate
-
-    @cached_property
-    def op_names_to_replicate(self):
-        """Get the names of ops to be replicated."""
-        return {op.name for op in self.ops_to_replicate}
-
-    @cached_property
-    def op_names_to_share(self):
-        """Get the names of ops to be shared."""
-        # By default, share all ops not ancestors of the fetches (e.g. stateful ops)
-        # These won't be run by session.run, so they don't matter
-        return {op.name for op in set(self.graph.get_operations()).difference(self.ops_to_replicate)}
 
     # pylint: disable=too-many-locals
     def pipeline_ops(self, in_ops):  # noqa: MC0001
