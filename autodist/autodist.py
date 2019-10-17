@@ -59,11 +59,9 @@ class AutoDist:
         """Core Logic."""
         # this line will traverse the graph and generate necessary stats
         item = self._original_graph
-        item.update_info(
-            trainable_variables=item.graph.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES),
+        item.info.update(
             variables=item.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES),
-            table_initializers=item.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS),
-            queue_runners=item.graph.get_collection(ops.GraphKeys.QUEUE_RUNNERS)
+            table_initializers=item.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS)
         )
 
         if IS_AUTODIST_CHIEF:

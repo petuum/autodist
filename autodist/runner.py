@@ -226,7 +226,7 @@ class Runner:
                 # TensorFlow default initializations
                 # TODO: Rethink. Should we do this?
                 self._session.run(
-                    self._transformed_graph_item.get_ops_in_graph(self._transformed_graph_item._info.initializers)
+                    self._transformed_graph_item.get_ops_in_graph(self._transformed_graph_item.info.initializers)
                 )
                 self._init_ds_iterator(iter_fd, graph)
                 # AutoDist initializations

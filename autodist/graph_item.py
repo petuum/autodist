@@ -3,14 +3,15 @@
 import contextlib
 import functools
 from collections import defaultdict
-from typing import List
 
+from tensorflow.core.framework.variable_pb2 import VariableDef
 from tensorflow.python.framework import ops
 from tensorflow.python.framework.importer import import_graph_def
+from tensorflow.python.ops.variables import Variable
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
-from autodist.kernel.common.utils import get_ancestors, get_consumers, parse_name_scope
+from autodist.kernel.common.utils import parse_name_scope, get_op_name
 from autodist.utils import logging
 
 
@@ -59,16 +60,46 @@ def wrap_gradients(fn):
 class Info:
     """Temp GraphItem Info before RunnerV2."""
 
-    # v1 mode                   # v2 mode
-    trainable_variables: List  # variable_captures if trainable
-    variables: List  # variable_captures
-    table_initializers: List  # Deprecating
-    queue_runners: List  # Deprecating
+    def __init__(self):
+        # v1 mode                   # v2 mode
+        self.trainable_variables = []  # variable_captures if trainable
+        self.variables = []  # variable_captures
+        self.table_initializers = []  # deprecating
 
     @property
     def initializers(self):
         """Initializers."""
-        return [v.initializer for v in self.variables] + self.table_initializers
+        return [v.initializer_name for v in self.variables] + self.table_initializers
+
+    def _add_variable(self, var):
+        """Add a variable to info tracker."""
+        if isinstance(var, VariableDef):
+            proto = var
+        elif isinstance(var, dict):
+            proto = VariableDef()
+            for k, v in var.items():
+                setattr(proto, k, v)
+        else:
+            proto = var.to_proto()
+        if proto.trainable:
+            self.trainable_variables.append(proto)
+        self.variables.append(proto)
+
+    def _reset(self):
+        self.trainable_variables = []
+        self.variables = []
+        self.table_initializers = []
+
+    def update(self, variables=None, table_initializers=None, replace=True, **kwargs):
+        """Set info."""
+        if replace:
+            self._reset()
+        if variables:
+            for v in variables:
+                self._add_variable(v)
+        if table_initializers:
+            for op in table_initializers:
+                self.table_initializers.append(op.name if isinstance(op, ops.Operation) else op)
 
 
 class GraphItem:
@@ -94,16 +125,7 @@ class GraphItem:
 
         ###################################
         # Info
-        self._info = Info()
-
-    def update_info(self, **kwargs):
-        """Set info."""
-        replace = kwargs.pop('replace', True)
-        if not replace:
-            for k, v in kwargs.items():
-                getattr(self._info, k).extend(v)
-        else:
-            self._info.__dict__.update(**kwargs)
+        self.info = Info()
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -130,6 +152,11 @@ class GraphItem:
             self._grad_target_pairs[
                 (g.indices.name, g.values.name, g.dense_shape.name) if isinstance(g, ops.IndexedSlices) else g.name
             ] = t.name
+
+    def extend_gradient_info_by_names(self, grads, targets):
+        """Add the detected grad-target pairs to the object by names."""
+        for g, t in zip(grads, targets):
+            self._grad_target_pairs[g] = t
 
     def copy_gradient_info_from(self, other):
         """Copy gradient info from the another GraphItem object."""
@@ -273,83 +300,84 @@ class GraphItem:
         Returns:
             Dict
         """
-        return {self.graph.get_operation_by_name(var.op.name): var for var in self._info.trainable_variables}
+        return {self.graph.get_operation_by_name(get_op_name(var_def.variable_name)): Variable.from_proto(var_def)
+                for var_def in self.info.trainable_variables}
 
     # pylint: disable=too-many-locals
-    def pipeline_ops(self, in_ops):  # noqa: MC0001
-        """[summary]."""
-        unstage_dequeue_iterator_queue = [
-            op for op in in_ops
-            if op.type in op_info.UNSTAGE_OP_TYPES
-            or op.type in op_info.DEQUEUE_OP_TYPES
-            or op.type in op_info.ITERATOR_OP_TYPES
-        ]
-
-        stage_enqueue_iterator_ops_queue = []
-        pipeline_ops = set()
-        visited = set()
-
-        def _get_shared_name_to_stage_ops(input_ops):
-            stage_ops = [op for op in input_ops if op.type in op_info.STAGE_OP_TYPES]
-            shared_name_to_stage_ops = {}
-            for stage_op in stage_ops:
-                shared_name = stage_op.get_attr("shared_name")
-                if shared_name not in shared_name_to_stage_ops:
-                    shared_name_to_stage_ops[shared_name] = []
-                shared_name_to_stage_ops[shared_name].append(stage_op)
-            return shared_name_to_stage_ops
-
-        shared_name_to_stage_ops = _get_shared_name_to_stage_ops(self._graph.get_operations())
-        queue_name_to_queue_runner = {}
-        for queue_runner in self.get_ops_in_graph(self._info.queue_runners):
-            queue_name_to_queue_runner[queue_runner.name] = queue_runner
-
-        while unstage_dequeue_iterator_queue or stage_enqueue_iterator_ops_queue:
-            if unstage_dequeue_iterator_queue:
-                curr_op = unstage_dequeue_iterator_queue.pop()
-                if curr_op in visited:
-                    continue
-                visited.add(curr_op)
-
-                if curr_op.type in op_info.UNSTAGE_OP_TYPES:
-                    stage_shared_name = curr_op.get_attr("shared_name")
-                    stage_ops = shared_name_to_stage_ops[stage_shared_name]
-                    for stage_op in stage_ops:
-                        pipeline_ops.add(stage_op)
-                        stage_enqueue_iterator_ops_queue.append(stage_op)
-                    # Handle colocation groups of unstage op (NoOp)
-                    assert len(curr_op.colocation_groups()) == 1
-                    stage_no_op_name = curr_op.colocation_groups()[0][len(COLOCATION_PREFIX):]
-                    pipeline_ops.add(self._graph.get_operation_by_name(stage_no_op_name))
-                elif curr_op.type in op_info.DEQUEUE_OP_TYPES:
-                    queue_ops = [input.op for input in curr_op.inputs if input.op.type in op_info.QUEUE_OP_TYPES]
-                    assert len(queue_ops) == 1
-                    queue_op = queue_ops[0]
-                    queue_runner = queue_name_to_queue_runner[queue_op.name]
-                    for enqueue_op in queue_runner.enqueue_ops:
-                        pipeline_ops.add(enqueue_op)
-                        stage_enqueue_iterator_ops_queue.append(enqueue_op)
-                    pipeline_ops.add(queue_runner.close_op)
-                    pipeline_ops.add(queue_runner.cancel_op)
-                elif curr_op.type in op_info.ITERATOR_OP_TYPES:
-                    consumer_ops = get_consumers(curr_op)
-                    stage_enqueue_iterator_ops_queue.extend(consumer_ops)
-                else:
-                    raise RuntimeError("Should not reach here")
-
-            elif stage_enqueue_iterator_ops_queue:
-                curr_op = stage_enqueue_iterator_ops_queue.pop()
-                if curr_op in visited:
-                    continue
-                visited.add(curr_op)
-                ancestor_ops = get_ancestors([curr_op],
-                                             include_control_inputs=True)
-                for ancestor_op in ancestor_ops:
-                    pipeline_ops.add(ancestor_op)
-                    if ancestor_op.type in op_info.UNSTAGE_OP_TYPES \
-                            + op_info.DEQUEUE_OP_TYPES + op_info.ITERATOR_OP_TYPES:
-                        unstage_dequeue_iterator_queue.append(ancestor_op)
-        return pipeline_ops
+    # def pipeline_ops(self, in_ops):  # noqa: MC0001
+    #     """[summary]."""
+    #     unstage_dequeue_iterator_queue = [
+    #         op for op in in_ops
+    #         if op.type in op_info.UNSTAGE_OP_TYPES
+    #         or op.type in op_info.DEQUEUE_OP_TYPES
+    #         or op.type in op_info.ITERATOR_OP_TYPES
+    #     ]
+    #
+    #     stage_enqueue_iterator_ops_queue = []
+    #     pipeline_ops = set()
+    #     visited = set()
+    #
+    #     def _get_shared_name_to_stage_ops(input_ops):
+    #         stage_ops = [op for op in input_ops if op.type in op_info.STAGE_OP_TYPES]
+    #         shared_name_to_stage_ops = {}
+    #         for stage_op in stage_ops:
+    #             shared_name = stage_op.get_attr("shared_name")
+    #             if shared_name not in shared_name_to_stage_ops:
+    #                 shared_name_to_stage_ops[shared_name] = []
+    #             shared_name_to_stage_ops[shared_name].append(stage_op)
+    #         return shared_name_to_stage_ops
+    #
+    #     shared_name_to_stage_ops = _get_shared_name_to_stage_ops(self._graph.get_operations())
+    #     queue_name_to_queue_runner = {}
+    #     for queue_runner in self.get_ops_in_graph(self.info.queue_runners):
+    #         queue_name_to_queue_runner[queue_runner.name] = queue_runner
+    #
+    #     while unstage_dequeue_iterator_queue or stage_enqueue_iterator_ops_queue:
+    #         if unstage_dequeue_iterator_queue:
+    #             curr_op = unstage_dequeue_iterator_queue.pop()
+    #             if curr_op in visited:
+    #                 continue
+    #             visited.add(curr_op)
+    #
+    #             if curr_op.type in op_info.UNSTAGE_OP_TYPES:
+    #                 stage_shared_name = curr_op.get_attr("shared_name")
+    #                 stage_ops = shared_name_to_stage_ops[stage_shared_name]
+    #                 for stage_op in stage_ops:
+    #                     pipeline_ops.add(stage_op)
+    #                     stage_enqueue_iterator_ops_queue.append(stage_op)
+    #                 # Handle colocation groups of unstage op (NoOp)
+    #                 assert len(curr_op.colocation_groups()) == 1
+    #                 stage_no_op_name = curr_op.colocation_groups()[0][len(COLOCATION_PREFIX):]
+    #                 pipeline_ops.add(self._graph.get_operation_by_name(stage_no_op_name))
+    #             elif curr_op.type in op_info.DEQUEUE_OP_TYPES:
+    #                 queue_ops = [input.op for input in curr_op.inputs if input.op.type in op_info.QUEUE_OP_TYPES]
+    #                 assert len(queue_ops) == 1
+    #                 queue_op = queue_ops[0]
+    #                 queue_runner = queue_name_to_queue_runner[queue_op.name]
+    #                 for enqueue_op in queue_runner.enqueue_ops:
+    #                     pipeline_ops.add(enqueue_op)
+    #                     stage_enqueue_iterator_ops_queue.append(enqueue_op)
+    #                 pipeline_ops.add(queue_runner.close_op)
+    #                 pipeline_ops.add(queue_runner.cancel_op)
+    #             elif curr_op.type in op_info.ITERATOR_OP_TYPES:
+    #                 consumer_ops = get_consumers(curr_op)
+    #                 stage_enqueue_iterator_ops_queue.extend(consumer_ops)
+    #             else:
+    #                 raise RuntimeError("Should not reach here")
+    #
+    #         elif stage_enqueue_iterator_ops_queue:
+    #             curr_op = stage_enqueue_iterator_ops_queue.pop()
+    #             if curr_op in visited:
+    #                 continue
+    #             visited.add(curr_op)
+    #             ancestor_ops = get_ancestors([curr_op],
+    #                                          include_control_inputs=True)
+    #             for ancestor_op in ancestor_ops:
+    #                 pipeline_ops.add(ancestor_op)
+    #                 if ancestor_op.type in op_info.UNSTAGE_OP_TYPES \
+    #                         + op_info.DEQUEUE_OP_TYPES + op_info.ITERATOR_OP_TYPES:
+    #                     unstage_dequeue_iterator_queue.append(ancestor_op)
+    #     return pipeline_ops
 
     def get_colocation_op(self, colocation_group):
         """
