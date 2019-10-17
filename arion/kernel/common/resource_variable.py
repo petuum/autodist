@@ -97,7 +97,7 @@ class ResourceVariableReplicator:
                     initializer=self._initial_value,
                     trainable=False
                 )
-                self._graph_item.update_info(variables=[mirror_var], replace=False)
+                self._graph_item.info.update(variables=[mirror_var], replace=False)
             mv_mapping.append(mirror_var)
             init_ops.append(mirror_var.assign(get_read_var_tensor(self._this_op)))
 

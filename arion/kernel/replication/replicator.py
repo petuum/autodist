@@ -77,7 +77,7 @@ class Replicator:
         """
         # First, make a copy of the graph item as it is immutable
         item = GraphItem(graph_def=graph_item.graph.as_graph_def())
-        item.update_info(**graph_item._info.__dict__)
+        item.info.update(**graph_item.info.__dict__)
 
         with item.graph.as_default():
             for update_op, (gradient, target) in graph_item.update_op_to_grad_target.items():
@@ -101,7 +101,7 @@ class Replicator:
         """
         item = GraphItem(graph_def=multi_gpu_graph_item.graph.as_graph_def())
         item.copy_gradient_info_from(multi_gpu_graph_item)
-        item.update_info(**multi_gpu_graph_item._info.__dict__)
+        item.info.update(**multi_gpu_graph_item.info.__dict__)
 
         with item.graph.as_default():
             with ops.device(self._local_worker_device):
@@ -172,7 +172,7 @@ class Replicator:
 
         # create graph item
         new_graph_item = GraphItem(graph_def=multi_gpu_graph_def)
-        new_graph_item.update_info(**graph_item._info.__dict__)
+        new_graph_item.info.update(**graph_item.info.__dict__)
 
         # update the gradient target pair.
         # At this point, all gradients shall be gradients on replica0
@@ -222,11 +222,11 @@ class Replicator:
         grads_ancestor_ops = get_ancestors([grad.op for grad in grad_related],
                                            include_control_inputs=True)
 
-        pipeline_ops = graph_item.pipeline_ops(grads_ancestor_ops)
-        table_related_ops = set()
-        for table_init in graph_item._info.table_initializers:
-            table_related_ops.add(table_init)
-            table_related_ops.add(table_init.inputs[0].op)
+        # pipeline_ops = graph_item.pipeline_ops(grads_ancestor_ops)
+        # table_related_ops = set()
+        # for table_init in graph_item.info.table_initializers:
+        #     table_related_ops.add(table_init)
+        #     table_related_ops.add(table_init.inputs[0].op)
 
         var_related_ops = set()
         for global_var in graph_item.trainable_var_op_to_var.values():
@@ -243,11 +243,11 @@ class Replicator:
             var_related_ops.update(related_ops)
 
         ops_to_replicate = grads_ancestor_ops.copy()
-        ops_to_replicate.update(pipeline_ops)
+        # ops_to_replicate.update(pipeline_ops)
 
         # exclude all var related ops
         ops_to_replicate.difference_update(var_related_ops)
-        ops_to_replicate.difference_update(table_related_ops)
+        # ops_to_replicate.difference_update(table_related_ops)
         return ops_to_replicate
 
     def _update_copied_node_properties(self, op_names_to_replicate, new_node, replica_id, shared=False):
