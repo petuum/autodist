@@ -9,7 +9,6 @@ from tensorflow.python.client import timeline
 from tensorflow.python.client.session import Session
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops.variables import Variable
-from tensorflow.python.summary.writer import writer
 
 import autodist.const
 from autodist.graph_item import GraphItem
@@ -20,6 +19,7 @@ from autodist.kernel.replication.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.strategy.base import StrategyCompiler
 from autodist.utils import logging
+from autodist.utils import visualization_util
 
 
 # TODO(Hao): could extend this to use tfprof (though I don't
@@ -34,14 +34,6 @@ def _log_timeline(run_metadata, name='timeline', step=0):
     with open(p, "w") as f:
         f.write(chrome_trace)
         logging.info('Traced timeline written to: %s' % p)
-
-
-def _log_graph(graph, name):
-    directory = os.path.join(autodist.const.DEFAULT_WORKING_DIR, "graphs")
-    os.makedirs(directory, exist_ok=True)
-    p = os.path.join(directory, name)
-    writer.FileWriter(p, graph=graph)
-    logging.info('Graph summary written to: %s' % p)
 
 
 # Future: convert this to protobuf
@@ -102,7 +94,7 @@ class Runner:
         assert not self._is_built
 
         if self._config.log_graph:
-            _log_graph(graph=item.graph, name='original')
+            visualization_util.log_graph(graph=item.graph, name='original')
 
         # Compile Strategy
         logging.info('Raw strategy: %s' % self._strategy)
@@ -128,7 +120,7 @@ class Runner:
         self._finalize_build(final_item)
 
         if self._config.log_graph:
-            _log_graph(graph=self._transformed_graph_item.graph, name='transformed')
+            visualization_util.log_graph(graph=self._transformed_graph_item.graph, name='transformed')
 
         return self
 
