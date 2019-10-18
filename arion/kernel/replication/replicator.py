@@ -77,10 +77,10 @@ class Replicator:
         """
         # First, make a copy of the graph item as it is immutable
         item = GraphItem(graph_def=graph_item.graph.as_graph_def())
-        item.info.update(**graph_item.info.__dict__)
+        item.info = graph_item.info.copy()
 
         with item.graph.as_default():
-            for update_op, (gradient, target) in graph_item.update_op_to_grad_target.items():
+            for gradient, target, update_op, in graph_item.var_op_name_to_grad_info.values():
                 self._synchronizers[target.name].in_graph_apply(
                     item,
                     update_op,
@@ -99,14 +99,12 @@ class Replicator:
         Returns:
             GraphItem
         """
-        item = GraphItem(graph_def=multi_gpu_graph_item.graph.as_graph_def())
-        item.copy_gradient_info_from(multi_gpu_graph_item)
-        item.info.update(**multi_gpu_graph_item.info.__dict__)
+        item = multi_gpu_graph_item.copy()
 
         with item.graph.as_default():
             with ops.device(self._local_worker_device):
                 mirrored_vars = {}
-                for update_op, (gradient, target) in item.update_op_to_grad_target.items():
+                for gradient, target, update_op, in item.var_op_name_to_grad_info.values():
                     mirrored_vars[update_op] = self._synchronizers[target.name].between_graph_apply(
                         item,
                         update_op,
@@ -172,7 +170,7 @@ class Replicator:
 
         # create graph item
         new_graph_item = GraphItem(graph_def=multi_gpu_graph_def)
-        new_graph_item.info.update(**graph_item.info.__dict__)
+        new_graph_item.info = graph_item.info.copy()
 
         # update the gradient target pair.
         # At this point, all gradients shall be gradients on replica0

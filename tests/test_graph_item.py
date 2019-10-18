@@ -95,7 +95,7 @@ def test_update_ops_for_optimizers(optimizer_class, kwargs):
         print(optimizer)
         grads = optimizer.get_gradients(model.outputs[0], trainable_variables)
         optimizer.apply_gradients(zip(grads, trainable_variables))
-        assert len(item.update_op_to_grad_target) == len(trainable_variables)
+        assert len(item.var_op_name_to_grad_info) == len(trainable_variables)
 
 
 def test_graph_item_context_scope():

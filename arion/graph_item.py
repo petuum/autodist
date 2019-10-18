@@ -3,6 +3,7 @@
 import contextlib
 import functools
 from collections import defaultdict
+import copy
 
 from tensorflow.core.framework.variable_pb2 import VariableDef
 from tensorflow.python.framework import ops
@@ -92,6 +93,7 @@ class Info:
 
     def update(self, variables=None, table_initializers=None, replace=True, **kwargs):
         """Set info."""
+        logging.warning('Unused kwargs in info update: {}'.format(kwargs))
         if replace:
             self._reset()
         if variables:
@@ -100,6 +102,10 @@ class Info:
         if table_initializers:
             for op in table_initializers:
                 self.table_initializers.append(op.name if isinstance(op, ops.Operation) else op)
+
+    def copy(self):
+        """Copy info."""
+        return copy.deepcopy(self)
 
 
 class GraphItem:
@@ -126,6 +132,13 @@ class GraphItem:
         ###################################
         # Info
         self.info = Info()
+
+    def copy(self):
+        """Get a duplicated current GraphItem."""
+        g = GraphItem(graph_def=self._graph.as_graph_def())
+        g.info = self.info.copy()
+        g._grad_target_pairs = self._grad_target_pairs.copy()
+        return g
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -185,18 +198,10 @@ class GraphItem:
                 op.type in op_info.DENSE_VAR_UPDATE_OP_TYPES.keys() | op_info.SPARSE_VAR_UPDATE_OP_TYPES.keys()]
 
     @cached_property
-    def update_op_to_grad_target(self):
-        """
-        Get all update ops.
-
-        Get all ops in the graph that perform stateful operations,
-        on trainable variables, excluding initialization (i.e. the first "update").
-
-        Returns:
-            List
-        """
-        expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs}
-        update_ops = {}
+    def var_op_name_to_grad_info(self):
+        """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple."""
+        expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
+        res = {}
         for op in self.all_update_ops:
             var_op = op.inputs[op_info.UPDATE_OP_VAR_POS].op
             on_trainable_variable = var_op in expected_var_ops
@@ -205,8 +210,9 @@ class GraphItem:
             is_initialization = update_op_scope == var_scope
             is_saving = update_op_scope.startswith('save')
             if on_trainable_variable and not is_initialization and not is_saving:
-                update_ops[op] = expected_var_ops[var_op]
-        return update_ops
+                # TODO: Support One Var -> Multiple Grad Update Ops
+                res[var_op.name] = expected_var_ops[var_op] + (op, )
+        return res
 
     @cached_property
     def global_step_update_ops(self):
@@ -232,7 +238,7 @@ class GraphItem:
         Returns:
             List
         """
-        return [grad for grad, _ in self.grad_target_pairs]
+        return list(self.grad_target_pairs.keys())
 
     @cached_property
     def target_list(self):
@@ -242,7 +248,7 @@ class GraphItem:
         Returns:
             List
         """
-        return [target for _, target in self.grad_target_pairs]
+        return list(self.grad_target_pairs.values())
 
     @cached_property
     def grad_target_name_pairs(self):
@@ -252,7 +258,7 @@ class GraphItem:
         Return:
             List
         """
-        return self._grad_target_pairs
+        return self._grad_target_pairs.copy()
 
     @cached_property
     def grad_target_pairs(self):
@@ -262,14 +268,13 @@ class GraphItem:
         Return:
              List
         """
-        return [(
+        return {
             ops.IndexedSlices(
                 indices=self.graph.get_tensor_by_name(g[0]),
                 values=self.graph.get_tensor_by_name(g[1]),
                 dense_shape=self.graph.get_tensor_by_name(g[2])
-            ) if isinstance(g, tuple) else self.graph.get_tensor_by_name(g),
-            self.graph.get_tensor_by_name(t)
-        ) for g, t in self._grad_target_pairs.items()]
+            ) if isinstance(g, tuple) else self.graph.get_tensor_by_name(g): self.graph.get_tensor_by_name(t)
+            for g, t in self._grad_target_pairs.items()}
 
     @cached_property
     def control_consumers(self):
@@ -302,82 +307,6 @@ class GraphItem:
         """
         return {self.graph.get_operation_by_name(get_op_name(var_def.variable_name)): Variable.from_proto(var_def)
                 for var_def in self.info.trainable_variables}
-
-    # pylint: disable=too-many-locals
-    # def pipeline_ops(self, in_ops):  # noqa: MC0001
-    #     """[summary]."""
-    #     unstage_dequeue_iterator_queue = [
-    #         op for op in in_ops
-    #         if op.type in op_info.UNSTAGE_OP_TYPES
-    #         or op.type in op_info.DEQUEUE_OP_TYPES
-    #         or op.type in op_info.ITERATOR_OP_TYPES
-    #     ]
-    #
-    #     stage_enqueue_iterator_ops_queue = []
-    #     pipeline_ops = set()
-    #     visited = set()
-    #
-    #     def _get_shared_name_to_stage_ops(input_ops):
-    #         stage_ops = [op for op in input_ops if op.type in op_info.STAGE_OP_TYPES]
-    #         shared_name_to_stage_ops = {}
-    #         for stage_op in stage_ops:
-    #             shared_name = stage_op.get_attr("shared_name")
-    #             if shared_name not in shared_name_to_stage_ops:
-    #                 shared_name_to_stage_ops[shared_name] = []
-    #             shared_name_to_stage_ops[shared_name].append(stage_op)
-    #         return shared_name_to_stage_ops
-    #
-    #     shared_name_to_stage_ops = _get_shared_name_to_stage_ops(self._graph.get_operations())
-    #     queue_name_to_queue_runner = {}
-    #     for queue_runner in self.get_ops_in_graph(self.info.queue_runners):
-    #         queue_name_to_queue_runner[queue_runner.name] = queue_runner
-    #
-    #     while unstage_dequeue_iterator_queue or stage_enqueue_iterator_ops_queue:
-    #         if unstage_dequeue_iterator_queue:
-    #             curr_op = unstage_dequeue_iterator_queue.pop()
-    #             if curr_op in visited:
-    #                 continue
-    #             visited.add(curr_op)
-    #
-    #             if curr_op.type in op_info.UNSTAGE_OP_TYPES:
-    #                 stage_shared_name = curr_op.get_attr("shared_name")
-    #                 stage_ops = shared_name_to_stage_ops[stage_shared_name]
-    #                 for stage_op in stage_ops:
-    #                     pipeline_ops.add(stage_op)
-    #                     stage_enqueue_iterator_ops_queue.append(stage_op)
-    #                 # Handle colocation groups of unstage op (NoOp)
-    #                 assert len(curr_op.colocation_groups()) == 1
-    #                 stage_no_op_name = curr_op.colocation_groups()[0][len(COLOCATION_PREFIX):]
-    #                 pipeline_ops.add(self._graph.get_operation_by_name(stage_no_op_name))
-    #             elif curr_op.type in op_info.DEQUEUE_OP_TYPES:
-    #                 queue_ops = [input.op for input in curr_op.inputs if input.op.type in op_info.QUEUE_OP_TYPES]
-    #                 assert len(queue_ops) == 1
-    #                 queue_op = queue_ops[0]
-    #                 queue_runner = queue_name_to_queue_runner[queue_op.name]
-    #                 for enqueue_op in queue_runner.enqueue_ops:
-    #                     pipeline_ops.add(enqueue_op)
-    #                     stage_enqueue_iterator_ops_queue.append(enqueue_op)
-    #                 pipeline_ops.add(queue_runner.close_op)
-    #                 pipeline_ops.add(queue_runner.cancel_op)
-    #             elif curr_op.type in op_info.ITERATOR_OP_TYPES:
-    #                 consumer_ops = get_consumers(curr_op)
-    #                 stage_enqueue_iterator_ops_queue.extend(consumer_ops)
-    #             else:
-    #                 raise RuntimeError("Should not reach here")
-    #
-    #         elif stage_enqueue_iterator_ops_queue:
-    #             curr_op = stage_enqueue_iterator_ops_queue.pop()
-    #             if curr_op in visited:
-    #                 continue
-    #             visited.add(curr_op)
-    #             ancestor_ops = get_ancestors([curr_op],
-    #                                          include_control_inputs=True)
-    #             for ancestor_op in ancestor_ops:
-    #                 pipeline_ops.add(ancestor_op)
-    #                 if ancestor_op.type in op_info.UNSTAGE_OP_TYPES \
-    #                         + op_info.DEQUEUE_OP_TYPES + op_info.ITERATOR_OP_TYPES:
-    #                     unstage_dequeue_iterator_queue.append(ancestor_op)
-    #     return pipeline_ops
 
     def get_colocation_op(self, colocation_group):
         """
