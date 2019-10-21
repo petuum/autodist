@@ -33,15 +33,13 @@ class Synchronizer(ABC):
         return self
 
     @abstractmethod
-    def in_graph_apply(self, graph_item, update_op, grad, target):
+    def in_graph_apply(self, graph_item, var_name):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
             graph_item (GraphItem): The graph to put the new ops in.
-            update_op (Op): The update op corresponding to the grad and target.
-            grad: The gradient object.
-            target: The target tensor.
+            var_name (str): The variable name w/o the replica prefix.
 
         Returns:
             GraphItem

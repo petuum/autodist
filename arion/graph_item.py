@@ -2,7 +2,6 @@
 
 import contextlib
 import functools
-from collections import defaultdict
 import copy
 
 from tensorflow.core.framework.variable_pb2 import VariableDef
@@ -63,7 +62,6 @@ class Info:
 
     def __init__(self):
         # v1 mode                   # v2 mode
-        self.trainable_variables = []  # variable_captures if trainable
         self.variables = []  # variable_captures
         self.table_initializers = []  # deprecating
 
@@ -71,6 +69,11 @@ class Info:
     def initializers(self):
         """Initializers."""
         return [v.initializer_name for v in self.variables] + self.table_initializers
+
+    @property
+    def trainable_variables(self):
+        """Trainable Variables."""
+        return [v for v in self.variables if v.trainable]
 
     def _add_variable(self, var):
         """Add a variable to info tracker."""
@@ -82,24 +85,27 @@ class Info:
                 setattr(proto, k, v)
         else:
             proto = var.to_proto()
-        if proto.trainable:
-            self.trainable_variables.append(proto)
         self.variables.append(proto)
 
-    def _reset(self):
-        self.trainable_variables = []
-        self.variables = []
-        self.table_initializers = []
+    def pop_variable(self, var_name):
+        """Pop out a variable by its name from info tracker."""
+        for i, v in enumerate(self.variables):
+            if v.variable_name == var_name:
+                self.variables.pop(i)
+                break
 
     def update(self, variables=None, table_initializers=None, replace=True, **kwargs):
         """Set info."""
-        logging.warning('Unused kwargs in info update: {}'.format(kwargs))
-        if replace:
-            self._reset()
+        if kwargs:
+            logging.warning('Unused kwargs in info update: {}'.format(kwargs))
         if variables:
+            if replace:
+                self.variables = []
             for v in variables:
                 self._add_variable(v)
         if table_initializers:
+            if replace:
+                self.table_initializers = []
             for op in table_initializers:
                 self.table_initializers.append(op.name if isinstance(op, ops.Operation) else op)
 
@@ -171,6 +177,12 @@ class GraphItem:
         for g, t in zip(grads, targets):
             self._grad_target_pairs[g] = t
 
+    def pop_gradient_info(self, var_name):
+        """Pop out a grad target pair by variable name."""
+        for k, v in self._grad_target_pairs.copy().items():
+            if v == var_name:
+                self._grad_target_pairs.pop(k)
+
     def copy_gradient_info_from(self, other):
         """Copy gradient info from the another GraphItem object."""
         # TODO: Future export autodist-defined protobuf message
@@ -186,7 +198,7 @@ class GraphItem:
         """
         return self._graph
 
-    @cached_property
+    @property
     def all_update_ops(self):
         """
         Get all ops in the graph that perform stateful operations.
@@ -197,7 +209,7 @@ class GraphItem:
         return [op for op in self.graph.get_operations() if
                 op.type in op_info.DENSE_VAR_UPDATE_OP_TYPES.keys() | op_info.SPARSE_VAR_UPDATE_OP_TYPES.keys()]
 
-    @cached_property
+    @property
     def var_op_name_to_grad_info(self):
         """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple."""
         expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
@@ -214,7 +226,7 @@ class GraphItem:
                 res[var_op.name] = expected_var_ops[var_op] + (op, )
         return res
 
-    @cached_property
+    @property
     def global_step_update_ops(self):
         """
         Get all ops in the graph that are part of the global step.
@@ -230,7 +242,7 @@ class GraphItem:
             ))
         ]
 
-    @cached_property
+    @property
     def grad_list(self):
         """
         List of target gradients that will be updated.
@@ -240,7 +252,7 @@ class GraphItem:
         """
         return list(self.grad_target_pairs.keys())
 
-    @cached_property
+    @property
     def target_list(self):
         """
         List of target variables that will be updated.
@@ -250,7 +262,7 @@ class GraphItem:
         """
         return list(self.grad_target_pairs.values())
 
-    @cached_property
+    @property
     def grad_target_name_pairs(self):
         """
         List of names of grad and target variable pairs.
@@ -260,7 +272,7 @@ class GraphItem:
         """
         return self._grad_target_pairs.copy()
 
-    @cached_property
+    @property
     def grad_target_pairs(self):
         """
         List of grad and target variable pairs.
@@ -276,28 +288,7 @@ class GraphItem:
             ) if isinstance(g, tuple) else self.graph.get_tensor_by_name(g): self.graph.get_tensor_by_name(t)
             for g, t in self._grad_target_pairs.items()}
 
-    @cached_property
-    def control_consumers(self):
-        """
-        Mapping from an op to the ops for which it is a control dependency.
-
-        A: [B]
-        A --> B
-        B depends on A
-
-        Args:
-            graph: TensorFlow Graph object
-
-        Returns:
-            DefaultDict
-        """
-        op_to_control_consumer_ops = defaultdict(list)
-        for op in self.graph.get_operations():
-            for control_input_op in op.control_inputs:
-                op_to_control_consumer_ops[control_input_op].append(op)
-        return op_to_control_consumer_ops
-
-    @cached_property
+    @property
     def trainable_var_op_to_var(self):
         """
         Mapping from trainable variable ops (e.g. VarHandleOps) to the Variables.
