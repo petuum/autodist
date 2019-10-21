@@ -17,9 +17,12 @@ from autodist.kernel.common.utils import get_consumers, update_consumers, replic
 from autodist.utils import logging
 
 
-def get_read_var_ops(var_handle_op):
+def get_read_var_ops(var_handle_op, exclude_snapshot=False):
     """Given a resource handle op, get all its read variable ops."""
-    return {consumer for consumer in get_consumers(var_handle_op) if consumer.type == "ReadVariableOp"}
+    read_var_ops = {consumer for consumer in get_consumers(var_handle_op) if consumer.type == "ReadVariableOp"}
+    if exclude_snapshot:
+        read_var_ops = {op for op in read_var_ops if not op.name.endswith("/Read/ReadVariableOp")}
+    return read_var_ops
 
 
 def gen_read_var_op(var_handle_op, dtype):

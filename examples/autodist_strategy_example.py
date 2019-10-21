@@ -22,7 +22,7 @@ train_labels = train_labels[0:NUM_DATAPOINTS]
 
 BATCH_SIZE = 32
 STEPS_PER_EPOCH = len(train_images) // BATCH_SIZE
-EPOCHS = 100
+EPOCHS = 20
 
 #############################################################
 # Change 2: Put Model under the Scope

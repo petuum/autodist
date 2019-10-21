@@ -10,8 +10,9 @@ from tensorflow.python.platform import tf_logging as logging
 from autodist.const import MAX_INT64, AUTODIST_PREFIX
 from autodist.kernel.common import utils, resource_variable
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
+from autodist.kernel.common.resource_variable import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
-    update_control_consumers, replica_prefix, strip_replica_prefix
+    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 
 
@@ -33,7 +34,83 @@ class PSSynchronizer(Synchronizer):
         self._var_op_to_accum_apply_op = {}
         super().__init__()
 
-    def in_graph_apply(self, graph_item, old_update_op, old_grad, old_target):
+    def in_graph_apply(self, graph_item, var_name):
+        """
+        Apply in-graph ps synchornization.
+
+        Args:
+            graph_item: the old graph item, immutable
+            var_name: the variable name w/o replica prefix
+
+        Returns:
+            GraphItem
+
+        """
+        item = graph_item.copy()
+        var_op_name = get_op_name(var_name)
+        with item.graph.as_default():
+            self._share_variable(item, var_op_name, master_replica=0)
+
+            master_var_name = ops.prepend_name_scope(var_name, replica_prefix(0))
+            master_var_op_name = get_op_name(master_var_name)
+            grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
+            agg_grad = self._aggregate_gradidents(item, old_update_op=update_op, old_grad=grad, old_target=target)
+
+        # update grad_target_pair and variable info
+        for i in range(self.num_replicas):
+            var_name_to_remove = ops.prepend_name_scope(var_name, replica_prefix(i))
+            item.pop_gradient_info(var_name=var_name_to_remove)
+            if i != 0:
+                item.info.pop_variable(var_name=var_name_to_remove)
+        item.extend_gradient_info(
+            grads=[agg_grad],
+            targets=[item.graph.get_tensor_by_name(master_var_name)]
+        )
+
+        # TODO(Hao): Prune the graph to use unncessasry nodes
+        return item
+
+    def _share_variable(self, graph_item, var_op_name, master_replica=0):
+        """
+        Share the variable on the replica = `master_replica` (default to 0).
+
+        Update inputs of consumers of the variable on replica > 0 to variable on replica=`master_replica`.
+
+        Args:
+            graph_item:
+            var_name:
+            master_replica:
+        """
+        for i in range(0, self.num_replicas):
+            if i == master_replica:
+                continue
+            this_var_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
+            this_var_op = graph_item.graph.get_operation_by_name(this_var_op_name)
+
+            # Get all read variable ops to this replica variable
+            read_var_ops = get_read_var_ops(this_var_op)
+
+            # Get all consumers of its VarhandleOp,
+            # excluding ReadVariableOps and those not in its variable scope
+            handle_consumers = set(get_consumers(this_var_op))
+            handle_consumers.difference_update(set(read_var_ops))
+            handle_consumers.difference_update(
+                {con for con in handle_consumers if con.name.startswith(this_var_op_name + '/')})
+
+            # update the consumers of all read variable ops to use the read variable ops of replica=master_replica
+            for read_var_op in read_var_ops:
+                new_read_var_op_name = ops.prepend_name_scope(ops.strip_name_scope(read_var_op.name, replica_prefix(i)),
+                                                              replica_prefix(master_replica))
+                new_read_var_op = graph_item.graph.get_operation_by_name(new_read_var_op_name)
+                update_consumers(get_consumers(read_var_op), read_var_op.outputs[0], new_read_var_op.outputs[0])
+
+            # update the consumers of VarhandleOp to use the handle on replica=master_replica
+            new_handle_op_name = ops.prepend_name_scope(ops.strip_name_scope(this_var_op_name, replica_prefix(i)),
+                                                        replica_prefix(master_replica))
+            new_handle_op = graph_item.graph.get_operation_by_name(new_handle_op_name)
+            update_consumers(list(handle_consumers), this_var_op.outputs[0], new_handle_op.outputs[0])
+
+    def _aggregate_gradidents(self, graph_item, old_update_op, old_grad, old_target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
@@ -58,9 +135,9 @@ class PSSynchronizer(Synchronizer):
         # Aggregate old_grad
         if isinstance(old_grad, ops.Tensor):
             # Dense gradient
-            agg_grad = self._get_aggregated_dense_grad(graph_item, old_grad.name, reduce_to_device)
             consumer_ops = graph_item.get_ops_in_graph(old_grad.consumers())
             ctrl_consumer_ops = graph_item.get_ops_in_graph(ctrl_consumers(old_grad.op))
+            agg_grad = self._get_aggregated_dense_grad(graph_item, old_grad.name, reduce_to_device)
 
             # Make gradients consumers to consume the aggregated gradients.
             self._update_gradient_consumers(graph_item,
@@ -70,12 +147,11 @@ class PSSynchronizer(Synchronizer):
                                             agg_grad)
         elif isinstance(old_grad, ops.IndexedSlices):
             # Sparse gradient
-            agg_grad = self._get_aggregated_sparse_grad(old_target.op, old_grad, reduce_to_device)
-
             indices_c_ops = graph_item.get_ops_in_graph(old_grad.indices.consumers())
             indices_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(old_grad.indices.op))
             values_c_ops = graph_item.get_ops_in_graph(old_grad.values.consumers())
             values_cc_ops = graph_item.get_ops_in_graph(ctrl_consumers(old_grad.values.op))
+            agg_grad = self._get_aggregated_sparse_grad(graph_item, old_target.op, old_grad, reduce_to_device)
 
             self._update_gradient_consumers(graph_item,
                                             indices_c_ops,
@@ -89,10 +165,7 @@ class PSSynchronizer(Synchronizer):
                                             agg_grad.values)
         else:
             raise RuntimeError("Incorrect old_grad.")
-        graph_item.extend_gradient_info(
-            grads=[agg_grad],
-            targets=[graph_item.trainable_var_op_to_var[graph_item.graph.get_operation_by_name(old_target.op.name)]]
-        )
+        return agg_grad
 
     # pylint: disable=arguments-differ
     def between_graph_apply(self, graph_item, update_op, gradient, target):
@@ -117,6 +190,7 @@ class PSSynchronizer(Synchronizer):
         self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = self._get_accumulation_ops(graph_item, gradient,
                                                                                               target, self.num_workers)
 
+        # TODO(): update graph_item info and grad target pair after between-graph transformation
         if self._sync:
             self.add_sync_op(graph_item, update_op, variable_replicator)
 
@@ -145,6 +219,7 @@ class PSSynchronizer(Synchronizer):
 
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
         is_trainable = var_op in graph_item.trainable_var_op_to_var
+        cc = get_control_consumers(var_update_op)
 
         with ops.device(var_op.device), ops.name_scope(""):
             queue_ops = self._get_queue_ops(var_update_op, self.is_chief, is_trainable)
@@ -169,9 +244,7 @@ class PSSynchronizer(Synchronizer):
 
         # Replace variable update op with finish_op (control input)
         # or read_op (input)
-        # TODO: [SYM-9098] Make this work with .control_outputs
-        #   (currently, that breaks because it adds the new queue_ops to the list, causing a cycle)
-        update_control_consumers(graph_item.control_consumers[var_update_op], var_update_op, finish_op)
+        update_control_consumers(cc, var_update_op, finish_op)
 
     # pylint: disable=too-many-branches
     def _get_queue_ops(self, var_update_op, is_chief, is_trainable):
@@ -224,18 +297,18 @@ class PSSynchronizer(Synchronizer):
             grad_avg = math_ops.realdiv(grad_sum, self.num_replicas, name=grad_avg_op_name)
         return grad_avg
 
-    def _get_aggregated_sparse_grad(self, var_op, grad, reduce_to_device):
+    def _get_aggregated_sparse_grad(self, graph_item, var_op, grad, reduce_to_device):
         indices_op_name = strip_replica_prefix(get_op_name(grad.indices.name))
         values_op_name = strip_replica_prefix(get_op_name(grad.values.name))
         dense_shape_op_name = strip_replica_prefix(get_op_name(grad.dense_shape.name))
 
         indexed_slices_grads = []
         for i in range(self.num_replicas):
-            indices_op = ops.get_default_graph().get_operation_by_name(
+            indices_op = graph_item.graph.get_operation_by_name(
                 ops.prepend_name_scope(indices_op_name, replica_prefix(i)))
-            values_op = ops.get_default_graph().get_operation_by_name(
+            values_op = graph_item.graph.get_operation_by_name(
                 ops.prepend_name_scope(values_op_name, replica_prefix(i)))
-            dense_shape_op = ops.get_default_graph().get_operation_by_name(
+            dense_shape_op = graph_item.graph.get_operation_by_name(
                 ops.prepend_name_scope(dense_shape_op_name, replica_prefix(i)))
             indexed_slices_grads.append(
                 ops.IndexedSlices(
@@ -321,7 +394,7 @@ class PSSynchronizer(Synchronizer):
                 agg_grad = grad_accum.take_grad(num_workers,
                                                 name=var_op.name + '_take_grad')
                 update_consumers(grad_consumers, grad, agg_grad)
-                update_control_consumers(graph_item.control_consumers[grad.op],
+                update_control_consumers(get_control_consumers(grad.op),
                                          grad.op, agg_grad.op)
             else:
                 grad_indexed_slices = ops.IndexedSlices(values=grad, indices=indices,
@@ -347,9 +420,9 @@ class PSSynchronizer(Synchronizer):
                 assert isinstance(agg_grad, ops.IndexedSlices)
                 update_consumers(indices_consumers, indices, agg_grad.indices)
                 update_consumers(grad_consumers, grad, agg_grad.values)
-                update_control_consumers(graph_item.control_consumers[indices.op],
+                update_control_consumers(get_control_consumers(indices.op),
                                          indices.op, agg_grad.indices.op)
-                update_control_consumers(graph_item.control_consumers[grad.op],
+                update_control_consumers(get_control_consumers(grad.op),
                                          grad.op, agg_grad.values.op)
             return accum_apply_op, agg_grad
 

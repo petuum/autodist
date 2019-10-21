@@ -7,8 +7,7 @@ from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import ops
 from tensorflow.python.client import timeline
 from tensorflow.python.client.session import Session
-from tensorflow.python.framework import dtypes
-from tensorflow.python.ops.variables import Variable
+from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 import autodist.const
 from autodist.graph_item import GraphItem
@@ -164,29 +163,26 @@ class Runner:
             else:
                 self._fd[x] = kwargs[self._ph_feed_index[x]]
 
-    def _remap_fetches(self, graph, fetches):
-        for f in fetches:
-            if isinstance(f, ops.Tensor):
-                try:
-                    new_fetch = graph.get_tensor_by_name(f.name)
-                except KeyError:
-                    # TODO: make this a reasonable fetch for replicated tensors
-                    replica_f_name = ops.prepend_name_scope(f.name, replica_prefix(0))
-                    logging.warning('Fetching replicated tensor "{}" now gets: "{}"'.format(f.name, replica_f_name))
-                    new_fetch = graph.get_tensor_by_name(replica_f_name)
-            elif isinstance(f, ops.Operation):
-                new_fetch = graph.get_operation_by_name(f.name)
-            elif isinstance(f, Variable):
-                handle = graph.get_tensor_by_name(f.name)
-                if handle.dtype is dtypes.resource:
-                    # Resource Var
-                    new_fetch = resource_variable.get_read_var_tensor(handle.op)
-                else:
-                    # Ref Var
-                    new_fetch = handle
-            else:
-                raise TypeError('Fetch type {} not supported.'.format(type(f)))
-            self._fetches.append(new_fetch)
+    def _remap_fetches(self, graph, fetch):
+        remap = {
+            ops.Tensor: graph.get_tensor_by_name,
+            ops.Operation: graph.get_operation_by_name,
+            ResourceVariable: lambda name: resource_variable.get_read_var_tensor(graph.get_tensor_by_name(name).op)
+        }
+        if isinstance(fetch, tuple):
+            return [self._remap_fetches(graph, f) for f in fetch]
+        else:
+            try:
+                fetch_type = type(fetch)
+                if fetch_type not in remap:
+                    raise TypeError('Fetch type {} not supported.'.format(fetch_type))
+                return remap[fetch_type](fetch.name)
+            except KeyError:
+                replica_f_name = ops.prepend_name_scope(fetch.name, replica_prefix(0))
+                # TODO: make this a reasonable fetch for replicated tensors
+                # replica_f1_name = ops.prepend_name_scope(fetch.name, replica_prefix(1))
+                logging.warning('Fetching replicated tensor "{}" now gets: "{}"'.format(fetch.name, replica_f_name))
+                return remap[type(fetch)](replica_f_name)
 
     def _init_ds_iterator(self, iter_fd, graph):
         if not iter_fd:
@@ -214,7 +210,7 @@ class Runner:
         with self._transformed_graph_item.graph.as_default() as graph:
             if not self._session:
                 self._create_feed_dict(graph, args_ph_map)
-                self._remap_fetches(graph, fetches)
+                self._fetches = self._remap_fetches(graph, fetches)
 
                 target = self._cluster.get_local_session_target()
                 self._session = Session(target=target, config=config_pb2.ConfigProto(
