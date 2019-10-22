@@ -94,3 +94,9 @@ docs/api/
 ### OS ###
 **/.DS_Store
 **/local*
+
+# Credentials #
+*_rsa*
+
+# pytest logs
+htmlcov*
