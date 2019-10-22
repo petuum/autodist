@@ -37,6 +37,7 @@ def main(autodist):
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
         optimizer = tf.keras.optimizers.SGD()
 
+        @d.function
         def train_step(x, y):
             with tf.GradientTape() as tape:
                 y_hat = model(x, training=True)
@@ -52,7 +53,7 @@ def main(autodist):
         for epoch in range(EPOCHS):
             j = 0
             for _ in range(train_steps_per_epoch):
-                loss, _, i = d.run(train_step, train_images[j:j+BATCH_SIZE], train_labels[j:j+BATCH_SIZE])
+                loss, _, i = train_step(train_images[j:j+BATCH_SIZE], train_labels[j:j+BATCH_SIZE])
                 print(f"step: {i}, train_loss: {loss}")
                 j += BATCH_SIZE
 

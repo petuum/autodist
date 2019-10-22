@@ -6,7 +6,6 @@ from collections import namedtuple
 
 import numpy as np
 from tensorflow.python.data.ops import dataset_ops
-from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
@@ -18,6 +17,7 @@ from autodist.graph_item import GraphItem
 from autodist.kernel.common.utils import get_op_name
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig
+from autodist.kernel.graph_transformer import GraphTransformer
 from autodist.strategy.base import StrategyBuilder
 from autodist.utils import logging
 from autodist.utils.code_transformer import transform
@@ -55,25 +55,42 @@ class AutoDist:
         with self._original_graph.as_default(graph_mode=graph_mode):
             yield
 
-    def _build(self, fetches):
-        """Core Logic."""
-        # this line will traverse the graph and generate necessary stats
-        item = self._original_graph
-        item.info.update(
-            variables=item.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES),
-            table_initializers=item.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS)
+    def build_strategy(self, graph_item):
+        """
+        Build distributed strategy based on a graph item.
+
+        Args:
+            graph_item (GraphItem): AutoDist GraphItem object on which a distributed strategy will be generated.
+
+        Returns:
+            (Strategy) Distributed strategy representation object.
+        """
+        graph_item.info.update(
+            variables=graph_item.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES),
+            table_initializers=graph_item.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS)
         )
 
         if IS_AUTODIST_CHIEF:
-            s = StrategyBuilder.build(item, self._resource_spec, self._strategy_name)
+            s = StrategyBuilder.build(graph_item, self._resource_spec, self._strategy_name)
             s.serialize()
         else:
             s = StrategyBuilder.load_strategy()
+        return s
+
+    def _build(self, fetches):
+        """Core Logic."""
+        # this line will traverse the graph and generate necessary stats
+
+        strategy = self.build_strategy(self._original_graph)
 
         self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
 
-        with context.graph_mode():
-            runner = Runner(strategy=s, cluster=self._cluster, config=self._runner_config).build(item)
+        transformed_graph_item = GraphTransformer(strategy=strategy, cluster=self._cluster)(self._original_graph)
+        runner = Runner(
+            graph_item=transformed_graph_item,
+            cluster=self._cluster,
+            config=self._runner_config
+        )
 
         def run_fn(args, kwargs, args_ph_map, iter_fd):
             try:
@@ -87,7 +104,7 @@ class AutoDist:
             # even though we could have multiple strategies.
             # TODO: optimize this and serialization
             if not self._coordinator:
-                self._coordinator = Coordinator(strategy=s, cluster=self._cluster)
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
 
         return run_fn
 
@@ -125,6 +142,7 @@ class AutoDist:
 
             # Build the strategy and get the runner with distributed graph
             run_fn = self._build(fetches)
+            # The boundary of graph construction and runtime
             if IS_AUTODIST_CHIEF:
                 self._cluster.start()
                 self._coordinator.launch_clients()
@@ -151,31 +169,11 @@ class AutoDist:
         ds_iter = dataset_ops.make_one_shot_iterator(dataset)
         return ds_iter.get_next()
 
-    def run(self, fn, *args, **kwargs):
-        """
-        TFStrategy-like Interface.
-
-        Args:
-            fn: train step function
-            *args: any args for fn
-            **kwargs: any kwargs for fn
-
-        Returns:
-            run function
-        """
-        return self._build_and_run(fn, *args, **kwargs)
+    def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
+        """Session-like interface."""
 
     def function(self, fn):
-        """
-        Decorator Interface.
-
-        # TODO(omkar)
-        @AutoDist().function
-        def step_fn(*args, **kwargs):
-            ...
-
-        step_fn(*args, **kwargs)
-        """
+        """Decorator Interface."""
         __build_and_run = self._build_and_run
 
         def wrapper(*args, **kwargs):
