@@ -14,12 +14,14 @@ cases = [
     c2,  # Sparse basics
     c3   # Numpy basics
 ]
-
+resource_specs = [
+    os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),
+    # os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
+    ]
+strategies = ['PS']
 
 @pytest.mark.integration
 def test_all():
-    resource_specs = [os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml')]
-    strategies = ['PS']
     combinations = itertools.product(resource_specs, strategies)
     for r, s in combinations:
         for c in cases:

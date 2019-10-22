@@ -3,12 +3,15 @@ stages:
   - toolchain
   - lint
   - test
+  - test_dist
   - build
   - release
 
 variables:
    TOOLCHAIN_IMAGE: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_latest
+   TOOLCHAIN_IMAGE_DIST: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_dist
    ARTIFACT_ROOT: /data/artifacts
+   # NOTE: don't forget to set the IP in resource_specs
 
 update-toolchain:
    stage: toolchain
@@ -19,7 +22,7 @@ update-toolchain:
       - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
    script:
       - ./docker/toolchain/update_toolchain_image.sh
-
+ 
 lint:
    stage: lint
    image: '${TOOLCHAIN_IMAGE}'
@@ -35,13 +38,30 @@ tests:
    image: '${TOOLCHAIN_IMAGE}'
    tags:
      - gpu_runner
+     - master_node
    script:
-     - 'python3 -m pytest -s --run-integration --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov tests/'
+     - 'python3 -m pytest -s --run-integration --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov --ignore=tests/integration/test_dist.py tests/'
    artifacts:
      name: cov-report
      paths:
        - htmlcov
      expire_in: '1 day'
+
+dist_tests:
+   stage: test_dist
+   only:
+      - master
+      - /^release-.+$/
+   image: '${TOOLCHAIN_IMAGE_DIST}'
+   tags:
+     - gpu_runner
+     - master_node
+   before_script:
+     # "distribution_trigger.sh is used to manage the autodist repo on target cluster"
+     - source scripts/distribution_setup.sh
+   script:
+     # execution entrance code
+     - ssh -i /tmp/credentials/id_rsa autodist@$NODE1 'source /home/autodist/venv/autodist/bin/activate; pytest -s /home/autodist/autodist/tests/integration/test_dist.py'
 
 build_wheel:
    only:
