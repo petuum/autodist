@@ -10,15 +10,9 @@ from tensorflow.python.client.session import Session
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 import autodist.const
-from autodist.graph_item import GraphItem
 from autodist.kernel.common import resource_variable
 from autodist.kernel.common.utils import replica_prefix
-from autodist.kernel.device.resolver import DeviceResolver
-from autodist.kernel.replication.replicator import Replicator
-from autodist.kernel.synchronization.synchronizer import Synchronizer
-from autodist.strategy.base import StrategyCompiler
 from autodist.utils import logging
-from autodist.utils import visualization_util
 
 
 # TODO(Hao): could extend this to use tfprof (though I don't
@@ -66,11 +60,9 @@ class RunnerConfig:
 class Runner:
     """Runner in worker process."""
 
-    def __init__(self, strategy, cluster, config=None):
-        self._strategy = strategy
+    def __init__(self, graph_item, cluster, config=None):
         self._cluster = cluster
-        self._is_built = False
-        self._transformed_graph_item = None
+        self._graph_item = graph_item
         self._config = config or RunnerConfig()
 
         self._session = None
@@ -82,51 +74,6 @@ class Runner:
         logging.debug('Tearing down clients...')
         # Resetting the variable reference triggers the garbage collection when it jumps out the local
         self._session = None
-
-    def build(self, item: GraphItem):
-        """
-        Build distributed graph.
-
-        Args:
-            item (GraphItem): wrapper of TensorFlow graph.
-        """
-        assert not self._is_built
-
-        if self._config.log_graph:
-            visualization_util.log_graph(graph=item.graph, name='original')
-
-        # Compile Strategy
-        logging.info('Raw strategy: %s' % self._strategy)
-        device_resolver = DeviceResolver(self._cluster)
-        strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str).compile(self._strategy)
-        logging.info('Compiled strategy: %s' % strategy)
-
-        # Create Synchronizers for each node in the strategy
-        synchronizers = {
-            name: Synchronizer.create(node['synchronizer']['type'], **node['synchronizer']['config'])
-            for name, node in strategy.node_config.items()
-        }
-
-        # Replicate the graph (both in-graph and between-graph)
-        r = Replicator(
-            config=strategy.graph_config.get('replicas'),
-            cluster=self._cluster,
-            synchronizers=synchronizers
-        )
-
-        final_item = r.apply(item)
-
-        self._finalize_build(final_item)
-
-        if self._config.log_graph:
-            visualization_util.log_graph(graph=self._transformed_graph_item.graph, name='transformed')
-
-        return self
-
-    def _finalize_build(self, graph_item):
-        self._transformed_graph_item = graph_item
-        self._is_built = self._transformed_graph_item is not None
-        logging.info('Successfully built transformed graph')
 
     def _run_by_name(self, name, session=None):
         """Run graph by op or tensor name."""
@@ -206,8 +153,7 @@ class Runner:
 
     def run(self, fetches, args=None, kwargs=None, args_ph_map=None, iter_fd=None):
         """Execute distributed graph."""
-        assert self._is_built
-        with self._transformed_graph_item.graph.as_default() as graph:
+        with self._graph_item.graph.as_default() as graph:
             if not self._session:
                 self._create_feed_dict(graph, args_ph_map)
                 self._fetches = self._remap_fetches(graph, fetches)
@@ -222,7 +168,7 @@ class Runner:
                 # TensorFlow default initializations
                 # TODO: Rethink. Should we do this?
                 self._session.run(
-                    self._transformed_graph_item.get_ops_in_graph(self._transformed_graph_item.info.initializers)
+                    self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
                 )
                 self._init_ds_iterator(iter_fd, graph)
                 # AutoDist initializations

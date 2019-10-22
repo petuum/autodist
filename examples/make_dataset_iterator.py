@@ -44,6 +44,7 @@ def main(_):
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
         optimizer = tf.keras.optimizers.SGD()
 
+        @d.function
         def train_step(inputs):
             x, y = inputs
             with tf.GradientTape() as tape:
@@ -59,7 +60,7 @@ def main(_):
 
         for epoch in range(EPOCHS):
             for _ in range(train_steps_per_epoch):
-                loss, _, i = d.run(train_step, iterator)
+                loss, _, i = train_step(iterator)
                 print(f"step: {i}, train_loss: {loss}")
 
 

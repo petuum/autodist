@@ -47,6 +47,7 @@ def main(autodist):
         optimizer = tf.keras.optimizers.SGD()
         optimizer.iterations = get_or_create_global_step()
 
+        @d.function
         def train_step(inputs):
             x, y = inputs
             with tf.GradientTape() as tape:
@@ -63,5 +64,5 @@ def main(autodist):
 
         for epoch in range(EPOCHS):
             for _ in range(train_steps_per_epoch):
-                loss, _ = d.run(train_step, train_iterator)
+                loss, _ = train_step(train_iterator)
                 print(f"train_loss: {loss}")
