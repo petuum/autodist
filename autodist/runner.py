@@ -116,7 +116,7 @@ class Runner:
             ops.Operation: graph.get_operation_by_name,
             ResourceVariable: lambda name: resource_variable.get_read_var_tensor(graph.get_tensor_by_name(name).op)
         }
-        if isinstance(fetch, tuple):
+        if isinstance(fetch, (tuple, list)):
             return [self._remap_fetches(graph, f) for f in fetch]
         else:
             try:
