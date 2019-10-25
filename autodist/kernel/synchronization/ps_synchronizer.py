@@ -1,6 +1,5 @@
 """PS Synchronizer."""
 from functools import partial
-
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
 from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
@@ -19,13 +18,7 @@ from autodist.kernel.synchronization.synchronizer import Synchronizer
 class PSSynchronizer(Synchronizer):
     """PS Synchronizer."""
 
-    def __init__(
-            self,
-            reduction_destinations=None,
-            local_replication=True,
-            sync=True
-    ):
-        # TODO: partitions
+    def __init__(self, reduction_destinations=None, local_replication=True, sync=True):
         self.target_device = reduction_destinations[0] if reduction_destinations else ""
         self._local_replication = local_replication
         self._sync = sync
@@ -36,7 +29,7 @@ class PSSynchronizer(Synchronizer):
 
     def in_graph_apply(self, graph_item, var_name):
         """
-        Apply in-graph ps synchornization.
+        Apply in-graph ps synchronization.
 
         Args:
             graph_item: the old graph item, immutable
@@ -67,7 +60,7 @@ class PSSynchronizer(Synchronizer):
             targets=[item.graph.get_tensor_by_name(master_var_name)]
         )
 
-        # TODO(Hao): Prune the graph to use unncessasry nodes
+        # TODO(Hao): Prune the graph to use unnecessary nodes
         return item
 
     def _share_variable(self, graph_item, var_op_name, master_replica=0):

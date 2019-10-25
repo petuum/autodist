@@ -6,7 +6,7 @@ import tensorflow as tf
 # Change 1: Construct AutoDist with ResourceSpec
 from autodist import AutoDist
 resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
-d = AutoDist(resource_spec_file, 'PSLoadBalancing')
+d = AutoDist(resource_spec_file, 'PS')
 #############################################################
 
 NUM_DATAPOINTS = 100

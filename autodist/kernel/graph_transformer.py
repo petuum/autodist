@@ -4,7 +4,8 @@ from tensorflow.python.eager import context
 
 from autodist.graph_item import GraphItem
 from autodist.kernel.device.resolver import DeviceResolver
-from autodist.kernel.replication.replicator import Replicator
+from autodist.kernel.partitioner import VariablePartitioner
+from autodist.kernel.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.strategy.base import StrategyCompiler
 from autodist.utils import logging, visualization_util
@@ -29,6 +30,8 @@ class GraphTransformer:
             # Ensure the transformation happens under graph mode, no matter the outer mode is under eager or graph.
 
             visualization_util.log_graph(graph=graph_item.graph, name='original')
+
+            graph_item, self._strategy.node_config = VariablePartitioner(self._strategy.node_config, graph_item)()
 
             # Create Synchronizers for each node in the strategy
             synchronizers = {

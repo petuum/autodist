@@ -6,8 +6,8 @@ import copy
 
 from tensorflow.core.framework.variable_pb2 import VariableDef
 from tensorflow.python.framework import ops
+from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 from tensorflow.python.framework.importer import import_graph_def
-from tensorflow.python.ops.variables import Variable
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
@@ -42,18 +42,33 @@ def get_default_graph_item():
     return _default_graph_item
 
 
-def wrap_gradients(fn):
-    """Wrapper for gradients functions in tensorflow.python.ops.gradients_impl."""
+def wrap_optimizer_init(fn):
+    """Wraps the __init__ function of OptimizerV2 objects and stores the info in the default GraphItem."""
     def wrapper(*args, **kwargs):
-        if fn.__name__ == 'gradient':
-            targets = kwargs.get('sources') or args[2]
-        else:
-            targets = kwargs.get('xs') or args[1]  # Keep kwargs optional as default
-        grads = fn(*args, **kwargs)
-        if _default_graph_item:
-            _default_graph_item.extend_gradient_info(grads, targets)
-            logging.debug('Registered grads: \n {} with targets: \n {}'.format(grads, targets))
-        return grads
+        # args[0] should be `self`, which is an object of type == optimizer class
+        containing_class = type(args[0])
+        class_name = containing_class.__name__
+        if _default_graph_item and kwargs.pop('update', True):
+            _default_graph_item.extend_optimizer_info(containing_class, *args, **kwargs)
+            logging.debug('Patched optimizer: {} \nwith args: {} \nkwargs: {}'.format(class_name, args, kwargs))
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def wrap_optimizer_apply_gradient(fn):
+    """Wraps the apply_gradients function of OptimizerV2 objects and stores the info in the default GraphItem."""
+    # Signature for apply_gradients
+    # apply_gradients(self, grads_and_vars, name=None)
+    def wrapper(*args, **kwargs):
+        # Assume grads_and_vars is an iterable of tuples
+        # Materialize here because in case it's a generator, we need to be able to iterate multiple times
+        grads_and_vars = list(kwargs.get('grads_and_vars') or args[1])
+        grads, variables = map(list, zip(*grads_and_vars))
+        if _default_graph_item and kwargs.pop('update', True):
+            _default_graph_item.extend_gradient_info(grads, variables)
+            logging.debug('Registered grads: \n {} with targets: \n {}'.format(grads, variables))
+        args = (args[0], grads_and_vars)  # Replace possible generator with definite list
+        return fn(*args, **kwargs)
     return wrapper
 
 
@@ -138,11 +153,15 @@ class GraphItem:
         ###################################
         # Info
         self.info = Info()
+        self.optimizer, self.optimizer_args, self.optimizer_kwargs = None, None, None
 
     def copy(self):
         """Get a duplicated current GraphItem."""
         g = GraphItem(graph_def=self._graph.as_graph_def())
         g.info = self.info.copy()
+        g.optimizer = self.optimizer
+        g.optimizer_args = self.optimizer_args
+        g.optimizer_kwargs = self.optimizer_kwargs
         g._grad_target_pairs = self._grad_target_pairs.copy()
         return g
 
@@ -164,6 +183,12 @@ class GraphItem:
         else:
             yield self
         _default_graph_item = None
+
+    def extend_optimizer_info(self, optimizer, *args, **kwargs):
+        """Add the detected optimizer to the object."""
+        self.optimizer = optimizer
+        self.optimizer_args = args
+        self.optimizer_kwargs = kwargs
 
     def extend_gradient_info(self, grads, targets):
         """Add the detected grad-target pairs to the object."""
@@ -296,8 +321,9 @@ class GraphItem:
         Returns:
             Dict
         """
-        return {self.graph.get_operation_by_name(get_op_name(var_def.variable_name)): Variable.from_proto(var_def)
-                for var_def in self.info.trainable_variables}
+        with self.graph.as_default():
+            return {self.graph.get_operation_by_name(get_op_name(var_def.variable_name)): _from_proto_fn(var_def)
+                    for var_def in self.info.trainable_variables}
 
     def get_colocation_op(self, colocation_group):
         """
