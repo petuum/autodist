@@ -1,12 +1,13 @@
-"""PS Load Balancing Strategy."""
+"""Partitioned PS Strategy with Greedy Load Balancer."""
 
+from math import ceil
 from tensorflow.python.framework import tensor_shape
 
 from autodist.strategy.base import Strategy, StrategyBuilder
 
 
-class PSLoadBalancing(StrategyBuilder):
-    """PS Strategy with Greedy Load Balancing."""
+class PartitionedPS(StrategyBuilder):
+    """Partitioned PS Strategy with Greedy Load Balancer."""
 
     def __init__(self, *args, **kwargs):
         self.loads = {}
@@ -38,20 +39,38 @@ class PSLoadBalancing(StrategyBuilder):
         Returns:
             Dict: the config dict for the node.
         """
-        min_ps = min(self.loads, key=self.loads.get)
-        self.loads[min_ps] += byte_size_load_fn(var)
+        num_shards = self.get_num_shards(var)
+        sorted_ps = sorted(self.loads, key=self.loads.get)
+        if num_shards > len(self.loads):
+            # If there's more shards than servers, round-robin in greedy order
+            sorted_ps = sorted_ps * ceil(num_shards / len(self.loads))
+        min_ps = sorted_ps[0:num_shards]
+        for ps in min_ps:
+            self.loads[ps] += byte_size_load_fn(var) / num_shards
 
         node_config = {
             'synchronizer': {
                 'type': 'PSSynchronizer',
                 'config': {
-                    'reduction_destinations': [min_ps],
+                    'reduction_destinations': min_ps,
                     'local_replication': False,
                     'sync': True
                 }
             }
         }
         return node_config
+
+    def get_num_shards(self, tensor):
+        """Gets the minimum number of shards for a variable."""
+        var = self._item.trainable_var_op_to_var[tensor.op]
+        if not var.initial_value.shape.ndims:
+            return 1
+
+        n = var.initial_value.shape[0]
+        for i in range(2, n):
+            if n % i == 0:
+                return i
+        return n
 
 
 def byte_size_load_fn(op):

@@ -1,9 +1,10 @@
 """Experimental Patch on TF."""
 from tensorflow.python.framework import ops
+from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 from autodist.utils import logging
-from autodist.graph_item import wrap_gradients
+from autodist.graph_item import wrap_optimizer_init, wrap_optimizer_apply_gradient
 
 
 class PatchTensorFlow:
@@ -26,15 +27,8 @@ class PatchTensorFlow:
                         'to behave as ref (only on reading) to avoid multiple recv_tensor.')
 
     @staticmethod
-    def init_gradient_handler():
-        """Wrap the apis for gradients."""
-        from tensorflow.python.ops import gradients_util
-        original_api = gradients_util._GradientsHelper
-        new_api = wrap_gradients(original_api)
-        gradients_util._GradientsHelper = new_api
-
-        from tensorflow.python.eager import backprop
-        original_api = backprop.GradientTape.gradient
-        new_api = wrap_gradients(original_api)
-        backprop.GradientTape.gradient = new_api
-        # TODO: tape
+    def patch_optimizers():
+        """Patch all instances of OptimizerV2 for us to store optimizer and gradient information."""
+        for subclass in optimizer_v2.OptimizerV2.__subclasses__():
+            subclass.__init__ = wrap_optimizer_init(subclass.__init__)
+            subclass.apply_gradients = wrap_optimizer_apply_gradient(subclass.apply_gradients)

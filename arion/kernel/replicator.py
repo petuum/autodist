@@ -1,9 +1,10 @@
 """Replicator."""
 
 from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
-from tensorflow.python import ops, import_graph_def, Variable
+from tensorflow.python import ops, import_graph_def
 from tensorflow.python.framework import device_spec, kernels
 from tensorflow.python.framework.device_spec import DeviceSpecV2
+from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 
 from autodist.graph_item import GraphItem
 from autodist.kernel.common import resource_variable
@@ -49,7 +50,7 @@ class Replicator:
         new_graph_item = graph_item
         if self._num_local_replicas > 1:
             new_graph_item = self.replicate(graph_item)
-            logging.info('Successfully replicate operations')
+            logging.info('Successfully replicated operations')
 
             # Apply synchronizers
             new_graph_item = self.in_graph_apply(new_graph_item)
@@ -160,7 +161,7 @@ class Replicator:
                         targets=[new_t_name]
                     )
                 item.info.update(
-                    variables=[Variable.from_proto(proto, import_scope=replica_prefix(i)).to_proto()
+                    variables=[_from_proto_fn(proto, import_scope=replica_prefix(i)).to_proto()
                                for proto in graph_item.info.variables],
                     replace=False
                 )

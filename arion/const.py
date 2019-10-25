@@ -22,6 +22,7 @@ MAX_INT64 = int(2 ** 63 - 1)
 COLOCATION_PREFIX = b"loc:@"
 AUTODIST_PREFIX = u"AutoDist-"
 AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX
+AUTODIST_TO_DELETE_SCOPE = u"to-delete"
 
 
 class InitOps(Enum):
