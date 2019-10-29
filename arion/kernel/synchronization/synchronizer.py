@@ -21,14 +21,22 @@ class Synchronizer(ABC):
         self.var_op_to_agg_grad = None
         self.var_op_to_accum_apply_op = None
         self.is_chief = None
+        self.all_canonical_replica_devices = None
 
     # pylint: disable=too-many-arguments
-    def assign_cluster_information(self, num_workers, num_replicas, worker_device, worker_id, is_chief=False):
+    def assign_cluster_information(self,
+                                   num_workers,
+                                   num_replicas,
+                                   worker_device,
+                                   worker_id,
+                                   canonical_replica_devices,
+                                   is_chief=False):
         """Store cluster information in the synchronizer."""
         self.num_workers = num_workers
         self.num_replicas = num_replicas
         self.worker_device = worker_device  # local worker device
         self.worker_id = worker_id  # local worker id
+        self.all_canonical_replica_devices = canonical_replica_devices
         self.is_chief = is_chief
         return self
 

@@ -190,6 +190,20 @@ def update_control_consumers(control_consumer_ops, old_op, new_op):
         control_consumer_op._add_control_inputs(control_inputs)
 
 
+def remove_control_input(op, op_to_remove):
+    """
+    Remove the op_to_remove from op's control inputs.
+
+    Args:
+        op: the op whose control input is to be removed
+        op_to_remove: the op to be removed
+    """
+    new_control_inputs = op.control_inputs
+    new_control_inputs.remove(op_to_remove)
+    op._remove_all_control_inputs()
+    op._add_control_inputs(new_control_inputs)
+
+
 def get_shared_name_to_stage_ops(input_ops):
     """Get shared_name_to_stage_ops mapping."""
     stage_ops = [op for op in input_ops if op.type in STAGE_OP_TYPES]

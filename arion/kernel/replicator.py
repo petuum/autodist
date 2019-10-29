@@ -7,9 +7,8 @@ from tensorflow.python.framework.device_spec import DeviceSpecV2
 from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 
 from autodist.graph_item import GraphItem
-from autodist.kernel.common import resource_variable
 from autodist.kernel.common.utils import replica_prefix, strip_replica_prefix
-from autodist.utils import logging
+from autodist.utils import logging, visualization_util
 
 
 class Replicator:
@@ -22,6 +21,7 @@ class Replicator:
         self._replica_devices = {device_spec.DeviceSpecV2.from_string(s) for s in config}
         self._replica_hosts = {cluster.get_address_from_task(d.job, d.task) for d in self._replica_devices}
         self._num_workers = len(self._replica_hosts)
+
         self._local_canonical_replica_devices = sorted({
             d.to_string() for d in self._replica_devices
             if self._cluster.get_local_address() == cluster.get_address_from_task(d.job, d.task)
@@ -35,8 +35,11 @@ class Replicator:
         for synchronizer in self._synchronizers.values():
             synchronizer.assign_cluster_information(self._num_workers, self._num_local_replicas,
                                                     self._local_worker_device, self._local_worker_id,
+                                                    sorted({d.to_string() for d in self._replica_devices}),
                                                     is_chief=self._cluster.is_chief())
 
+    # TODO(Hao): Replicator class and apply() method carries too many workflow logic that may not
+    #            belong to a replicator. Consider move this out from replicator.
     def apply(self, graph_item):
         """
         Apply replication to a graph.
@@ -55,6 +58,7 @@ class Replicator:
             # Apply synchronizers
             new_graph_item = self.in_graph_apply(new_graph_item)
             logging.info('Successfully applied local in-graph replication')
+            visualization_util.log_graph(new_graph_item.graph, 'after-in-graph')
 
         if self._num_workers >= 1:
             new_graph_item = self.between_graph_apply(new_graph_item)
@@ -99,8 +103,7 @@ class Replicator:
                         gradient,
                         target
                     )
-
-                resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
+                # resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
 
                 for variable_replicator in mirrored_vars.values():
                     if variable_replicator:

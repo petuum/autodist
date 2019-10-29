@@ -1,5 +1,6 @@
 """PS Synchronizer."""
 from functools import partial
+
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
 from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
@@ -11,7 +12,7 @@ from autodist.kernel.common import utils, resource_variable
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common.resource_variable import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
-    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers
+    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, remove_control_input
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 
 
@@ -41,9 +42,10 @@ class PSSynchronizer(Synchronizer):
         """
         item = graph_item.copy()
         var_op_name = get_op_name(var_name)
-        with item.graph.as_default():
-            self._share_variable(item, var_op_name, master_replica=0)
 
+        with item.graph.as_default():
+            self._prune_control_dependencies(item, var_op_name, master_replica=0)
+            self._share_variable(item, var_op_name, master_replica=0)
             master_var_name = ops.prepend_name_scope(var_name, replica_prefix(0))
             master_var_op_name = get_op_name(master_var_name)
             grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
@@ -59,7 +61,6 @@ class PSSynchronizer(Synchronizer):
             grads=[agg_grad],
             targets=[item.graph.get_tensor_by_name(master_var_name)]
         )
-
         # TODO(Hao): Prune the graph to use unnecessary nodes
         return item
 
@@ -159,6 +160,25 @@ class PSSynchronizer(Synchronizer):
         else:
             raise RuntimeError("Incorrect old_grad.")
         return agg_grad
+
+    def _prune_control_dependencies(self, graph_item, var_op_name, master_replica=0):
+        """
+        Prune the control dependencies between the train_op on non-master replica and update op.
+
+        Since the replicator will replicate the entire graph, the update op on non-master replica
+        will also be replicated. If the train_op on non-master replica is fetched (which is the case
+        in our current feed-fetch remap implementation), it will trigger those update ops and result
+        in an unnecessary update over the trainable variables.
+        This function prunes the control dependencies between train_op and any variable that bases on
+        a PS syncer to avoid this situation.
+        """
+        for i in range(self.num_replicas):
+            if i == master_replica:
+                continue
+            this_var_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
+            _, _, update_op = graph_item.var_op_name_to_grad_info[this_var_op_name]
+            for c_output in update_op._control_outputs:  # pylint: disable=protected-access
+                remove_control_input(c_output, update_op)
 
     # pylint: disable=arguments-differ
     def between_graph_apply(self, graph_item, update_op, gradient, target):

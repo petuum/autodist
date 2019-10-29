@@ -4,19 +4,15 @@ import os
 
 import yaml
 from tensorflow.core.protobuf import config_pb2
-from tensorflow.python import ops
 from tensorflow.python.client import timeline
 from tensorflow.python.client.session import Session
-from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 import autodist.const
-from autodist.kernel.common import resource_variable
-from autodist.kernel.common.utils import replica_prefix
 from autodist.utils import logging
 
 
 # TODO(Hao): could extend this to use tfprof (though I don't
-# see immediate benefit now)
+#            see immediate benefit now)
 def _log_timeline(run_metadata, name='timeline', step=0):
     fetched_timeline = timeline.Timeline(run_metadata.step_stats)
     chrome_trace = fetched_timeline.generate_chrome_trace_format()
@@ -42,7 +38,7 @@ class RunnerConfig:
         adopt the default RunnerConfig.
 
 
-        Args:AutoDist
+        Args:
             config_file (string, optional): file path to the config file . Defaults to None.
         """
         self.trace_level = config_pb2.RunOptions.NO_TRACE
@@ -68,7 +64,6 @@ class Runner:
         self._session = None
         self._fd = {}
         self._ph_feed_index = {}
-        self._fetches = []
 
     def _clean(self):
         logging.debug('Tearing down clients...')
@@ -110,27 +105,6 @@ class Runner:
             else:
                 self._fd[x] = kwargs[self._ph_feed_index[x]]
 
-    def _remap_fetches(self, graph, fetch):
-        remap = {
-            ops.Tensor: graph.get_tensor_by_name,
-            ops.Operation: graph.get_operation_by_name,
-            ResourceVariable: lambda name: resource_variable.get_read_var_tensor(graph.get_tensor_by_name(name).op)
-        }
-        if isinstance(fetch, (tuple, list)):
-            return [self._remap_fetches(graph, f) for f in fetch]
-        else:
-            try:
-                fetch_type = type(fetch)
-                if fetch_type not in remap:
-                    raise TypeError('Fetch type {} not supported.'.format(fetch_type))
-                return remap[fetch_type](fetch.name)
-            except KeyError:
-                replica_f_name = ops.prepend_name_scope(fetch.name, replica_prefix(0))
-                # TODO: make this a reasonable fetch for replicated tensors
-                # replica_f1_name = ops.prepend_name_scope(fetch.name, replica_prefix(1))
-                logging.warning('Fetching replicated tensor "{}" now gets: "{}"'.format(fetch.name, replica_f_name))
-                return remap[type(fetch)](replica_f_name)
-
     def _init_ds_iterator(self, iter_fd, graph):
         if not iter_fd:
             return
@@ -156,7 +130,6 @@ class Runner:
         with self._graph_item.graph.as_default() as graph:
             if not self._session:
                 self._create_feed_dict(graph, args_ph_map)
-                self._fetches = self._remap_fetches(graph, fetches)
 
                 target = self._cluster.get_local_session_target()
                 self._session = Session(target=target, config=config_pb2.ConfigProto(
@@ -171,9 +144,10 @@ class Runner:
                     self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
                 )
                 self._init_ds_iterator(iter_fd, graph)
-                # AutoDist initializations
-                for op in autodist.const.InitOps:
-                    self._run_by_name(op.value)
+
+                # # AutoDist initializations
+                # for op in autodist.const.InitOps:
+                #     self._run_by_name(op.value)
 
             # fill out the feed_dict with new batch
             self._refill_fd(args, kwargs)
@@ -183,13 +157,14 @@ class Runner:
                     trace_level=self._config.trace_level
                 )
                 run_metadata = config_pb2.RunMetadata()
-                p = self._session.run(self._fetches,
+                p = self._session.run(fetches,
                                       options=options,
                                       run_metadata=run_metadata,
                                       feed_dict=self._fd)
                 _log_timeline(run_metadata)
             else:
-                p = self._session.run(self._fetches, feed_dict=self._fd)
+                p = self._session.run(fetches, feed_dict=self._fd)
+
         return p
 
     # TODO: v2 way of execution

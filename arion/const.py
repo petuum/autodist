@@ -10,6 +10,9 @@ DEFAULT_SERIALIZATION_DIR = os.path.join(DEFAULT_WORKING_DIR, 'strategies')
 os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
 DEFAULT_PORT_RANGE = iter(range(15000, 16000))
 
+# For Allreduce and Collective Ops
+DEFAULT_GROUP_LEADER = '/job:worker/replica:0/task:0'
+
 
 class Env(Enum):
     """AutoDist Environment Variables."""
