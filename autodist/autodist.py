@@ -85,7 +85,11 @@ class AutoDist:
 
         self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
 
-        transformed_graph_item = GraphTransformer(strategy=strategy, cluster=self._cluster)(self._original_graph)
+        megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
+        transformed_graph_item = megatron.transform(self._original_graph)
+        # remap fetches and returns
+        new_fetches, remap_return_func = megatron.remap_io(transformed_graph_item, fetches)
+
         runner = Runner(
             graph_item=transformed_graph_item,
             cluster=self._cluster,
@@ -94,7 +98,7 @@ class AutoDist:
 
         def run_fn(args, kwargs, args_ph_map, iter_fd):
             try:
-                return runner.run(fetches, args, kwargs, args_ph_map, iter_fd)
+                return remap_return_func(runner.run(new_fetches, args, kwargs, args_ph_map, iter_fd))
             except KeyboardInterrupt:
                 logging.info('KeyboardInterrupt')
                 exit(1)
@@ -171,6 +175,7 @@ class AutoDist:
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Session-like interface."""
+        raise NotImplementedError()
 
     def function(self, fn):
         """Decorator Interface."""

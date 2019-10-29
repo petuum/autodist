@@ -18,13 +18,15 @@ resource_specs = [
     os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),
     # os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
     ]
-strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS']
+strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce']
 
 @pytest.mark.integration
 def test_all():
     combinations = itertools.product(resource_specs, strategies)
     for r, s in combinations:
         for c in cases:
+            if s == 'AllReduce' and c not in [c0, c1]:
+                continue
             def run():
                 """This wrapper will handle the AutoDist destructor and garbage collections."""
                 atexit._clear()  # TensorFlow also uses atexit, but running its exitfuncs cause some issues

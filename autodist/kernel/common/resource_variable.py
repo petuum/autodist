@@ -127,7 +127,7 @@ class ResourceVariableReplicator:
         new_colocation_group = []
         for colocation_group in self._this_op.colocation_groups():
             current_binding_op = get_colocation_op(colocation_group)
-            if current_binding_op in self._mirror_vars:
+            if current_binding_op == self._this_op:
                 replica_index = 0
                 if len(self._mirror_vars) > 1:
                     # Mirror variables are created on GPU, find one on the same GPU

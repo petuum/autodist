@@ -245,7 +245,7 @@ class GraphItem:
             var_scope = var_op.name
             update_op_scope = parse_name_scope(op.name)
             is_initialization = update_op_scope == var_scope
-            is_saving = update_op_scope.startswith('save')
+            is_saving = update_op_scope.startswith('save')  # is this safe if AutoDist appends "save" in the future?
             if on_trainable_variable and not is_initialization and not is_saving:
                 # TODO: Support One Var -> Multiple Grad Update Ops
                 res[var_op.name] = expected_var_ops[var_op] + (op, )

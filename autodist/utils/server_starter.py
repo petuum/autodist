@@ -4,9 +4,10 @@ import argparse
 import json
 import os
 
+from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.training.server_lib import ClusterSpec, Server
 
-from autodist.const import DEFAULT_WORKING_DIR
+from autodist.const import DEFAULT_WORKING_DIR, DEFAULT_GROUP_LEADER
 
 
 def start_server(cluster_spec, job_name: str, task_index: int):
@@ -18,10 +19,15 @@ def start_server(cluster_spec, job_name: str, task_index: int):
         job_name: TensorFlow job name
         task_index: TensorFlow task index
     """
+    # TODO(Peng): this should be less hard coded ad based on strategy
+    experimental = config_pb2.ConfigProto.Experimental(
+        collective_nccl=True,
+        collective_group_leader=DEFAULT_GROUP_LEADER)
     s = Server(
         ClusterSpec(cluster_spec),
         job_name=job_name,
-        task_index=task_index
+        task_index=task_index,
+        config=config_pb2.ConfigProto(experimental=experimental)
     )
     s.join()
 
