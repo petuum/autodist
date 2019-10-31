@@ -56,7 +56,6 @@ class SimpleModel():
         loss = tf.reduce_mean(loss)
         return loss
 
-    @autodist.function
     def train_fn(self, xy):
         x, y = xy
         #with tf.GradientTape() as tape:
@@ -86,10 +85,11 @@ def main(_):
         # my_iterator = MyIterator().get_next()
         model = SimpleModel()
         prev_time = time.time()
+        # fetch train_op and loss
+        loss_fn, train_op = model.train_fn(my_iterator)
+        sess = autodist.create_distributed_session()
         for local_step in range(max_steps):
-            # fetch train_op and loss
-            loss, _ = model.train_fn(my_iterator)
-            # loss, _ = autodist.run(model.train_fn, my_iterator)
+            loss, _ = sess.run(fetches=[loss_fn, train_op])
             if local_step % log_frequency == 0:
                 cur_time = time.time()
                 elapsed_time = cur_time - prev_time
