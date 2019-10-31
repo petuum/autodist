@@ -67,7 +67,7 @@ class GraphTransformer:
 
         return final_item
 
-    def remap_io(self, graph_item, fetches):
+    def remap_io(self, graph_item, fetches, feed_dict=None):
         """
         Remap the user-provided fetches to the right list of fetches after graph transformations.
 
@@ -79,6 +79,7 @@ class GraphTransformer:
         Args:
             graph_item: the transformed graph item
             fetches: the original fetches from user code
+            feed_dict: the original feed_dict from user code
 
         Returns:
             new_fetches (list) : a list of new fetches for execution
@@ -93,8 +94,24 @@ class GraphTransformer:
                    for fetch in fetches]
             return ret if len(ret) > 1 else ret[0]
 
+        # TODO: Handle Feed Fetch for both Graph and FuncGraph in the style of tensorflow.python.client._HandleFetch
         new_fetches, name_to_remapped_indices = self._remap_fetches(graph_item.graph, fetches)
-        return new_fetches, remap_return_func
+        new_feed_dict = self._remap_feed_dict(graph_item.graph, feed_dict)
+        return new_fetches, new_feed_dict, remap_return_func
+
+    def _remap_feed_dict(self, graph, feed_dict):
+        if feed_dict is None:
+            return None
+        new_feed_dict = {}
+        for t, v in feed_dict.items():
+            try:
+                d = {graph.get_tensor_by_name(t.name): v}
+            except KeyError:
+                # Temporary Workaround for SYM-9004
+                d = {ops.prepend_name_scope(t.name, replica_prefix(i)): v for i in range(self.num_local_replica)}
+                logging.warning('Feed key %s is remapped to all replicas for the same value.' % t.name)
+            new_feed_dict.update(d)
+        return new_feed_dict
 
     def _remap_fetches(self, graph, fetches):
         """
@@ -128,8 +145,8 @@ class GraphTransformer:
             ops.Operation: graph.get_operation_by_name,
             ResourceVariable: lambda name: resource_variable.get_read_var_tensor(graph.get_tensor_by_name(name).op)
         }
+        fetch_type = type(fetch)
         try:
-            fetch_type = type(fetch)
             if fetch_type not in remap:
                 raise TypeError('Fetch type {} not supported.'.format(fetch_type))
             return [remap[fetch_type](fetch.name)]
@@ -138,9 +155,9 @@ class GraphTransformer:
             # For fetches that are stateful operations (i.e. train_op), fetch them on all replicas
             # For fetches that are tensors or variables, only fetch it on master_replica
             if fetch_type is ops.Operation and remap[type(fetch)](master_replica_name).op_def.is_stateful:
-                logging.warning('Fetch %s have been reampped to all replicas' % fetch.name)
+                logging.warning('Fetch %s is remapped to all replicas' % fetch.name)
                 return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
                         for i in range(self.num_local_replica)]
             else:
-                logging.warning('Fetch %s have been reampped to %s' % (fetch.name, master_replica_name))
+                logging.warning('Fetch %s is remapped to %s' % (fetch.name, master_replica_name))
                 return [remap[type(fetch)](master_replica_name)]

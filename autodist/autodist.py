@@ -15,9 +15,9 @@ from autodist.const import Env
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.common.utils import get_op_name
-from autodist.resource_spec import ResourceSpec
-from autodist.runner import Runner, RunnerConfig
 from autodist.kernel.graph_transformer import GraphTransformer
+from autodist.resource_spec import ResourceSpec
+from autodist.runner import Runner, RunnerConfig, WrappedSession
 from autodist.strategy.base import StrategyBuilder
 from autodist.utils import logging
 from autodist.utils.code_transformer import transform
@@ -26,16 +26,7 @@ IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 
-class AutoDist:
-    """
-    User Interface.
-
-    Notes:
-        * Don't initialize session here.
-        * Independent of distributed logic.
-    """
-
-    CacheKey = namedtuple('CacheKey', ['fn'])
+class _AutoDistInterface:
 
     def __init__(self, resource_spec_file, strategy_name=None, runner_config_file=None):
         self._original_graph = GraphItem(graph=ops.Graph())
@@ -45,9 +36,6 @@ class AutoDist:
 
         self._cluster = None
         self._coordinator = None
-        self._cache = {}
-        self._args_ph_map = {}
-        self._iter_fd = None
 
     @tf_contextlib.contextmanager
     def scope(self, graph_mode=True):
@@ -77,6 +65,40 @@ class AutoDist:
             s = StrategyBuilder.load_strategy()
         return s
 
+
+class _V1(_AutoDistInterface):
+
+    def create_distributed_session(self, *args, **kwargs):
+        strategy = self.build_strategy(self._original_graph)
+
+        self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
+
+        megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
+        transformed_graph_item = megatron.transform(self._original_graph)
+
+        if IS_AUTODIST_CHIEF:
+            # we should only have one single coordinator for one single AutoDist() instance scope,
+            # even though we could have multiple strategies.
+            # TODO: optimize this and serialization
+            if not self._coordinator:
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
+            # if not started
+            self._cluster.start()
+            self._coordinator.launch_clients()
+
+        return WrappedSession(graph_item=transformed_graph_item, remap_io=megatron.remap_io, cluster=self._cluster)
+
+
+class _V2Graph(_AutoDistInterface):
+
+    CacheKey = namedtuple('CacheKey', ['fn'])
+
+    def __init__(self, resource_spec_file, strategy_name=None, runner_config_file=None):
+        self._cache = {}
+        self._args_ph_map = {}
+        self._iter_fd = None
+        super().__init__(resource_spec_file, strategy_name=strategy_name, runner_config_file=runner_config_file)
+
     def _build(self, fetches):
         """Core Logic."""
         # this line will traverse the graph and generate necessary stats
@@ -88,7 +110,7 @@ class AutoDist:
         megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
         transformed_graph_item = megatron.transform(self._original_graph)
         # remap fetches and returns
-        new_fetches, remap_return_func = megatron.remap_io(transformed_graph_item, fetches)
+        new_fetches, _, remap_return_func = megatron.remap_io(transformed_graph_item, fetches)
 
         runner = Runner(
             graph_item=transformed_graph_item,
@@ -173,10 +195,6 @@ class AutoDist:
         ds_iter = dataset_ops.make_one_shot_iterator(dataset)
         return ds_iter.get_next()
 
-    def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
-        """Session-like interface."""
-        raise NotImplementedError()
-
     def function(self, fn):
         """Decorator Interface."""
         __build_and_run = self._build_and_run
@@ -185,3 +203,17 @@ class AutoDist:
             return __build_and_run(fn, *args, **kwargs)
 
         return wrapper
+
+
+class _V2Eager(_AutoDistInterface):
+    """Interface for TensorFlow>=2.x Eager Mode."""
+
+    # def experimental_function(self, fn):
+    #     def wrapper(*args, **kwargs):
+    #         print(self._original_graph)
+    #         return fn(*args, **kwargs)
+    #     return wrapper
+
+
+class AutoDist(_V1, _V2Graph, _V2Eager):
+    """User Interface."""

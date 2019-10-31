@@ -6,9 +6,10 @@ import pytest
 import os
 
 from autodist import AutoDist
-from .cases import c0, c1, c2, c3
+from .cases import c0, c1, c2, c3, v1_interface
 
 cases = [
+    v1_interface, # v1-style interfaces
     c0,  # TensorFlow 2.0 basics
     c1,  # Keras basics
     c2,  # Sparse basics

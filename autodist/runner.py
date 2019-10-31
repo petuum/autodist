@@ -4,8 +4,7 @@ import os
 
 import yaml
 from tensorflow.core.protobuf import config_pb2
-from tensorflow.python.client import timeline
-from tensorflow.python.client.session import Session
+from tensorflow.python.client import timeline, session
 
 import autodist.const
 from autodist.utils import logging
@@ -70,17 +69,6 @@ class Runner:
         # Resetting the variable reference triggers the garbage collection when it jumps out the local
         self._session = None
 
-    def _run_by_name(self, name, session=None):
-        """Run graph by op or tensor name."""
-        session = self._session if not session else session
-        graph = session.graph
-        try:
-            op = graph.get_operation_by_name(name)
-            logging.info('Run by name:\n{}'.format(op))
-            session.run(op)
-        except KeyError:
-            pass
-
     # We have to remap the inputs (args and kwargs) to the right placeholder
     # created in the *replicated* graph. args_ph_map holds a map of placeholder
     # *names* to the argument tensor. Note that there are N copies of a
@@ -132,7 +120,7 @@ class Runner:
                 self._create_feed_dict(graph, args_ph_map)
 
                 target = self._cluster.get_local_session_target()
-                self._session = Session(target=target, config=config_pb2.ConfigProto(
+                self._session = session.Session(target=target, config=config_pb2.ConfigProto(
                     allow_soft_placement=True,
                     # log_device_placement=True
                 ))
@@ -144,10 +132,6 @@ class Runner:
                     self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
                 )
                 self._init_ds_iterator(iter_fd, graph)
-
-                # # AutoDist initializations
-                # for op in autodist.const.InitOps:
-                #     self._run_by_name(op.value)
 
             # fill out the feed_dict with new batch
             self._refill_fd(args, kwargs)
@@ -170,3 +154,33 @@ class Runner:
     # TODO: v2 way of execution
     # def run_v2():
     # to_func(self.distributed_graph)()
+
+
+class WrappedSession:
+    """Wrapped Session."""
+
+    def __init__(self, graph_item, remap_io, cluster):
+        self._graph_item = graph_item
+        self._remap_io = remap_io
+        self._cluster = cluster
+
+        target = self._cluster.get_local_session_target()
+        self._session = session.Session(target=target, graph=self._graph_item.graph, config=config_pb2.ConfigProto(
+            allow_soft_placement=True,
+            # log_device_placement=True
+        ))
+
+        # TensorFlow default initializations
+        # TODO: Rethink. Should we do this?
+        self._session.run(
+            self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
+        )
+
+    def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
+        """Wrapped Session.run."""
+        new_fetches, new_feed_dict, remap_return_func = self._remap_io(self._graph_item, fetches, feed_dict)
+        return remap_return_func(
+            self._session.run(
+                new_fetches, feed_dict=new_feed_dict, options=options, run_metadata=run_metadata
+            )
+        )
