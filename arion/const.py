@@ -22,6 +22,7 @@ class Env(Enum):
 
 
 MAX_INT64 = int(2 ** 63 - 1)
+MAX_INT32 = int(2 ** 31 - 1)
 COLOCATION_PREFIX = b"loc:@"
 AUTODIST_PREFIX = u"AutoDist-"
 AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX

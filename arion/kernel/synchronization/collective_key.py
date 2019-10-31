@@ -1,5 +1,8 @@
 """Utility function or classes for syncers."""
 import threading
+import hashlib
+
+from autodist.const import MAX_INT32
 
 
 _collective_keys = None
@@ -27,12 +30,10 @@ class CollectiveKey:
     """A hash that generates group key and instance key for allreduce."""
 
     def __init__(self,
-                 group_key_start=1,
-                 instance_key_start=1000):
+                 group_key_start=1):
         """Init the collective key."""
         self._group_key = group_key_start
         self._group_key_dict = {}
-        self._instance_key = instance_key_start
         self._instance_key_dict = {}
 
     def get_group_key(self, canonical_devices):
@@ -47,11 +48,10 @@ class CollectiveKey:
             self._group_key_dict[key_id] = new_key
         return self._group_key_dict[key_id]
 
-    def get_instance_key(self, var_name):
-        """Generate or retrieve the instance key based on the *original* variable name."""
-        key_id = var_name
+    def get_instance_key(self, var_op_name):
+        """Generate or retrieve the instance key based on the *original* variable op name."""
+        key_id = var_op_name
         if key_id not in self._instance_key_dict:
-            new_key = self._instance_key
-            self._instance_key += 1
+            new_key = int(hashlib.md5(var_op_name.encode()).hexdigest(), 16) % MAX_INT32
             self._instance_key_dict[key_id] = new_key
         return self._instance_key_dict[key_id]
