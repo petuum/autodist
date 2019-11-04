@@ -61,7 +61,6 @@ dist_tests:
      - source scripts/distribution_setup.sh
    script:
      # execution entrance code
-     # - ssh -i /tmp/credentials/id_rsa autodist@$NODE1 'bash -c "source /home/autodist/venv/autodist/bin/activate; pytest -s /home/autodist/autodist/tests/integration/test_dist.py"'
      - ssh -i /tmp/credentials/id_rsa autodist@$NODE1 "bash /home/autodist/autodist/scripts/distributed_test_trigger.sh"
 
 build_wheel:
