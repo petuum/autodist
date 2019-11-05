@@ -22,9 +22,18 @@ class StrategyBuilder:
         self._resource_spec = resource_spec
 
     @classmethod
+    def all_subclasses(cls):
+        """Get all subclasses recursively as a set."""
+        subclasses = set()
+        for subclass in cls.__subclasses__():
+            subclasses.add(subclass)
+            subclasses.update(subclass.all_subclasses())
+        return subclasses
+
+    @classmethod
     def get_subclasses(cls):
-        """Get all strategy builders."""
-        return {c.__name__: c for c in cls.__subclasses__()}
+        """Get the mapping between strategy name and strategy classes."""
+        return {c.__name__: c for c in cls.all_subclasses()}
 
     @classmethod
     def build(cls, item, resource_spec, strategy_name):

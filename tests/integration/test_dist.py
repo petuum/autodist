@@ -16,7 +16,7 @@ resource_specs = [
     # os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),
     os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
     ]
-strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce']
+strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce', 'Parallax']
 
 
 def test_dist():
