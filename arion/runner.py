@@ -1,6 +1,7 @@
 """Runner."""
 import atexit
 import os
+import hashlib
 
 import yaml
 from tensorflow.core.protobuf import config_pb2
@@ -8,6 +9,18 @@ from tensorflow.python.client import timeline, session
 
 import autodist.const
 from autodist.utils import logging
+from autodist.const import Env, MAX_INT32
+
+
+RUN_OPTIONS = config_pb2.RunOptions()
+# Force every worker session to use different collective graph keys,
+# thus to make session run has different TensorFlow step_ids when fetching collective_op.
+# A different step_id avoids skipping re-initialization of a rendezvous object.
+# Shared step_id may cause racing for different sessions, across which some variable is shared.
+# For more information, please refer to TensorFlow worker.proto: `collective_graph_key`
+RUN_OPTIONS.experimental.collective_graph_key = int(
+    hashlib.md5(os.environ.get(Env.AUTODIST_WORKER.name, '').encode()).hexdigest(), 16
+) % MAX_INT32
 
 
 # TODO(Hao): could extend this to use tfprof (though I don't
@@ -140,14 +153,15 @@ class Runner:
                 options = config_pb2.RunOptions(
                     trace_level=self._config.trace_level
                 )
+                RUN_OPTIONS.MergeFrom(options)
                 run_metadata = config_pb2.RunMetadata()
                 p = self._session.run(fetches,
-                                      options=options,
+                                      options=RUN_OPTIONS,
                                       run_metadata=run_metadata,
                                       feed_dict=self._fd)
                 _log_timeline(run_metadata)
             else:
-                p = self._session.run(fetches, feed_dict=self._fd)
+                p = self._session.run(fetches, feed_dict=self._fd, options=RUN_OPTIONS)
 
         return p
 
@@ -179,8 +193,10 @@ class WrappedSession:
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Wrapped Session.run."""
         new_fetches, new_feed_dict, remap_return_func = self._remap_io(self._graph_item, fetches, feed_dict)
+        if options:
+            RUN_OPTIONS.MergeFrom(options)
         return remap_return_func(
             self._session.run(
-                new_fetches, feed_dict=new_feed_dict, options=options, run_metadata=run_metadata
+                new_fetches, feed_dict=new_feed_dict, options=RUN_OPTIONS, run_metadata=run_metadata
             )
         )
