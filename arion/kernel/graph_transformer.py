@@ -10,7 +10,7 @@ from autodist.kernel.partitioner import VariablePartitioner
 from autodist.kernel.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.strategy.base import StrategyCompiler
-from autodist.kernel.common import resource_variable
+from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
 from autodist.kernel.common.utils import replica_prefix
 from autodist.utils import logging, visualization_util
 
@@ -143,7 +143,7 @@ class GraphTransformer:
         remap = {
             ops.Tensor: graph.get_tensor_by_name,
             ops.Operation: graph.get_operation_by_name,
-            ResourceVariable: lambda name: resource_variable.get_read_var_tensor(graph.get_tensor_by_name(name).op)
+            ResourceVariable: lambda name: get_read_var_tensor(graph.get_tensor_by_name(name).op)
         }
         fetch_type = type(fetch)
         try:

@@ -16,10 +16,11 @@ cases = [
     c3   # Numpy basics
 ]
 resource_specs = [
-    os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),
-    # os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
+    os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),  # single node with 2 GPUs
+    os.path.join(os.path.dirname(__file__), 'resource_specs/r2.yml')  # single node with 1 GPU
     ]
-strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce', 'Parallax']
+strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce', 'Parallax',
+              'PSProxy', 'PSLoadBalancingProxy', 'PartitionedPSProxy', 'ParallaxProxy']
 
 @pytest.mark.integration
 def test_all():
@@ -27,6 +28,8 @@ def test_all():
     for r, s in combinations:
         for c in cases:
             if s == 'AllReduce' and c not in [c0, c1]:
+                continue
+            if s in ['AllReduce', 'Parallax', 'ParallaxProxy'] and r == resource_specs[1]:
                 continue
             def run():
                 """This wrapper will handle the AutoDist destructor and garbage collections."""

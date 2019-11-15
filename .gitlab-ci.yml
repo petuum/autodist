@@ -51,6 +51,7 @@ dist_tests:
    stage: test_dist
    only:
       - master
+      - new-var-replication
       - /^release-.+$/
    image: '${TOOLCHAIN_IMAGE_DIST}'
    tags:

@@ -8,12 +8,13 @@ from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops,
 from tensorflow.python.platform import tf_logging as logging
 
 from autodist.const import MAX_INT64, AUTODIST_PREFIX
-from autodist.kernel.common import utils, resource_variable
+from autodist.kernel.common import utils, resource_variable_utils
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
-from autodist.kernel.common.resource_variable import get_read_var_ops
+from autodist.kernel.common.resource_variable_utils import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
     update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, remove_control_input
 from autodist.kernel.synchronization.synchronizer import Synchronizer
+from autodist.kernel.common.proxy_variable import ProxyVariable
 
 
 class PSSynchronizer(Synchronizer):
@@ -49,7 +50,7 @@ class PSSynchronizer(Synchronizer):
             master_var_name = ops.prepend_name_scope(var_name, replica_prefix(0))
             master_var_op_name = get_op_name(master_var_name)
             grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
-            agg_grad = self._aggregate_gradidents(item, old_update_op=update_op, old_grad=grad, old_target=target)
+            agg_grad = self._aggregate_gradients(item, old_update_op=update_op, old_grad=grad, old_target=target)
 
         # update grad_target_pair and variable info
         for i in range(self.num_replicas):
@@ -104,7 +105,7 @@ class PSSynchronizer(Synchronizer):
             new_handle_op = graph_item.graph.get_operation_by_name(new_handle_op_name)
             update_consumers(list(handle_consumers), this_var_op.outputs[0], new_handle_op.outputs[0])
 
-    def _aggregate_gradidents(self, graph_item, old_update_op, old_grad, old_target):
+    def _aggregate_gradients(self, graph_item, old_update_op, old_grad, old_target):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
@@ -123,6 +124,8 @@ class PSSynchronizer(Synchronizer):
         # Hierarchical reduction at local node
         reduce_to_device = device_spec.DeviceSpecV2.from_string(self.worker_device). \
             replace(device_type='CPU', device_index=0)
+
+        # TODO(Hao): rethink this -- is this correct?
         graph_item.graph.get_operation_by_name(old_target.op.name)._set_device_from_string(self.target_device)
         graph_item.graph.get_operation_by_name(old_update_op.name)._set_device_from_string(self.target_device)
 
@@ -180,34 +183,31 @@ class PSSynchronizer(Synchronizer):
             for c_output in update_op._control_outputs:  # pylint: disable=protected-access
                 remove_control_input(c_output, update_op)
 
-    # pylint: disable=arguments-differ
-    def between_graph_apply(self, graph_item, update_op, gradient, target):
+    def between_graph_apply(self, graph_item, var_name):
         """
         Apply between-graph synchronization to the target ops in the graph.
 
         Args:
             graph_item: The current graph.
-            update_op: The update op.
-            gradient: The target gradient.
-            target: The target op.
+            var_name: the variable to be synchronized.
 
         Returns:
-            ResourceVariableReplicator
+            GraphItem: updated graph item.
         """
-        variable_replicator = None
-        if self._local_replication:
-            variable_replicator = self._replicate_variable_to_devices(
-                graph_item, gradient, target, self.worker_device, self.num_replicas
-            )
+        item = graph_item.copy()
 
-        self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = self._get_accumulation_ops(graph_item, gradient,
-                                                                                              target, self.num_workers)
-
-        # TODO(): update graph_item info and grad target pair after between-graph transformation
-        if self._sync:
-            self.add_sync_op(graph_item, update_op, variable_replicator)
-
-        return variable_replicator
+        # here the variable on replica:0 has been shared, so the original var_name won't work
+        var_op_name = ops.prepend_name_scope(get_op_name(var_name), replica_prefix(0))
+        gradient, target, update_op = item.var_op_name_to_grad_info[var_op_name]
+        with item.graph.as_default():
+            proxy = self._create_proxy(item, gradient, target) if self._local_replication else None
+            if proxy:
+                proxy.update_colocation_group(item.get_colocation_op)
+            self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = \
+                self._get_accumulation_ops(item, gradient, target, self.num_workers)
+            if self._sync:
+                self.add_sync_op(item, update_op, proxy)
+        return item
 
     def add_sync_op(self, graph_item, var_update_op, variable_replicator=None):
         """
@@ -372,29 +372,30 @@ class PSSynchronizer(Synchronizer):
                 )
         return ops.IndexedSlices(new_values, new_indices, new_dense_shape)
 
-    @staticmethod
-    def _replicate_variable_to_devices(graph_item, gradient, target, worker_device, num_replicas_per_worker):
-
-        if not isinstance(gradient, ops.Tensor):
-            # Do not replicate sparse variables
+    def _create_proxy(self, graph_item, gradient, target):
+        # Do not replicate sparse variables
+        if not isinstance(gradient, ops.Tensor) \
+                or self.worker_device in self.target_device:  # meaning the variable is local
             return None
-
-        worker_device = device_spec.DeviceSpecV2.from_string(worker_device)
+        d = device_spec.DeviceSpecV2.from_string(self.worker_device)
         master_var = graph_item.trainable_var_op_to_var.get(target.op)
-        mirror_var_device = device_spec.DeviceSpecV2(job=worker_device.job,
-                                                     replica=worker_device.replica,
-                                                     task=worker_device.task)
-        resource_var_replicator = resource_variable.ResourceVariableReplicator(
-            master_var, graph_item
-        ).build_mirror_vars(mirror_var_device, num_replicas_per_worker)
-
-        return resource_var_replicator
+        master_var_device = device_spec.DeviceSpecV2.from_string(master_var.device)
+        device_type = 'GPU' \
+            if master_var_device.device_type and master_var_device.device_type.upper() == 'GPU'\
+            else 'CPU'
+        device_index = 0 if device_type == 'CPU' else master_var_device.device_index
+        proxy_var_device = device_spec.DeviceSpecV2(job=d.job,
+                                                    replica=d.replica,
+                                                    task=d.task,
+                                                    device_type=device_type,
+                                                    device_index=device_index)
+        return ProxyVariable(master_var, graph_item, proxy_var_device)
 
     @staticmethod
     def _get_accumulation_ops(graph_item, gradient, target, num_workers):
         def _get_accum_apply_and_agg_grad(var_op, grad, indices, dense_shape):
             if indices is None:
-                tensor = resource_variable.get_read_var_tensor(var_op)
+                tensor = resource_variable_utils.get_read_var_tensor(var_op)
                 grad_accum = data_flow_ops.ConditionalAccumulator(
                     grad.dtype,
                     shape=tensor.get_shape(),

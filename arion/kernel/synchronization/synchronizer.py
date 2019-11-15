@@ -55,13 +55,13 @@ class Synchronizer(ABC):
         return
 
     @abstractmethod
-    def between_graph_apply(self, *args, **kwargs):
+    def between_graph_apply(self, graph_item, var_name):
         """
         Apply between-graph synchronization to the target ops in the graph.
 
         Args:
-            *args: Leaving these up to the implementation until we find a universal signature.
-            **kwargs: See above.
+            graph_item (GraphItem): The graph to put the new ops in.
+            var_name (str): The variable name w/o the replica prefix.
 
         Returns:
             GraphItem
