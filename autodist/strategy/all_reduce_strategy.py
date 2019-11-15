@@ -38,7 +38,8 @@ class AllReduce(StrategyBuilder):
             'synchronizer': {
                 'type': 'AllReduceSynchronizer',
                 'config': {
-                    'spec': all_reduce_spec
+                    'spec': all_reduce_spec,
+                    'compressor': 'NoneCompressor',
                 }
             }
         }

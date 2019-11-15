@@ -1,13 +1,15 @@
 """AllReduce Synchronizer."""
+from collections import defaultdict
+
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
-from tensorflow.python.ops import collective_ops
 
 from autodist.kernel.common.utils import get_consumers, update_consumers, \
     replica_prefix
 from autodist.kernel.common.utils import get_op_name
-from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.kernel.synchronization.collective_key import get_collective_keys
+from autodist.kernel.synchronization.compressor import Compressor, CollectiveOpsConfig
+from autodist.kernel.synchronization.synchronizer import Synchronizer
 
 
 class AllReduceSynchronizer(Synchronizer):
@@ -23,8 +25,9 @@ class AllReduceSynchronizer(Synchronizer):
     (2) any other types of hybrid reduction of PS and Allreduce.
     """
 
-    def __init__(self, spec):
+    def __init__(self, spec, compressor):
         self._spec = spec
+        self._compressor_type = compressor
         super().__init__()
 
     def in_graph_apply(self, graph_item, var_name):
@@ -57,20 +60,23 @@ class AllReduceSynchronizer(Synchronizer):
 
     def _aggregate_gradients(self, graph_item, var_op_name):
         """Append collective ops after the gradient is calculated."""
+        compressors = defaultdict(lambda: Compressor.create(self._compressor_type, var_op_name))
+
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
             grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
             # TODO (Tairui): (3) Merge of reduction for performance
-            grad_consumers = get_consumers(grad.op)  # this line must happen before the next line
+            grad_consumers = get_consumers(grad.op)  # this line must happen before the reduction
+
+            conf = CollectiveOpsConfig()
+            conf.group_size = self.num_replicas * self.num_workers
+            conf.group_key = get_collective_keys().get_group_key(self.all_canonical_replica_devices)
+            conf.instance_key = get_collective_keys().get_instance_key(var_op_name)
+            conf.merge_op = 'Add'
+            conf.final_op = 'Div'
             with ops.name_scope(replica_prefix(i)):
                 with ops.colocate_with(grad.op):
-                    reduced_grad = collective_ops.all_reduce(
-                        grad,
-                        self.num_replicas * self.num_workers,
-                        get_collective_keys().get_group_key(self.all_canonical_replica_devices),
-                        get_collective_keys().get_instance_key(var_op_name),
-                        'Add',
-                        'Div')  # TODO(Hao): add in next TF version -- communication_hint = 'nccl'
+                    reduced_grad = compressors[i].reduce(grad, conf)
             update_consumers(grad_consumers, grad, reduced_grad)
             # TODO(Hao): update grad, target pair here or not?
 
@@ -83,7 +89,7 @@ class AllReduceSynchronizer(Synchronizer):
         master_init_tensor = graph_item.graph.get_tensor_by_name(master_var.initial_value.name)
         master_init_op = master_init_tensor.op
         # set the device of the init ops to reside on the chief device
-        master_init_device = device_spec.DeviceSpecV2.from_string(master_init_op.device)\
+        master_init_device = device_spec.DeviceSpecV2.from_string(master_init_op.device) \
             .replace(task=0)
         master_init_op._set_device_from_string(master_init_device.to_string())
 
