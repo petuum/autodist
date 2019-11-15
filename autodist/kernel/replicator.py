@@ -7,7 +7,7 @@ from tensorflow.python.framework.device_spec import DeviceSpecV2
 from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 
 from autodist.graph_item import GraphItem
-from autodist.kernel.common.utils import replica_prefix, strip_replica_prefix
+from autodist.kernel.common.utils import replica_prefix
 from autodist.utils import logging, visualization_util
 
 
@@ -51,7 +51,7 @@ class Replicator:
             GraphItem
         """
         new_graph_item = graph_item
-        if self._num_local_replicas > 1:
+        if self._num_local_replicas >= 1:
             new_graph_item = self.replicate(graph_item)
             logging.info('Successfully replicated operations')
 
@@ -90,30 +90,13 @@ class Replicator:
         Returns:
             GraphItem
         """
-        item = multi_gpu_graph_item.copy()
-
-        with item.graph.as_default():
-            with ops.device(self._local_worker_device):
-                mirrored_vars = {}
-                for gradient, target, update_op in item.var_op_name_to_grad_info.values():
-                    syncer_key = strip_replica_prefix(target.name)
-                    mirrored_vars[update_op] = self._synchronizers[syncer_key].between_graph_apply(
-                        item,
-                        update_op,
-                        gradient,
-                        target
-                    )
-                # resource_variable.gen_mirror_var_init_op(mirrored_vars.values())
-
-                for variable_replicator in mirrored_vars.values():
-                    if variable_replicator:
-                        variable_replicator.update_colocation_group(item.get_colocation_op)
-
-                self._prune_colocation_groups(item)
-
+        new_graph_item = multi_gpu_graph_item
+        for var_name, syncer in self._synchronizers.items():
+            new_graph_item = syncer.between_graph_apply(new_graph_item, var_name)
+        self._prune_colocation_groups(new_graph_item)
         # TODO: make this work
         # update_shard_values_for_worker(num_workers, worker_id)
-        return item
+        return new_graph_item
 
     def _replica_device_placer(self, replica_id):
         """A device placer function that places CPU-only ops on CPU instead of destination devices."""
@@ -175,6 +158,7 @@ class Replicator:
                 )
         return item
 
+    # TODO(Hao): this seems still problematic
     @staticmethod
     def _prune_colocation_groups(graph_item):
         for op in graph_item.graph.get_operations():
@@ -187,3 +171,9 @@ class Replicator:
                 new_colocation_groups = [c for (c, op) in colocation_groups if op.device == device_to_bind_to]
                 op._set_device(device_to_bind_to)
                 op._set_attr("_class", pb2_AttrValue(list=pb2_AttrValue.ListValue(s=new_colocation_groups)))
+            else:
+                try:
+                    if op.get_attr("_class"):
+                        op._clear_attr("_class")
+                except ValueError:
+                    pass

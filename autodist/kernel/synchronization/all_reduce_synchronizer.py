@@ -103,8 +103,7 @@ class AllReduceSynchronizer(Synchronizer):
             init_assign_op = get_consumers(init_op)[0]
             init_assign_op._update_input(1, master_init_tensor)
 
-    def between_graph_apply(self, *args, **kwargs):
+    # pylint: disable=no-self-use
+    def between_graph_apply(self, graph_item, var_name):
         """Allreduce synchronizer will do nothing in between-graph synchronization."""
-        # pylint: disable=no-self-use
-        # TODO (Hao): improve the signature after refactoring between_graph_apply signatures.
-        return None
+        return graph_item

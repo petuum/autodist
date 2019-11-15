@@ -1,5 +1,6 @@
+# Single node multi-gpu experiment
+
 nodes:
-# single-node experiment
   - address: localhost
     gpus: [0,1]
     chief: true

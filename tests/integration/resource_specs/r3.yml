@@ -1,11 +1,11 @@
-# Mutli-node multi-gpu experiment
+# multi-nodes, each node with one GPU experiment
 
 nodes:
   - address: 10.20.41.98
-    gpus: [0,1]
+    gpus: [0]
     chief: true
   - address: 10.20.41.19
-    gpus: [0,1]
+    gpus: [0]
 ssh:
   username: 'autodist'
   key_file: '/home/autodist/.ssh/id_rsa'

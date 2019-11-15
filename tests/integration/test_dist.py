@@ -1,10 +1,6 @@
-import atexit
 import itertools
-import pytest
-import subprocess
-
 import os
-
+import subprocess
 
 cases = [
     "c0",  # TensorFlow 2.0 basics
@@ -12,13 +8,14 @@ cases = [
     "c2",  # Sparse basics
     "c3"   # Numpy basics
 ]
+
 resource_specs = [
-    # os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),
     os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
+    os.path.join(os.path.dirname(__file__), 'resource_specs/r3.yml')
     ]
-strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce', 'Parallax']
 
-
+strategies = ['PS', 'PSLoadBalancing', 'PartitionedPS', 'AllReduce', 'Parallax',
+              'PSProxy', 'PSLoadBalancingProxy', 'PartitionedPSProxy', 'ParallaxProxy']
 def test_dist():
     combinations = itertools.product(resource_specs, strategies, cases)
     for r, s, c in combinations:
