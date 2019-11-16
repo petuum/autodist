@@ -3,9 +3,10 @@ from collections import defaultdict
 
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
+from tensorflow.python.ops import collective_ops
 
 from autodist.kernel.common.utils import get_consumers, update_consumers, \
-    replica_prefix
+    replica_prefix, get_control_consumers, update_control_consumers
 from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.synchronization.collective_key import get_collective_keys
 from autodist.kernel.synchronization.compressor import Compressor, CollectiveOpsConfig
@@ -49,16 +50,15 @@ class AllReduceSynchronizer(Synchronizer):
         # Throw an error if the variable is sparse
         master_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(0))
         grad, _, _ = graph_item.var_op_name_to_grad_info[master_op_name]
-        if isinstance(grad, ops.IndexedSlices):
-            raise ValueError('AllReduce synchronizer only supports dense gradients; \
-                              PS is recommended for sparse updates.')
-
         with item.graph.as_default():
             self._share_initializer(item, var_op_name, master_replica=0)
-            self._aggregate_gradients(item, var_op_name)
+            if isinstance(grad, ops.IndexedSlices):
+                self._collect_sparse_gradients(item, var_op_name)
+            else:
+                self._collect_dense_gradients(item, var_op_name)
         return item
 
-    def _aggregate_gradients(self, graph_item, var_op_name):
+    def _collect_dense_gradients(self, graph_item, var_op_name):
         """Append collective ops after the gradient is calculated."""
         compressors = defaultdict(lambda: Compressor.create(self._compressor_type, var_op_name))
 
@@ -79,6 +79,37 @@ class AllReduceSynchronizer(Synchronizer):
                     reduced_grad = compressors[i].reduce(grad, conf)
             update_consumers(grad_consumers, grad, reduced_grad)
             # TODO(Hao): update grad, target pair here or not?
+
+    def _collect_sparse_gradients(self, graph_item, var_op_name):
+        """Append collective ops after the gradient is calculated."""
+        if self.num_workers > 1:
+            raise NotImplementedError('Currently the collective all_gather is being fixed for multi-node execution. '
+                                      'Please choose another strategy.')
+        for i in range(0, self.num_replicas):
+            op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
+            grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
+            # TODO (Tairui): (3) Merge of reduction for performance
+            indices_c_ops = grad.indices.consumers()
+            indices_cc_ops = get_control_consumers(grad.indices.op)
+            values_c_ops = grad.values.consumers()
+            values_cc_ops = get_control_consumers(grad.values.op)
+            with ops.name_scope(replica_prefix(i)):
+                with ops.colocate_with(grad.indices.op):
+                    new_indices = collective_ops.all_gather(
+                        grad.indices,
+                        self.num_replicas * self.num_workers,
+                        get_collective_keys().get_group_key(self.all_canonical_replica_devices),
+                        get_collective_keys().get_instance_key(var_op_name + '-indices'))
+                with ops.colocate_with(grad.values.op):
+                    new_values = collective_ops.all_gather(
+                        grad.values,
+                        self.num_replicas * self.num_workers,
+                        get_collective_keys().get_group_key(self.all_canonical_replica_devices),
+                        get_collective_keys().get_instance_key(var_op_name + '-values'))
+            update_consumers(indices_c_ops, grad.indices, new_indices)
+            update_control_consumers(indices_cc_ops, grad.indices.op, new_indices.op)
+            update_consumers(values_c_ops, grad.values, new_values)
+            update_control_consumers(values_cc_ops, grad.values.op, new_values)
 
     def _share_initializer(self, graph_item, var_op_name, master_replica=0):
         """Share the initializers of all replica variables to use initializer on replica=master_replica."""
