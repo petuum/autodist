@@ -79,7 +79,7 @@ def main(_):
                                                               padding='post',
                                                               maxlen=256)
     train_labels = train_labels.astype(np.float32)
-    with autodist.scope():  # AutoDist code
+    with tf.Graph().as_default(), autodist.scope():  # AutoDist code
         my_iterator = tf.compat.v1.data.Dataset.from_tensor_slices((train_data, train_labels)) \
             .shuffle(25000).batch(batch_size).repeat().make_one_shot_iterator().get_next()
         # my_iterator = MyIterator().get_next()

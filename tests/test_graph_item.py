@@ -50,20 +50,6 @@ def model_keras_dense_and_sparse():
     return tf.keras.models.Model(inputs, layer)
 
 
-@pytest.mark.parametrize("iter_or_global_step", [True, False])
-def test_global_step_update_ops(iter_or_global_step):
-    graph, gradients, variables = model_simple()
-    with graph.as_default():
-        optimizer = tf.optimizers.SGD(0.01)
-        if iter_or_global_step:
-            optimizer.iterations = get_or_create_global_step()
-        optimizer.apply_gradients(zip(gradients, variables))
-
-    item = graph_item.GraphItem(graph=graph)
-    op = item.global_step_update_ops.pop()
-    assert op.inputs[UPDATE_OP_VAR_POS].op == optimizer.iterations.op
-
-
 @pytest.mark.parametrize(
     argnames='optimizer_class, kwargs',
     argvalues=[

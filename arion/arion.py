@@ -6,6 +6,7 @@ from collections import namedtuple
 
 import numpy as np
 from tensorflow.python.data.ops import dataset_ops
+from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
@@ -28,87 +29,89 @@ IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 class _AutoDistInterface:
 
-    def __init__(self, resource_spec_file, strategy_name=None, runner_config_file=None):
-        self._original_graph = GraphItem(graph=ops.Graph())
+    def __init__(self, resource_spec_file, strategy_name=None, strategy_path=None, runner_config_file=None):
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
         self._strategy_name = strategy_name
+        self._strategy_path = strategy_path
+        # TODO: deprecate the runner config
         self._runner_config = RunnerConfig(config_file=runner_config_file)
 
-        self._cluster = None
-        self._coordinator = None
+        self._original_graph_item = None
+        # TODO: separate the control
+        self._cluster: Cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
+        self._coordinator: Coordinator
 
     @tf_contextlib.contextmanager
-    def scope(self, graph_mode=True):
-        """Scope."""
-        with self._original_graph.as_default(graph_mode=graph_mode):
+    def _scope(self):
+        """Forward the context manager of a graph item."""
+        with self._original_graph_item.as_default():
             yield
 
-    def build_strategy(self, graph_item):
+    def build_strategy(self):
         """
         Build distributed strategy based on a graph item.
-
-        Args:
-            graph_item (GraphItem): AutoDist GraphItem object on which a distributed strategy will be generated.
 
         Returns:
             (Strategy) Distributed strategy representation object.
         """
-        graph_item.info.update(
-            variables=graph_item.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES),
-            table_initializers=graph_item.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS)
-        )
+        self._original_graph_item.prepare()
+        return StrategyBuilder.build(self._original_graph_item, self._resource_spec, self._strategy_name)
 
+    def _build_or_load_strategy(self):
         if IS_AUTODIST_CHIEF:
-            s = StrategyBuilder.build(graph_item, self._resource_spec, self._strategy_name)
+            s = self.build_strategy()
             s.serialize()
         else:
             s = StrategyBuilder.load_strategy()
         return s
 
-
-class _V1(_AutoDistInterface):
-
-    def create_distributed_session(self, *args, **kwargs):
-        strategy = self.build_strategy(self._original_graph)
-
-        self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
-
-        megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
-        transformed_graph_item = megatron.transform(self._original_graph)
-
+    def _setup(self, strategy):
+        """Prepare for the execution."""
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
-            # TODO: optimize this and serialization
-            if not self._coordinator:
-                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
-            # if not started
+            self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
             self._cluster.start()
             self._coordinator.launch_clients()
 
+
+class _GraphModeInterface(_AutoDistInterface):
+
+    def _initialize_graph(self):
+        """Postpone the initialization of the member original_graph_item to the scoping time."""
+        assert not context.executing_eagerly()
+        self._original_graph_item = GraphItem(graph=ops.get_default_graph())
+
+
+class _V1Graph(_GraphModeInterface):
+
+    def create_distributed_session(self, *args, **kwargs):
+        """Create a Session object to execute the default graph in a distributed manner."""
+        strategy = self._build_or_load_strategy()
+        megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
+        transformed_graph_item = megatron.transform(self._original_graph_item)
+
+        self._setup(strategy)
+
+        # TODO: use the outer args
         return WrappedSession(graph_item=transformed_graph_item, remap_io=megatron.remap_io, cluster=self._cluster)
 
 
-class _V2Graph(_AutoDistInterface):
-
+class _V2Graph(_GraphModeInterface):
     CacheKey = namedtuple('CacheKey', ['fn'])
 
-    def __init__(self, resource_spec_file, strategy_name=None, runner_config_file=None):
+    def __init__(self, *args, **kwargs):
         self._cache = {}
         self._args_ph_map = {}
         self._iter_fd = None
-        super().__init__(resource_spec_file, strategy_name=strategy_name, runner_config_file=runner_config_file)
+        super().__init__(*args, **kwargs)
 
     def _build(self, fetches):
         """Core Logic."""
-        # this line will traverse the graph and generate necessary stats
-
-        strategy = self.build_strategy(self._original_graph)
-
-        self._cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
-
+        strategy = self._build_or_load_strategy()
         megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
-        transformed_graph_item = megatron.transform(self._original_graph)
+        transformed_graph_item = megatron.transform(self._original_graph_item)
+
         # remap fetches and returns
         new_fetches, _, remap_return_func = megatron.remap_io(transformed_graph_item, fetches)
 
@@ -125,14 +128,7 @@ class _V2Graph(_AutoDistInterface):
                 logging.info('KeyboardInterrupt')
                 exit(1)
 
-        if IS_AUTODIST_CHIEF:
-            # we should only have one single coordinator for one single AutoDist() instance scope,
-            # even though we could have multiple strategies.
-            # TODO: optimize this and serialization
-            if not self._coordinator:
-                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
-
-        return run_fn
+        return strategy, run_fn
 
     def _get_new_args(self, args, kwargs):
         # Insert placeholders in place of ndarrays
@@ -167,11 +163,9 @@ class _V2Graph(_AutoDistInterface):
             fetches = fn(*args_with_ph, **kwargs_with_ph)
 
             # Build the strategy and get the runner with distributed graph
-            run_fn = self._build(fetches)
+            strategy, run_fn = self._build(fetches)
             # The boundary of graph construction and runtime
-            if IS_AUTODIST_CHIEF:
-                self._cluster.start()
-                self._coordinator.launch_clients()
+            self._setup(strategy)
             # Cache the runner
             self._cache[cache_id] = run_fn
 
@@ -207,13 +201,28 @@ class _V2Graph(_AutoDistInterface):
 
 class _V2Eager(_AutoDistInterface):
     """Interface for TensorFlow>=2.x Eager Mode."""
-
-    # def experimental_function(self, fn):
-    #     def wrapper(*args, **kwargs):
-    #         print(self._original_graph)
-    #         return fn(*args, **kwargs)
-    #     return wrapper
+    # TODO: Merge single node eager support from peng-tffunc and peng-eager
 
 
-class AutoDist(_V1, _V2Graph, _V2Eager):
-    """User Interface."""
+class AutoDist(_V1Graph, _V2Graph, _V2Eager):
+    """
+    AutoDist is a scalable ML engine.
+
+    AutoDist provides user-friendly interfaces to distribute local deep-learning model training
+        across multiple processing units with scalability and minimal code changes.
+    """
+
+    @tf_contextlib.contextmanager
+    def scope(self):
+        """
+        Returns a context manager capturing the code block to be distributed.
+
+        Returns:
+          A context manager.
+        """
+        if not context.executing_eagerly():
+            self._initialize_graph()
+        else:
+            raise NotImplementedError('AutoDist will support distributed execution under eager mode later.')
+        with self._scope():
+            yield

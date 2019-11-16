@@ -26,7 +26,7 @@ EPOCHS = 20
 
 #############################################################
 # Change 2: Put Model under the Scope
-with d.scope():
+with tf.Graph().as_default(), d.scope():
 #############################################################
 
     train_dataset = tf.data.Dataset.from_tensor_slices(

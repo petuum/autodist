@@ -170,17 +170,17 @@ class GraphItem:
         return [op.outputs[0] for op in self.trainable_var_op_to_var]
 
     @contextlib.contextmanager
-    def as_default(self, graph_mode=True):
+    def as_default(self):
         """A context scope with current graph item as the default."""
         global _default_graph_item
         if _default_graph_item:
             raise SyntaxError('GraphItem does not support nested contexts.')
         _default_graph_item = self
         # if global graph mode
-        if graph_mode:
+        if isinstance(self._graph, ops.Graph):
             with self._graph.as_default():  # enter graph mode
                 yield self
-        else:
+        else:  # case FuncGraph: keep its eager context
             yield self
         _default_graph_item = None
 
@@ -250,22 +250,6 @@ class GraphItem:
                 # TODO: Support One Var -> Multiple Grad Update Ops
                 res[var_op.name] = expected_var_ops[var_op] + (op, )
         return res
-
-    @property
-    def global_step_update_ops(self):
-        """
-        Get all ops in the graph that are part of the global step.
-
-        Returns:
-            List
-        """
-        return [
-            op for op in self.all_update_ops
-            if any((
-                'global_step' in input.name or 'iter' in input.name
-                for input in op.inputs
-            ))
-        ]
 
     @property
     def grad_list(self):
@@ -351,3 +335,11 @@ class GraphItem:
             Iterable
         """
         return type(op_iter)((self.graph.get_operation_by_name(o if isinstance(o, str) else o.name) for o in op_iter))
+
+    def prepare(self):
+        """Prepare for building strategy and/or transforming graph."""
+        self.info.update(
+            variables=self.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES),
+            table_initializers=self.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS),
+            replace=True
+        )

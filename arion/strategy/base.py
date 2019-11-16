@@ -89,20 +89,24 @@ class Strategy:
         o.__dict__.update(d)
         return o
 
-    def serialize(self):
+    def serialize(self, path=None):
         """
         Serialize the strategy.
 
         TODO: Maybe protobuf later
         """
-        path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._id)
+        if path is None:
+            os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
+            path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._id)
         yaml.safe_dump(self.as_dict(), stream=open(path, 'w+'))
         self.path = path
 
     @classmethod
-    def deserialize(cls, strategy_id):
+    def deserialize(cls, strategy_id=None, path=None):
         """Deserialize the strategy."""
-        path = os.path.join(DEFAULT_SERIALIZATION_DIR, strategy_id)
+        if path is None:
+            assert strategy_id is not None
+            path = os.path.join(DEFAULT_SERIALIZATION_DIR, strategy_id)
         return cls.from_dict(yaml.safe_load(open(path, 'r')))
 
     def __str__(self):

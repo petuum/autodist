@@ -26,7 +26,7 @@ def main(autodist):
     EPOCHS = 1
     train_steps_per_epoch = min(100, len(train_images) // BATCH_SIZE)
 
-    with d.scope():
+    with tf.Graph().as_default(), d.scope():
         model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, 3, activation='relu'),
             tf.keras.layers.MaxPooling2D(),
