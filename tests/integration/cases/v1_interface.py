@@ -13,7 +13,7 @@ def main(autodist):
     outputs = inputs * TRUE_W + TRUE_b + noises
 
     print('I am going to a scope.')
-    with autodist.scope():
+    with tf.Graph().as_default(), autodist.scope():
         x = tf.compat.v1.placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
 
         W = tf.Variable(5.0, name='W')

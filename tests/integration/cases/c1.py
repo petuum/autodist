@@ -28,7 +28,7 @@ def main(autodist):
     EPOCHS = 1
     train_steps_per_epoch = 8
 
-    with d.scope():
+    with tf.Graph().as_default(), d.scope():
 
         train_dataset = tf.data.Dataset.from_tensor_slices(
             (train_images, train_labels)).shuffle(

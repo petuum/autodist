@@ -31,7 +31,7 @@ def main(autodist):
             return inputs
 
     inputs_iterator = MyIterator()
-    with autodist.scope():
+    with tf.Graph().as_default(), autodist.scope():
         # x = placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
 
         W = tf.Variable(5.0, name='W', dtype=tf.float64)

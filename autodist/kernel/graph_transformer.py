@@ -41,6 +41,7 @@ class GraphTransformer:
     def transform(self, graph_item: GraphItem):
         """Call graph transformer to transform a graph item based on strategy and cluster."""
         with context.graph_mode():
+            graph_item.prepare()
             # Ensure the transformation happens under graph mode, no matter the outer mode is under eager or graph.
 
             visualization_util.log_graph(graph=graph_item.graph, name='original')
