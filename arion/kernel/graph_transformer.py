@@ -162,3 +162,6 @@ class GraphTransformer:
             else:
                 logging.warning('Fetch %s is remapped to %s' % (fetch.name, master_replica_name))
                 return [remap[type(fetch)](master_replica_name)]
+                # For Debugging:
+                # return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
+                #        for i in range(self.num_local_replica)]
