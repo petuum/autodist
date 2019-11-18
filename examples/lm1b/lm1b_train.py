@@ -55,7 +55,7 @@ def gen_lm1b_train_dataset(file_pattern, num_step):
 def main(_):
     data_path = os.path.join(FLAGS.datadir, "training-monolingual.tokenized.shuffled/*")
     distribute_batch_size = FLAGS.batch_size * autodist._resource_spec.num_gpus
-    with autodist.scope():
+    with tf.Graph().as_default(), autodist.scope():
         train_dataset = gen_lm1b_train_dataset(data_path, FLAGS.num_steps)
         train_dataset = train_dataset.batch(FLAGS.batch_size)
         train_iterator = train_dataset.make_one_shot_iterator().get_next()

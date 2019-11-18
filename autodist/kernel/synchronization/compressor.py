@@ -195,9 +195,8 @@ class PowerSGDCompressor(CompressorEF):
     """An implementation of the PowerSGD compression algorithm (arxiv.org/abs/1905.13727)."""
 
     def __init__(self, var_op_name, rank=1):
-        logging.warning("TODO (trevin): Currently this PowerSGD implementation only works on some models.")
         self.rank = rank
-        self.og_shape, self.new_shape, self.compressor = None, None, None
+        self.og_shape, self.ndims, self.new_shape, self.compressor = None, None, None, None
         super().__init__(var_op_name)
 
     def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
@@ -211,20 +210,21 @@ class PowerSGDCompressor(CompressorEF):
         Returns:
             Reduced Tensor
         """
-        # Check if rank 1 tensor or sparse (TODO)
+        if self.og_shape is None:
+            self.og_shape = array_ops.shape_v2(tensor)
+            self.ndims = len(self.og_shape.shape)
+
+        # Check if rank 1 tensor (this shouldn't be called with sparse tensors)
         # Just reduce it if it is, no need to compress
-        if tensor.shape.ndims <= 1:
+        if self._is_1d:
             return self._all_reduce(tensor, conf)
 
-        if self.og_shape is None:
-            self.og_shape = tensor.shape
-
-        if tensor.shape.ndims > 2:
-            # TODO (trevin): Make this more robust to [None, ...] shapes
-            tensor = array_ops.reshape(tensor, [tensor.shape[0], -1])
+        logging.info(f"Compressing tensor {tensor.name} (var {self.var_op_name}) with shape {tensor.shape}")
+        if self.ndims > 2:
+            tensor = array_ops.reshape(tensor, [self.og_shape[0], -1])
 
         if self.compressor is None:
-            self.new_shape = tensor.shape
+            self.new_shape = array_ops.shape_v2(tensor)
             self.compressor = random_ops.random_normal([self.new_shape[1], self.rank])
 
         if self.error is not None:
@@ -242,13 +242,19 @@ class PowerSGDCompressor(CompressorEF):
         conf.instance_key = get_collective_keys().get_instance_key(self.var_op_name + "/compressor")
         self.compressor = self._all_reduce(self.compressor, conf)
         return array_ops.reshape(self._decompress(reduced), self.og_shape) \
-            if self.og_shape.ndims > 2 else self._decompress(reduced)
+            if self.ndims > 2 else self._decompress(reduced)
 
     def _compress(self, tensor: Tensor):
         return math_ops.matmul(tensor, self.compressor)
 
     def _decompress(self, compressed_tensor: Tensor):
         return math_ops.matmul(compressed_tensor, self.compressor, transpose_b=True)
+
+    @property
+    def _is_1d(self):
+        return self.ndims <= 1 or (
+            self.ndims == 2 and any(d == 1 for d in self.og_shape)
+        )
 
     @staticmethod
     def _orthogonalize(matrix):
