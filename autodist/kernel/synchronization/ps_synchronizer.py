@@ -12,7 +12,8 @@ from autodist.kernel.common import utils, resource_variable_utils
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common.resource_variable_utils import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
-    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, remove_control_input
+    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, remove_control_input, \
+    get_index_from_tensor_name
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.kernel.common.proxy_variable import ProxyVariable
 from autodist.proto import synchronizers_pb2
@@ -297,7 +298,7 @@ class PSSynchronizer(Synchronizer):
 
     def _get_aggregated_dense_grad(self, graph_item, grad_name, reduce_to_device):
         grad_op_name = strip_replica_prefix(get_op_name(grad_name))
-        output_idx = int(grad_name.split(':')[1])
+        output_idx = get_index_from_tensor_name(grad_name)
         grad_ops = [
             graph_item.graph.get_operation_by_name(ops.prepend_name_scope(grad_op_name, replica_prefix(i)))
             for i in range(self.num_replicas)

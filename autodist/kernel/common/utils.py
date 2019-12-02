@@ -31,7 +31,7 @@ def strip_replica_prefix(name):
     i = name.find('/')
     if i != -1:
         if AUTODIST_REPLICA_PREFIX in name[:i]:
-            return name[i + 1:]
+            return name[i + 1:] if not name.startswith('^') else '^' + name[i + 1:]
     return name
 
 
@@ -47,7 +47,7 @@ def parse_name_scope(name):
     """
     i = name.rfind('/')
     if i != -1:
-        return name[:i]
+        return name[:i] if not name.startswith('^') else name[1:i]
     return ''
 
 
