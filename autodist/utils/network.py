@@ -95,7 +95,8 @@ def remote_exec(args,
         cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
     full_cmd = ' '.join(cmd_list + args)
 
-    remote_cmd = 'ssh -i %s -tt -p %d %s@%s \'bash -c "%s"\' </dev/null' % (
+    remote_cmd = ('ssh -i %s -o StrictHostKeyChecking=no -tt '
+                  '-p %d %s@%s \'bash -c "%s"\' </dev/null') % (
         ssh_config.key_file, ssh_config.port, ssh_config.username, hostname, full_cmd
     )
 
