@@ -15,15 +15,16 @@ from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancesto
     update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, remove_control_input
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.kernel.common.proxy_variable import ProxyVariable
+from autodist.proto import synchronizers_pb2
 
 
 class PSSynchronizer(Synchronizer):
     """PS Synchronizer."""
 
-    def __init__(self, reduction_destinations=None, local_replication=True, sync=True):
-        self.target_device = reduction_destinations[0] if reduction_destinations else ""
-        self._local_replication = local_replication
-        self._sync = sync
+    def __init__(self, config: synchronizers_pb2.PSSynchronizer):
+        self.target_device = config.reduction_destinations[0] if config.reduction_destinations else ""
+        self._local_replication = config.local_replication
+        self._sync = config.sync
 
         self._var_op_to_agg_grad = {}
         self._var_op_to_accum_apply_op = {}

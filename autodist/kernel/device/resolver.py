@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 
+from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.python.framework import device_spec
 
 from autodist.resource_spec import DeviceSpec
@@ -42,4 +43,6 @@ class DeviceResolver:
         """Resolve an AutoDist DeviceSpec or its string to a TensorFlow device string."""
         if isinstance(device, (list, set)):
             return type(device)(self.resolve_to_device_spec(d).to_string() for d in device)
+        elif isinstance(device, RepeatedScalarContainer):
+            return list(self.resolve_to_device_spec(d).to_string() for d in device)
         return self.resolve_to_device_spec(device).to_string()

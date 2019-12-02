@@ -2,10 +2,9 @@
 
 import os
 from datetime import datetime
-from copy import deepcopy
-import yaml
 
 from autodist.const import DEFAULT_SERIALIZATION_DIR, Env
+from autodist.proto import strategy_pb2
 from autodist.resource_spec import ResourceSpec
 
 
@@ -61,45 +60,65 @@ class StrategyBuilder:
 
 
 class Strategy:
-    """Strategy representation."""
+    """A wrapper around a Strategy Protocol Buffer."""
 
-    def __init__(self):
-        self._id = datetime.utcnow().strftime('%Y%m%dT%H%M%SM%f')
-        self.node_config = {}
-        self.graph_config = {}
+    def __init__(self, strategy=None):
+        self._strategy = strategy or strategy_pb2.Strategy()
+        if strategy is None:
+            self._strategy.id = datetime.utcnow().strftime('%Y%m%dT%H%M%SM%f')
 
-        self.path = ''
+    @property
+    def id(self):
+        """Strategy's ID."""
+        return self._strategy.id
 
-    def get_id(self):
-        """Return the strategy id."""
-        return self._id
+    @property
+    def path(self):
+        """Strategy's Path."""
+        return self._strategy.path
 
-    def as_dict(self):
-        """Strategy representation as dict."""
-        return {
-            '_id': self._id,
-            'node_config': self.node_config,
-            'graph_config': self.graph_config
-        }
+    @property
+    def node_config(self):
+        """Strategy's Node Config."""
+        return self._strategy.node_config
 
-    @classmethod
-    def from_dict(cls, d):
-        """Create a new Strategy instance from the serialized dict."""
-        o = cls()
-        o.__dict__.update(d)
-        return o
+    @node_config.setter
+    def node_config(self, value):
+        """Set this Strategy's Node Config."""
+        if self._strategy.node_config is not value:
+            # TODO: is this the best way?
+            del self._strategy.node_config[:]
+            self._strategy.node_config.extend(value)
+
+    @property
+    def graph_config(self):
+        """Strategy's Graph Config."""
+        return self._strategy.graph_config
+
+    @graph_config.setter
+    def graph_config(self, value):
+        """Set this Strategy's Graph Config."""
+        self._strategy.graph_config = value
+
+    def copy(self):
+        """Create a copy of this strategy."""
+        other_strategy = strategy_pb2.Strategy()
+        other_strategy.CopyFrom(self._strategy)
+        return Strategy(strategy=other_strategy)
+
+    def __str__(self):
+        return self._strategy.__str__()
 
     def serialize(self, path=None):
-        """
-        Serialize the strategy.
-
-        TODO: Maybe protobuf later
-        """
+        """Serialize this strategy and write it to disk."""
         if path is None:
             os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
-            path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._id)
-        yaml.safe_dump(self.as_dict(), stream=open(path, 'w+'))
-        self.path = path
+            path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._strategy.id)
+
+        with open(path, "wb+") as f:
+            f.write(self._strategy.SerializeToString())
+
+        self._strategy.path = path
 
     @classmethod
     def deserialize(cls, strategy_id=None, path=None):
@@ -107,17 +126,7 @@ class Strategy:
         if path is None:
             assert strategy_id is not None
             path = os.path.join(DEFAULT_SERIALIZATION_DIR, strategy_id)
-        return cls.from_dict(yaml.safe_load(open(path, 'r')))
-
-    def __str__(self):
-        return str(self.as_dict())
-
-    def __repr__(self):
-        return self.__str__()
-
-    def copy(self):
-        """Return a deepcopy of the strategy."""
-        return self.from_dict(deepcopy(self.as_dict()))
+        return cls(strategy=strategy_pb2.Strategy.ParseFromString(open(path, 'r')))
 
 
 class StrategyCompiler:
@@ -134,11 +143,12 @@ class StrategyCompiler:
     def _resolve_devices(self, strategy):
         s = strategy.copy()
         for n in s.node_config:
-            if 'reduction_destinations' in s.node_config[n]['synchronizer']['config']:
-                d = s.node_config[n]['synchronizer']['config']['reduction_destinations']
-                s.node_config[n]['synchronizer']['config']['reduction_destinations'] = self._device_resolver(d)
-        d = s.graph_config['replicas']
-        s.graph_config['replicas'] = self._device_resolver(d)
+            synchronizer = getattr(n, n.WhichOneof('synchronizer'))
+            if hasattr(synchronizer, 'reduction_destinations'):
+                d = synchronizer.reduction_destinations
+                synchronizer.reduction_destinations[:] = self._device_resolver(d)
+        d = s.graph_config.replicas
+        s.graph_config.replicas[:] = self._device_resolver(d)
         return s
 
     def compile(self, strategy):
