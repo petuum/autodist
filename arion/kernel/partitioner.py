@@ -10,7 +10,7 @@ from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
 from autodist.graph_item import GraphItem, Info
-from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers
+from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers, parse_name_scope
 from autodist.utils import logging
 
 
@@ -271,16 +271,16 @@ class VariablePartitioner:
         new_graph_def.library.Clear()
         new_graph_def.library.CopyFrom(graph_def.library)
         for node in graph_def.node:
-            if node.name.startswith(name_scope):
+            if parse_name_scope(node.name).startswith(name_scope):
                 continue
 
             for idx, input_name in enumerate(node.input):
-                if input_name.split("^")[-1].startswith(name_scope):
+                if parse_name_scope(input_name).startswith(name_scope):
                     node.input[idx] = ""
 
             for idx, s in enumerate(node.attr['_class'].list.s):
                 name = s[len(COLOCATION_PREFIX):].decode('utf-8')
-                if name.startswith(name_scope):
+                if parse_name_scope(name).startswith(name_scope):
                     node.attr['_class'].list.s.remove(s)
 
             self._prune_graphdef_node_inputs(node)

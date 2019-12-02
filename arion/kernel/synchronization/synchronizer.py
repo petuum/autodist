@@ -2,8 +2,8 @@
 from abc import ABC, abstractmethod
 from tensorflow.python import ops
 
-from autodist.kernel.common.utils import get_op_name, update_consumers, update_control_consumers, replica_prefix,\
-    strip_replica_prefix
+from autodist.kernel.common.utils import get_op_name, update_consumers, update_control_consumers, replica_prefix, \
+    strip_replica_prefix, get_index_from_tensor_name
 
 
 class Synchronizer(ABC):
@@ -92,7 +92,7 @@ class Synchronizer(ABC):
         old_op_name = strip_replica_prefix(get_op_name(old_tensor_name))
         replica_0_op_name = ops.prepend_name_scope(old_op_name, replica_prefix(0))
         replica_0_op = new_graph_item.graph.get_operation_by_name(replica_0_op_name)
-        output_idx = int(old_tensor_name.split(':')[1])
+        output_idx = get_index_from_tensor_name(old_tensor_name)
         replica_0_tensor = replica_0_op.outputs[output_idx]
 
         update_consumers(consumer_ops, replica_0_tensor, new_tensor)
