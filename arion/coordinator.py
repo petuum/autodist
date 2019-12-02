@@ -25,7 +25,7 @@ class Coordinator:
 
         replica_devices = [
             DeviceSpec.from_string(device_string)
-            for device_string in self._strategy.graph_config.get('replicas', {})
+            for device_string in self._strategy.graph_config.replicas
         ]
         replica_hosts = {d.host_address for d in replica_devices}
 

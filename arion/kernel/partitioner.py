@@ -1,7 +1,7 @@
 """Variable Partitioner."""
-from typing import Dict
-
 from copy import deepcopy
+
+from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python import ops
 from tensorflow.python.ops import embedding_ops
@@ -17,8 +17,8 @@ from autodist.utils import logging
 class VariablePartitioner:
     """Partitions a GraphItem's variables according to the given strategy."""
 
-    def __init__(self, node_config: Dict, graph_item: GraphItem):
-        self.node_config: Dict = node_config
+    def __init__(self, node_config: RepeatedScalarContainer, graph_item: GraphItem):
+        self.node_config: RepeatedScalarContainer = node_config
         self.graph_item: GraphItem = graph_item
         self.info: Info = graph_item.info.copy()
 
@@ -74,14 +74,15 @@ class VariablePartitioner:
         """
         vars_to_partition = {}
         unpartitioned_vars = {}
-        for var_name, node in self.node_config.items():
-            shards = node['synchronizer']['config'].get('reduction_destinations', [])
+        for node in self.node_config:
+            synchronizer = getattr(node, node.WhichOneof('synchronizer'))
+            shards = getattr(synchronizer, 'reduction_destinations', [])
             if len(shards) > 1:
-                vars_to_partition[var_name] = shards
-                logging.info("Partitioning variable {} across {}".format(var_name, shards))
+                vars_to_partition[node.var_name] = shards
+                logging.info("Partitioning variable {} across {}".format(node.var_name, shards))
             else:
-                grad, _, _ = self.graph_item.var_op_name_to_grad_info[get_op_name(var_name)]
-                unpartitioned_vars[var_name] = grad.name
+                grad, _, _ = self.graph_item.var_op_name_to_grad_info[get_op_name(node.var_name)]
+                unpartitioned_vars[node.var_name] = grad.name
         return vars_to_partition, unpartitioned_vars
 
     def _get_ops_to_delete(self, vars_to_partition):
@@ -244,13 +245,15 @@ class VariablePartitioner:
             var_list (List[Variable]): the new sharded variables.
         """
         num_shards = len(var_list)
-        conf = [deepcopy(self.node_config[var.name]) for _ in range(num_shards)]
-        for idx, node in enumerate(conf):
-            devices = node['synchronizer']['config']['reduction_destinations']
-            node['synchronizer']['config']['reduction_destinations'] = [devices[idx]]
-        self.node_config.pop(var.name)
-        var_names = [v.name for v in var_list]
-        self.node_config.update(zip(var_names, conf))
+        og_node = next(n for n in self.node_config if n.var_name == var.name)
+        conf = [deepcopy(og_node) for _ in range(num_shards)]
+        for idx, (v, node) in enumerate(zip(var_list, conf)):
+            node.var_name = v.name
+            synchronizer = getattr(node, node.WhichOneof('synchronizer'))
+            devices = synchronizer.reduction_destinations
+            synchronizer.reduction_destinations[:] = [devices[idx]]
+        self.node_config.remove(og_node)
+        self.node_config.extend(conf)
 
     def _delete_marked_ops(self, graph_item, name_scope):
         """

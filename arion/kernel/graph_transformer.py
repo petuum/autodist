@@ -32,7 +32,7 @@ class GraphTransformer:
     def num_local_replica(self):
         """Infer the nubmer of replica on this local machine."""
         replica_devices = \
-            {device_spec.DeviceSpecV2.from_string(s) for s in self._strategy.graph_config.get('replicas')}
+            {device_spec.DeviceSpecV2.from_string(s) for s in self._strategy.graph_config.replicas}
         return len({
             d for d in replica_devices
             if self._cluster.get_local_address() == self._cluster.get_address_from_task(d.job, d.task)
@@ -50,13 +50,14 @@ class GraphTransformer:
 
             # Create Synchronizers for each node in the strategy
             synchronizers = {
-                name: Synchronizer.create(node['synchronizer']['type'], **node['synchronizer']['config'])
-                for name, node in self._strategy.node_config.items()
+                node.var_name: Synchronizer.create(node.WhichOneof('synchronizer'),
+                                                   getattr(node, node.WhichOneof('synchronizer')))
+                for node in self._strategy.node_config
             }
 
             # Replicate the graph (both in-graph and between-graph)
             r = Replicator(
-                config=self._strategy.graph_config.get('replicas'),
+                config=self._strategy.graph_config.replicas,
                 cluster=self._cluster,
                 synchronizers=synchronizers
             )

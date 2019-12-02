@@ -21,14 +21,15 @@ def generate_proto(source):
     print("Generating %s..." % output)
 
     protoc_command = [protoc, "-I.", "--python_out=.", source]
-    if subprocess.call(protoc_command) != 0:
+    protoc_command = ' '.join(protoc_command)
+    if subprocess.call(protoc_command, shell=True) != 0:
         exit(-1)
 
 
 class build_py(_build_py):
 
     def run(self):
-        generate_proto("autodist/proto/foo.proto")
+        generate_proto("autodist/proto/*.proto")
 
         # _build_py is an old-style class, so super() doesn't work.
         _build_py.run(self)

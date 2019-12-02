@@ -100,3 +100,6 @@ docs/api/
 
 # pytest logs
 htmlcov*
+
+# Compiled Protobuf
+autodist/proto/*_pb2.py

@@ -11,6 +11,7 @@ from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.synchronization.collective_key import get_collective_keys
 from autodist.kernel.synchronization.compressor import Compressor, CollectiveOpsConfig
 from autodist.kernel.synchronization.synchronizer import Synchronizer
+from autodist.proto import synchronizers_pb2
 
 
 class AllReduceSynchronizer(Synchronizer):
@@ -26,9 +27,9 @@ class AllReduceSynchronizer(Synchronizer):
     (2) any other types of hybrid reduction of PS and Allreduce.
     """
 
-    def __init__(self, spec, compressor):
-        self._spec = spec
-        self._compressor_type = compressor
+    def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer):
+        self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(config.spec)
+        self._compressor_type = synchronizers_pb2.AllReduceSynchronizer.Compressor.Name(config.compressor)
         super().__init__()
 
     def in_graph_apply(self, graph_item, var_name):

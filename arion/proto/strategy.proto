@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package autodist.proto;
+
+import "autodist/proto/synchronizers.proto";
+
+
+message Strategy {
+    string id = 1;
+    string path = 2;
+
+    message Node {
+        string var_name = 1;
+        oneof synchronizer {
+            autodist.proto.PSSynchronizer PSSynchronizer = 2;
+            autodist.proto.AllReduceSynchronizer AllReduceSynchronizer = 3;
+        }
+    }
+
+    repeated Node node_config = 3;
+
+    message GraphConfig {
+        repeated string replicas = 1;
+    }
+
+    GraphConfig graph_config = 4;
+}

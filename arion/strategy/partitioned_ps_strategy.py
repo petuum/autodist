@@ -4,6 +4,7 @@ from math import ceil
 from tensorflow.python.framework import tensor_shape
 
 from autodist.strategy.base import Strategy, StrategyBuilder
+from autodist.proto import strategy_pb2
 
 
 class PartitionedPS(StrategyBuilder):
@@ -17,15 +18,15 @@ class PartitionedPS(StrategyBuilder):
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config
-        expr.graph_config['replicas'] = {k for k, v in self._resource_spec.gpu_devices}
+        expr.graph_config.replicas.extend([k for k, v in self._resource_spec.gpu_devices])
         # find all variables
         variables = self._item.get_trainable_variables()
         reduction_device_names = [k for k, _ in self._resource_spec.cpu_devices]
         self.loads = {ps: 0.0 for ps in reduction_device_names}
 
         # Mark each variable to be synchronized with a Parameter Server
-        node_config = {var.name: self._gen_ps_node_config(var) for var in variables}
-        expr.node_config.update(node_config)
+        node_config = [self._gen_ps_node_config(var) for var in variables]
+        expr.node_config.extend(node_config)
 
         return expr
 
@@ -48,17 +49,12 @@ class PartitionedPS(StrategyBuilder):
         for ps in min_ps:
             self.loads[ps] += byte_size_load_fn(var) / num_shards
 
-        node_config = {
-            'synchronizer': {
-                'type': 'PSSynchronizer',
-                'config': {
-                    'reduction_destinations': min_ps,
-                    'local_replication': False,
-                    'sync': True
-                }
-            }
-        }
-        return node_config
+        node = strategy_pb2.Strategy.Node()
+        node.var_name = var.name
+        node.PSSynchronizer.reduction_destinations.extend(min_ps)
+        node.PSSynchronizer.local_replication = False
+        node.PSSynchronizer.sync = True
+        return node
 
     def get_num_shards(self, tensor):
         """Gets the minimum number of shards for a variable."""

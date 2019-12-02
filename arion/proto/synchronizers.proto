@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package autodist.proto;
+
+message PSSynchronizer {
+    repeated string reduction_destinations = 1;
+    bool local_replication = 2;
+    bool sync = 3;
+}
+
+message AllReduceSynchronizer {
+    enum Spec {
+        AUTO = 0;
+        NCCL = 1;
+        RING = 2;
+    }
+
+    Spec spec = 1;
+
+    enum Compressor {
+        NoneCompressor = 0;
+        HorovodCompressor = 1;
+        HorovodCompressorEF = 2;
+        PowerSGDCompressor = 3;
+    }
+
+    Compressor compressor = 2;
+}
