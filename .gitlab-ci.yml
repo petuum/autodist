@@ -41,10 +41,14 @@ build_wheel:
   tags:
     - docker
   image: python:3.6-slim
-  script:
+  before_script:
     - apt-get update
-    - apt-get install -y git
+    - apt-get install -y git wget unzip
     - pip install wheel
+    - wget https://github.com/protocolbuffers/protobuf/releases/download/v3.11.0/protoc-3.11.0-linux-x86_64.zip
+    - unzip protoc-3.11.0-linux-x86_64.zip
+    - export PROTOC=$(pwd)/bin/protoc
+  script:
     - VERSION=$(./GENVER --pep440) HOME=$(pwd) python setup.py bdist_wheel
     - ls dist  # print whl version
   artifacts:
@@ -58,7 +62,7 @@ tests:
    stage: test
    image: '${TOOLCHAIN_IMAGE}'
    except:
-     - master
+     # - master # For dev coverage report
      - /^release-.+$/
      - tags
    tags:
