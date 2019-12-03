@@ -38,7 +38,7 @@ class Coordinator:
                 # Build the command
                 env = {
                     Env.AUTODIST_WORKER.name: replica_host,
-                    Env.AUTODIST_STRATEGY_ID.name: self._strategy.get_id()
+                    Env.AUTODIST_STRATEGY_ID.name: self._strategy.id
                 }
                 cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
                 cmd_main = ["python"] + sys.argv
