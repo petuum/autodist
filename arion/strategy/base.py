@@ -115,10 +115,10 @@ class Strategy:
             os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
             path = os.path.join(DEFAULT_SERIALIZATION_DIR, self._strategy.id)
 
+        self._strategy.path = path
+
         with open(path, "wb+") as f:
             f.write(self._strategy.SerializeToString())
-
-        self._strategy.path = path
 
     @classmethod
     def deserialize(cls, strategy_id=None, path=None):
@@ -126,7 +126,11 @@ class Strategy:
         if path is None:
             assert strategy_id is not None
             path = os.path.join(DEFAULT_SERIALIZATION_DIR, strategy_id)
-        return cls(strategy=strategy_pb2.Strategy.ParseFromString(open(path, 'r')))
+        with open(path, 'rb') as f:
+            data = f.read()
+        new_strategy = strategy_pb2.Strategy()
+        new_strategy.ParseFromString(data)
+        return cls(strategy=new_strategy)
 
 
 class StrategyCompiler:
