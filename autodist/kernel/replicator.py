@@ -104,8 +104,10 @@ class Replicator:
         replica_device = self._local_canonical_replica_devices[replica_id]
 
         def placer(op):
-            if all(['CPU' in kernel_def.device_type
-                    for kernel_def in kernels.get_registered_kernels_for_op(op.type).kernel]):
+            if op.type == 'VarHandleOp':
+                new_device = ''
+            elif all(['CPU' in kernel_def.device_type
+                      for kernel_def in kernels.get_registered_kernels_for_op(op.type).kernel]):
                 # It assumes an op has a CPU kernel by default.
                 new_device = DeviceSpecV2.from_string(self._local_worker_device). \
                     replace(device_type='CPU', device_index=0)
