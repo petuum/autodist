@@ -33,7 +33,7 @@ def main(autodist):
                                   name='b2',
                                   trainable=True,
                                   dtype=tf.float32)
-            self.optimizer = tf.optimizers.Adam()
+            self.optimizer = self.optimizer = tf.optimizers.Adagrad()
 
         def forward(self, x, y):
             # embedding layer
