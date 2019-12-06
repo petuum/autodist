@@ -1,168 +1,144 @@
 """Graph Transformer."""
 
+from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.python.eager import context
-from tensorflow.python.framework import device_spec, ops
-from tensorflow.python.ops.resource_variable_ops import ResourceVariable
+from tensorflow.python.framework import device_spec
 
 from autodist.graph_item import GraphItem
-from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.partitioner import VariablePartitioner
 from autodist.kernel.replicator import Replicator
 from autodist.kernel.synchronization.synchronizer import Synchronizer
-from autodist.strategy.base import StrategyCompiler
-from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
-from autodist.kernel.common.utils import replica_prefix
 from autodist.utils import logging, visualization_util
 
 
 class GraphTransformer:
     """Graph Transformer."""
 
-    def __init__(self, strategy, cluster):
+    def __init__(self, compiled_strategy, cluster, graph_item):
+        self._strategy = compiled_strategy
         self._cluster = cluster
+        self.graph_item = graph_item
 
-        # Prepare a compiled strategy for graph transformation.
-        logging.info('Raw strategy: %s' % strategy)
-        device_resolver = DeviceResolver(self._cluster)
-        self._strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str). \
-            compile(strategy)
-        logging.info('Compiled strategy: %s' % self._strategy)
+        # Set in _initialize_synchronizers
+        self._num_local_replicas = 0
+        self._num_workers = 0
+        self._synchronizers = {}
 
-    @property
-    def num_local_replica(self):
-        """Infer the nubmer of replica on this local machine."""
-        replica_devices = \
-            {device_spec.DeviceSpecV2.from_string(s) for s in self._strategy.graph_config.replicas}
-        return len({
-            d for d in replica_devices
-            if self._cluster.get_local_address() == self._cluster.get_address_from_task(d.job, d.task)
-        })
-
-    def transform(self, graph_item: GraphItem):
+    def transform(self):
         """Call graph transformer to transform a graph item based on strategy and cluster."""
         with context.graph_mode():
+            graph_item = self.graph_item
             graph_item.prepare()
             # Ensure the transformation happens under graph mode, no matter the outer mode is under eager or graph.
 
             visualization_util.log_graph(graph=graph_item.graph, name='original')
 
-            graph_item, self._strategy.node_config = VariablePartitioner(self._strategy.node_config, graph_item)()
+            graph_item, self._strategy.node_config = VariablePartitioner.apply(self._strategy.node_config, graph_item)
 
             # Create Synchronizers for each node in the strategy
-            synchronizers = {
-                node.var_name: Synchronizer.create(node.WhichOneof('synchronizer'),
-                                                   getattr(node, node.WhichOneof('synchronizer')))
-                for node in self._strategy.node_config
-            }
+            self._initialize_synchronizers()
 
             # Replicate the graph (both in-graph and between-graph)
-            r = Replicator(
+            new_graph_item = Replicator.apply(
                 config=self._strategy.graph_config.replicas,
                 cluster=self._cluster,
-                synchronizers=synchronizers
+                graph_item=graph_item
             )
 
-            # TODO: lift r.apply logic out to this scope
-            final_item = r.apply(graph_item)
+            # Apply synchronizers
+            if self._num_local_replicas >= 1:
+                new_graph_item = self._in_graph_apply(new_graph_item)
+                logging.info('Successfully applied local in-graph replication')
+                visualization_util.log_graph(new_graph_item.graph, 'after-in-graph')
+
+            if self._num_workers >= 1:
+                new_graph_item = self._between_graph_apply(new_graph_item)
+                logging.info('Successfully applied between-graph replication')
+
+            final_item = new_graph_item
             logging.info('Successfully built transformed graph')
             visualization_util.log_graph(graph=final_item.graph, name='transformed')
 
         return final_item
 
-    def remap_io(self, graph_item, fetches, feed_dict=None):
-        """
-        Remap the user-provided fetches to the right list of fetches after graph transformations.
-
-        It returns a list of new fetches that are necessary for distributed execution, e.g. in AllReduce,
-        the train ops on all replicas need to be fetched in order to trigger the execution on all replicas.
-        It also returns a remap_return_func that will be called in runner to map the actual fetched results (which
-        are supposed be a superset of the original fetches from users code) back to user-desired results.
-
-        Args:
-            graph_item: the transformed graph item
-            fetches: the original fetches from user code
-            feed_dict: the original feed_dict from user code
-
-        Returns:
-            new_fetches (list) : a list of new fetches for execution
-            remap_return_func (function): a function that maps the fetched results back to original fetches
-
-        """
-        if not isinstance(fetches, (tuple, list)):
-            fetches = [fetches]
-
-        def remap_return_func(returns):
-            ret = [returns[name_to_remapped_indices[fetch.name]]
-                   for fetch in fetches]
-            return ret if len(ret) > 1 else ret[0]
-
-        # TODO: Handle Feed Fetch for both Graph and FuncGraph in the style of tensorflow.python.client._HandleFetch
-        new_fetches, name_to_remapped_indices = self._remap_fetches(graph_item.graph, fetches)
-        new_feed_dict = self._remap_feed_dict(graph_item.graph, feed_dict)
-        return new_fetches, new_feed_dict, remap_return_func
-
-    def _remap_feed_dict(self, graph, feed_dict):
-        if feed_dict is None:
-            return None
-        new_feed_dict = {}
-        for t, v in feed_dict.items():
-            try:
-                d = {graph.get_tensor_by_name(t.name): v}
-            except KeyError:
-                # Temporary Workaround for SYM-9004
-                d = {ops.prepend_name_scope(t.name, replica_prefix(i)): v for i in range(self.num_local_replica)}
-                logging.warning('Feed key %s is remapped to all replicas for the same value.' % t.name)
-            new_feed_dict.update(d)
-        return new_feed_dict
-
-    def _remap_fetches(self, graph, fetches):
-        """
-        Remap the fetches in graph following rules below.
-
-        For fetches that are stateful operations (i.e. train_op), fetch them on all replicas.
-        For fetches that are tensors or variables, only fetch it on master_replica.
-
-        Args:
-            graph (ops.Graph): The graph to be executed
-            fetches (list): a list of fetches by users
-
-        Returns:
-            remapped_fetches (list): a list of fetches remapped
-            name_to_remapped_indices (dict): a map from the name of the original fetch to its index in the new fetches
-
-        """
-        index = 0
-        name_to_remapped_indices = {}
-        remapped_fetches = []
-        for fetch in fetches:
-            remapped_fetch = self.__remap_fetch(graph, fetch)
-            name_to_remapped_indices[fetch.name] = index
-            remapped_fetches.extend(remapped_fetch)
-            index += len(remapped_fetch)
-        return remapped_fetches, name_to_remapped_indices
-
-    def __remap_fetch(self, graph, fetch):
-        remap = {
-            ops.Tensor: graph.get_tensor_by_name,
-            ops.Operation: graph.get_operation_by_name,
-            ResourceVariable: lambda name: get_read_var_tensor(graph.get_tensor_by_name(name).op)
+    def _initialize_synchronizers(self):
+        self._synchronizers = {
+            node.var_name: Synchronizer.create(node.WhichOneof('synchronizer'),
+                                               getattr(node, node.WhichOneof('synchronizer')))
+            for node in self._strategy.node_config
         }
-        fetch_type = type(fetch)
-        try:
-            if fetch_type not in remap:
-                raise TypeError('Fetch type {} not supported.'.format(fetch_type))
-            return [remap[fetch_type](fetch.name)]
-        except KeyError:
-            master_replica_name = ops.prepend_name_scope(fetch.name, replica_prefix(0))
-            # For fetches that are stateful operations (i.e. train_op), fetch them on all replicas
-            # For fetches that are tensors or variables, only fetch it on master_replica
-            if fetch_type is ops.Operation and remap[type(fetch)](master_replica_name).op_def.is_stateful:
-                logging.warning('Fetch %s is remapped to all replicas' % fetch.name)
-                return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
-                        for i in range(self.num_local_replica)]
+
+        config = self._strategy.graph_config.replicas
+
+        replica_devices = {device_spec.DeviceSpecV2.from_string(s) for s in config}
+        replica_hosts = {self._cluster.get_address_from_task(d.job, d.task) for d in replica_devices}
+        self._num_workers = len(replica_hosts)
+
+        local_canonical_replica_devices = sorted({
+            d.to_string() for d in replica_devices
+            if self._cluster.get_local_address() == self._cluster.get_address_from_task(d.job, d.task)
+        })
+        logging.debug('Local replica devices: {}'.format(local_canonical_replica_devices))
+        self._num_local_replicas = len(local_canonical_replica_devices)
+
+        local_worker_id = self._cluster.get_local_worker_task_index()
+        local_worker_device = '/job:worker/task:{}'.format(local_worker_id)
+
+        for synchronizer in self._synchronizers.values():
+            synchronizer.assign_cluster_information(self._num_workers, self._num_local_replicas,
+                                                    local_worker_device, local_worker_id,
+                                                    sorted({d.to_string() for d in replica_devices}),
+                                                    is_chief=self._cluster.is_chief())
+
+    def _in_graph_apply(self, graph_item: GraphItem):
+        """
+        Perform in-graph synchronization of the graph.
+
+        Args:
+            graph_item (GraphItem): The graph to replication.
+
+        Returns:
+            GraphItem
+        """
+        new_graph_item = graph_item
+        for var_name, syncer in self._synchronizers.items():
+            new_graph_item = syncer.in_graph_apply(new_graph_item, var_name)
+        return new_graph_item
+
+    def _between_graph_apply(self, multi_gpu_graph_item: GraphItem):
+        """
+        Perform between-graph replication of the graph.
+
+        Args:
+            multi_gpu_graph_item (GraphItem): The graph to replication.
+
+        Returns:
+            GraphItem
+        """
+        new_graph_item = multi_gpu_graph_item
+        for var_name, syncer in self._synchronizers.items():
+            new_graph_item = syncer.between_graph_apply(new_graph_item, var_name)
+        self._prune_colocation_groups(new_graph_item)
+        # TODO: make this work
+        # update_shard_values_for_worker(num_workers, worker_id)
+        return new_graph_item
+
+    # TODO(Hao): this seems still problematic
+    @staticmethod
+    def _prune_colocation_groups(graph_item):
+        for op in graph_item.graph.get_operations():
+            # Now prune the graph to have the right colocation constraints
+            colocation_groups = [(c, graph_item.get_colocation_op(c)) for c in op.colocation_groups()]
+            # We don't want any colocation groups that are just this `op`
+            colocation_groups = [(c, bind_op) for (c, bind_op) in colocation_groups if bind_op != op]
+            if colocation_groups:
+                device_to_bind_to = colocation_groups[-1][1].device
+                new_colocation_groups = [c for (c, op) in colocation_groups if op.device == device_to_bind_to]
+                op._set_device(device_to_bind_to)
+                op._set_attr("_class", pb2_AttrValue(list=pb2_AttrValue.ListValue(s=new_colocation_groups)))
             else:
-                logging.warning('Fetch %s is remapped to %s' % (fetch.name, master_replica_name))
-                return [remap[type(fetch)](master_replica_name)]
-                # For Debugging:
-                # return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
-                #        for i in range(self.num_local_replica)]
+                try:
+                    if op.get_attr("_class"):
+                        op._clear_attr("_class")
+                except ValueError:
+                    pass

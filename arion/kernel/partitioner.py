@@ -11,47 +11,39 @@ from tensorflow.python.util.compat import as_bytes
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
 from autodist.graph_item import GraphItem, Info
 from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers, parse_name_scope
+from autodist.kernel.kernel import Kernel
 from autodist.utils import logging
 
 
-class VariablePartitioner:
+class VariablePartitioner(Kernel):
     """Partitions a GraphItem's variables according to the given strategy."""
 
-    def __init__(self, node_config: RepeatedScalarContainer, graph_item: GraphItem):
+    def __init__(self, key, node_config: RepeatedScalarContainer, graph_item: GraphItem):
+        super().__init__(key)
         self.node_config: RepeatedScalarContainer = node_config
         self.graph_item: GraphItem = graph_item
         self.info: Info = graph_item.info.copy()
 
-    def __call__(self):
+    def _apply(self, *args, **kwargs):
         """Partition the variables, returning a new GraphItem and a new corresponding Strategy."""
-        #
         # Get ops to partition
-        #
         vars_to_partition, unpartitioned_vars = self._get_vars_to_partition()
 
         if not vars_to_partition:
             return self.graph_item, self.node_config
 
-        #
         # Get everything we want to delete
-        #
         to_delete = self._get_ops_to_delete(vars_to_partition)
 
-        #
         # In GraphDef, move everything in to_rename under a separate name scope
         # This allows us to create new ops with the to-be-deleted ops' original names
-        #
         new_graph_item = self._batch_prepend_name_scope(to_delete, AUTODIST_TO_DELETE_SCOPE)
 
-        #
         # Create new variables and ops in the new graph
-        #
         new_graph_item.copy_gradient_info_from(self.graph_item)
         new_vars = self._create_new_vars(new_graph_item, vars_to_partition, unpartitioned_vars)
 
-        #
         # Remove the ops that are marked for deletion
-        #
         new_graph_def = self._delete_marked_ops(new_graph_item, AUTODIST_TO_DELETE_SCOPE)
 
         self.info.update(

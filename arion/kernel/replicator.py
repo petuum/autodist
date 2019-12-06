@@ -1,6 +1,5 @@
 """Replicator."""
 
-from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.python import ops, import_graph_def
 from tensorflow.python.framework import device_spec, kernels
 from tensorflow.python.framework.device_spec import DeviceSpecV2
@@ -8,19 +7,19 @@ from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 
 from autodist.graph_item import GraphItem
 from autodist.kernel.common.utils import replica_prefix
-from autodist.utils import logging, visualization_util
+from autodist.kernel.kernel import Kernel
+from autodist.utils import logging
 
 
-class Replicator:
+class Replicator(Kernel):
     """Replicator."""
 
-    def __init__(self, config, cluster, synchronizers):
+    def __init__(self, key, graph_item, config, cluster):
+        super().__init__(key)
+        self._graph_item = graph_item
         self._cluster = cluster
-        self._synchronizers = synchronizers
 
         self._replica_devices = {device_spec.DeviceSpecV2.from_string(s) for s in config}
-        self._replica_hosts = {cluster.get_address_from_task(d.job, d.task) for d in self._replica_devices}
-        self._num_workers = len(self._replica_hosts)
 
         self._local_canonical_replica_devices = sorted({
             d.to_string() for d in self._replica_devices
@@ -32,88 +31,18 @@ class Replicator:
         self._local_worker_id = self._cluster.get_local_worker_task_index()
         self._local_worker_device = '/job:worker/task:{}'.format(self._local_worker_id)
 
-        for synchronizer in self._synchronizers.values():
-            synchronizer.assign_cluster_information(self._num_workers, self._num_local_replicas,
-                                                    self._local_worker_device, self._local_worker_id,
-                                                    sorted({d.to_string() for d in self._replica_devices}),
-                                                    is_chief=self._cluster.is_chief())
-
-    # TODO(Hao): Replicator class and apply() method carries too many workflow logic that may not
-    #            belong to a replicator. Consider move this out from replicator.
-    def apply(self, graph_item):
+    def _apply(self, *args, **kwargs):
         """
         Apply replication to a graph.
 
-        Args:
-            graph_item (GraphItem): The graph for replication.
-
         Returns:
             GraphItem
         """
-        new_graph_item = graph_item
+        new_graph_item = self._graph_item
         if self._num_local_replicas >= 1:
-            new_graph_item = self.replicate(graph_item)
+            new_graph_item = self.replicate(new_graph_item)
             logging.info('Successfully replicated operations')
-
-            # Apply synchronizers
-            new_graph_item = self.in_graph_apply(new_graph_item)
-            logging.info('Successfully applied local in-graph replication')
-            visualization_util.log_graph(new_graph_item.graph, 'after-in-graph')
-
-        if self._num_workers >= 1:
-            new_graph_item = self.between_graph_apply(new_graph_item)
-            logging.info('Successfully applied between-graph replication')
         return new_graph_item
-
-    def in_graph_apply(self, graph_item):
-        """
-        Perform in-graph synchronization of the graph.
-
-        Args:
-            graph_item (GraphItem): The graph to replication.
-
-        Returns:
-            GraphItem
-        """
-        new_graph_item = graph_item
-        for var_name, syncer in self._synchronizers.items():
-            new_graph_item = syncer.in_graph_apply(new_graph_item, var_name)
-        return new_graph_item
-
-    def between_graph_apply(self, multi_gpu_graph_item):
-        """
-        Perform between-graph replication of the graph.
-
-        Args:
-            multi_gpu_graph_item (GraphItem): The graph to replication.
-
-        Returns:
-            GraphItem
-        """
-        new_graph_item = multi_gpu_graph_item
-        for var_name, syncer in self._synchronizers.items():
-            new_graph_item = syncer.between_graph_apply(new_graph_item, var_name)
-        self._prune_colocation_groups(new_graph_item)
-        # TODO: make this work
-        # update_shard_values_for_worker(num_workers, worker_id)
-        return new_graph_item
-
-    def _replica_device_placer(self, replica_id):
-        """A device placer function that places CPU-only ops on CPU instead of destination devices."""
-        # strategy device `new_device` merges onto the original `old_device`
-        replica_device = self._local_canonical_replica_devices[replica_id]
-
-        def placer(op):
-            if all(['CPU' in kernel_def.device_type
-                    for kernel_def in kernels.get_registered_kernels_for_op(op.type).kernel]):
-                # It assumes an op has a CPU kernel by default.
-                new_device = DeviceSpecV2.from_string(self._local_worker_device). \
-                    replace(device_type='CPU', device_index=0)
-            else:
-                new_device = DeviceSpecV2.from_string(replica_device)
-            return new_device
-
-        return placer
 
     def replicate(self, graph_item):
         """
@@ -158,22 +87,19 @@ class Replicator:
                 )
         return item
 
-    # TODO(Hao): this seems still problematic
-    @staticmethod
-    def _prune_colocation_groups(graph_item):
-        for op in graph_item.graph.get_operations():
-            # Now prune the graph to have the right colocation constraints
-            colocation_groups = [(c, graph_item.get_colocation_op(c)) for c in op.colocation_groups()]
-            # We don't want any colocation groups that are just this `op`
-            colocation_groups = [(c, bind_op) for (c, bind_op) in colocation_groups if bind_op != op]
-            if colocation_groups:
-                device_to_bind_to = colocation_groups[-1][1].device
-                new_colocation_groups = [c for (c, op) in colocation_groups if op.device == device_to_bind_to]
-                op._set_device(device_to_bind_to)
-                op._set_attr("_class", pb2_AttrValue(list=pb2_AttrValue.ListValue(s=new_colocation_groups)))
+    def _replica_device_placer(self, replica_id):
+        """A device placer function that places CPU-only ops on CPU instead of destination devices."""
+        # strategy device `new_device` merges onto the original `old_device`
+        replica_device = self._local_canonical_replica_devices[replica_id]
+
+        def placer(op):
+            if all(['CPU' in kernel_def.device_type
+                    for kernel_def in kernels.get_registered_kernels_for_op(op.type).kernel]):
+                # It assumes an op has a CPU kernel by default.
+                new_device = DeviceSpecV2.from_string(self._local_worker_device). \
+                    replace(device_type='CPU', device_index=0)
             else:
-                try:
-                    if op.get_attr("_class"):
-                        op._clear_attr("_class")
-                except ValueError:
-                    pass
+                new_device = DeviceSpecV2.from_string(replica_device)
+            return new_device
+
+        return placer
