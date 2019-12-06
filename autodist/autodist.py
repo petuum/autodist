@@ -16,10 +16,12 @@ from autodist.const import Env
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.common.utils import get_op_name
+from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.graph_transformer import GraphTransformer
+from autodist.remapper import Remapper
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig, WrappedSession
-from autodist.strategy.base import StrategyBuilder
+from autodist.strategy.base import StrategyBuilder, StrategyCompiler
 from autodist.utils import logging
 from autodist.utils.code_transformer import transform
 
@@ -65,6 +67,14 @@ class _AutoDistInterface:
             s = StrategyBuilder.load_strategy()
         return s
 
+    def _compile_strategy(self, strategy):
+        logging.info('Raw strategy: %s' % strategy)
+        device_resolver = DeviceResolver(self._cluster)
+        compiled_strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str). \
+            compile(strategy)
+        logging.info('Compiled strategy: %s' % compiled_strategy)
+        return compiled_strategy
+
     def _setup(self, strategy):
         """Prepare for the execution."""
         if IS_AUTODIST_CHIEF:
@@ -88,13 +98,18 @@ class _V1Graph(_GraphModeInterface):
     def create_distributed_session(self, *args, **kwargs):
         """Create a Session object to execute the default graph in a distributed manner."""
         strategy = self._build_or_load_strategy()
-        megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
-        transformed_graph_item = megatron.transform(self._original_graph_item)
+        compiled_strategy = self._compile_strategy(strategy)
+        transformed_graph_item = GraphTransformer(
+            compiled_strategy=compiled_strategy,
+            cluster=self._cluster,
+            graph_item=self._original_graph_item
+        ).transform()
+        remapper = Remapper(compiled_strategy, self._cluster)
 
         self._setup(strategy)
 
         # TODO: use the outer args
-        return WrappedSession(graph_item=transformed_graph_item, remap_io=megatron.remap_io, cluster=self._cluster)
+        return WrappedSession(graph_item=transformed_graph_item, remap_io=remapper.remap_io, cluster=self._cluster)
 
 
 class _V2Graph(_GraphModeInterface):
@@ -109,11 +124,16 @@ class _V2Graph(_GraphModeInterface):
     def _build(self, fetches):
         """Core Logic."""
         strategy = self._build_or_load_strategy()
-        megatron = GraphTransformer(strategy=strategy, cluster=self._cluster)
-        transformed_graph_item = megatron.transform(self._original_graph_item)
+        compiled_strategy = self._compile_strategy(strategy)
+        transformed_graph_item = GraphTransformer(
+            compiled_strategy=compiled_strategy,
+            cluster=self._cluster,
+            graph_item=self._original_graph_item
+        ).transform()
 
         # remap fetches and returns
-        new_fetches, _, remap_return_func = megatron.remap_io(transformed_graph_item, fetches)
+        remapper = Remapper(compiled_strategy, self._cluster)
+        new_fetches, _, remap_return_func = remapper.remap_io(transformed_graph_item, fetches)
 
         runner = Runner(
             graph_item=transformed_graph_item,
