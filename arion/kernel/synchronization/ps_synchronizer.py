@@ -43,7 +43,7 @@ class PSSynchronizer(Synchronizer):
             GraphItem
 
         """
-        item = graph_item.copy()
+        item = graph_item
         var_op_name = get_op_name(var_name)
 
         with item.graph.as_default():
@@ -93,6 +93,11 @@ class PSSynchronizer(Synchronizer):
             handle_consumers.difference_update(set(read_var_ops))
             handle_consumers.difference_update(
                 {con for con in handle_consumers if con.name.startswith(this_var_op_name + '/')})
+            # We exclude the `update_op` when updating the consumers on the shared variables.
+            # Because i) sharing variable indicates sharing its stateful ops correspondingly
+            # (so it is ok to remove stateful ops in none-master replica but we just disconnect it)
+            # ii) A variable cannot correspond to more than one update ops for now.
+            handle_consumers.difference_update(set(graph_item.all_update_ops))
 
             # update the consumers of all read variable ops to use the read variable ops of replica=master_replica
             for read_var_op in read_var_ops:
@@ -196,7 +201,7 @@ class PSSynchronizer(Synchronizer):
         Returns:
             GraphItem: updated graph item.
         """
-        item = graph_item.copy()
+        item = graph_item
 
         # here the variable on replica:0 has been shared, so the original var_name won't work
         var_op_name = ops.prepend_name_scope(get_op_name(var_name), replica_prefix(0))

@@ -95,3 +95,25 @@ def test_graph_item_context_scope():
         setattr(item, 'new_attr', 'new_value')
     assert graph_item.get_default_graph_item() is None
     assert getattr(i1, 'new_attr') == 'new_value'
+
+
+def test_copy():
+    g1 = graph_item.GraphItem(graph=ops.Graph())
+    with g1.as_default():
+        model = model_keras_dense_and_sparse()
+        trainable_variables = model.trainable_variables
+        optimizer = adagrad.Adagrad()
+        grads = optimizer.get_gradients(model.outputs[0], trainable_variables)
+        optimizer.apply_gradients(zip(grads, trainable_variables))
+    g2 = g1.copy()
+
+    def compare(g1, g2):
+        gd1 = g1.graph.as_graph_def()
+        gd2 = g2.graph.as_graph_def()
+        assert gd1 is not gd2
+        d1 = {n.name: n for n in gd1.node}
+        d2 = {n.name: n for n in gd2.node}
+        assert d1 == d2
+        assert g1._grad_target_pairs == g2._grad_target_pairs
+        assert g1.info.variables == g2.info.variables
+    compare(g1, g2)

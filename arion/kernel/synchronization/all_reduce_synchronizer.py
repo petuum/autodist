@@ -45,7 +45,7 @@ class AllReduceSynchronizer(Synchronizer):
         Returns:
             GraphItem
         """
-        item = graph_item.copy()
+        item = graph_item
         var_op_name = get_op_name(var_name)
 
         # Throw an error if the variable is sparse
