@@ -8,32 +8,32 @@ stages:
   - release
 
 variables:
-   TOOLCHAIN_IMAGE: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_latest
-   TOOLCHAIN_IMAGE_DIST: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_dist
-   ARTIFACT_ROOT: /data/artifacts
-   # NOTE: don't forget to set the IP in resource_specs
+  TOOLCHAIN_IMAGE: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_latest
+  TOOLCHAIN_IMAGE_DIST: registry.petuum.com/internal/scalable-ml/autodist/toolchain:ci_dist
+  ARTIFACT_ROOT: /data/artifacts
+  # NOTE: don't forget to set the IP in resource_specs
 
 update-toolchain:
-   stage: toolchain
-   image: registry.petuum.com/internal/devops/docker-dind-jq:1.0
-   tags:
-      - docker
-   before_script:
-      - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
-   script:
-      - ./docker/toolchain/update_toolchain_image.sh
- 
+  stage: toolchain
+  image: registry.petuum.com/internal/devops/docker-dind-jq:1.0
+  tags:
+    - docker
+  before_script:
+    - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_URL}
+  script:
+    - ./docker/toolchain/update_toolchain_image.sh
+
 lint:
-   stage: lint
-   image: '${TOOLCHAIN_IMAGE}'
-   except:
-      - master
-      - /^release-.+$/
-      - tags
-   tags:
-      - docker
-   script:
-      - prospector autodist
+  stage: lint
+  image: '${TOOLCHAIN_IMAGE}'
+  except:
+    - master
+    - /^release-.+$/
+    - tags
+  tags:
+    - docker
+  script:
+    - prospector autodist
 
 
 build_wheel:
@@ -59,85 +59,100 @@ build_wheel:
 
 
 tests:
-   stage: test
-   image: '${TOOLCHAIN_IMAGE}'
-   except:
-     # - master # For dev coverage report
-     - /^release-.+$/
-     - tags
-   tags:
-     - gpu_runner
-     - master_node
-   before_script:
-     # dist as artifacts from build_wheel
-     - ls dist  # print whl version
-     - pip install dist/autodist*.whl
-   script:
-     - cd tests  # force not using source
-     - python3 -c "import autodist; print(autodist.__file__);"  # Check autodist is the installed one instead of source
-     - 'python3 -m pytest -s --run-integration --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov --ignore=integration/test_dist.py .'
-     # Above line is stressed in string because of the colon.
-   artifacts:
-     name: cov-report
-     paths:
-       - htmlcov
-     expire_in: 1 day
+  stage: test
+  image: '${TOOLCHAIN_IMAGE}'
+  except:
+    # - master # For dev coverage report
+    - /^release-.+$/
+    - tags
+  tags:
+    - gpu_runner
+    - master_node
+  before_script:
+    # dist as artifacts from build_wheel
+    - ls dist  # print whl version
+    - pip install dist/autodist*.whl
+  script:
+    - cd tests  # force not using source
+    - python3 -c "import autodist; print(autodist.__file__);"  # Check autodist is the installed one instead of source
+    - 'python3 -m pytest -s --run-integration --cov=autodist --cov-branch --cov-report term-missing --cov-report html:htmlcov --ignore=integration/test_dist.py .'
+    # Above line is stressed in string because of the colon.
+  artifacts:
+    name: cov-report
+    paths:
+      - htmlcov
+    expire_in: 1 day
 
-dist_tests:
-   stage: test_dist
-   image: '${TOOLCHAIN_IMAGE_DIST}'
-   only:
+.job_template: &dist_tests
+  stage: test_dist
+  image: '${TOOLCHAIN_IMAGE_DIST}'
+  only:
+    refs:
       - master
-   tags:
-     - gpu_runner
-     - master_node
-   before_script:
-     # dist as artifacts from build_wheel
-     - ls dist  # print whl version
-     # "distribution_trigger.sh is used to manage the autodist repo on target cluster"
-     - source scripts/distribution_setup.sh
-   script:
-     # execution entrance code
-     - ssh -i /tmp/credentials/id_rsa autodist@$NODE1 "bash /home/autodist/autodist/scripts/distributed_test_trigger.sh"
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^release-.+$/
+  tags:
+    - gpu_runner
+    - master_node
+  before_script:
+    # dist as artifacts from build_wheel
+    - ls dist  # print whl version
+    # "distribution_trigger.sh is used to manage the autodist repo on target cluster"
+    - source scripts/distribution_setup.sh
+  script:
+    # execution entrance code
+    - ssh -i /tmp/credentials/id_rsa autodist@$NODE1 "bash /home/autodist/autodist/scripts/distributed_test_trigger.sh"
+
+dist_tests_master:
+  <<: *dist_tests
+  only:
+    refs:
+      - master
+
+dist_tests_branch:
+  <<: *dist_tests
+  only:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[run-dist\]/
 
 release_docs:
-   only:
-      - master
-      - /^release-.+$/
-      - tags
-   stage: release
-   image: '${TOOLCHAIN_IMAGE}'
-   tags:
-      - docker
-      - nfs
-   script:
-      - apt-get update
-      - apt-get install -y git make rsync
-      - pip install -r docs/requirements-docgen.txt
-      - cd docs
-      - make apidoc
-      - make html
-      - mkdir -p ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
-      - rsync -r --delete _build/html ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
-   artifacts:
-     name: "docs"
-     paths:
-       - docs/_build/html
-     expire_in: 3 days
+  only:
+    - master
+    - /^release-.+$/
+    - tags
+  stage: release
+  image: '${TOOLCHAIN_IMAGE}'
+  tags:
+    - docker
+    - nfs
+  script:
+    - apt-get update
+    - apt-get install -y git make rsync
+    - pip install -r docs/requirements-docgen.txt
+    - cd docs
+    - make apidoc
+    - make html
+    - mkdir -p ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
+    - rsync -r --delete _build/html ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
+  artifacts:
+    name: "docs"
+    paths:
+      - docs/_build/html
+    expire_in: 3 days
 
 release_autodist_wheel:
-   only:
-      - master
-      - /^release-.+$/
-      - tags
-   stage: release
-   tags:
-      - docker
-   image: python:3.6-slim
-   before_script:
-     - pip install wheel
-     - pip install twine
-   script:
-      # dist as artifacts from build_wheel
-      - ls dist  # print whl version
-      - twine upload --repository-url=http://pypi.int.petuum.com:8080/ -u "" -p "" dist/autodist*.whl
+  only:
+    - master
+    - /^release-.+$/
+    - tags
+  stage: release
+  tags:
+    - docker
+  image: python:3.6-slim
+  before_script:
+    - pip install wheel
+    - pip install twine
+  script:
+    # dist as artifacts from build_wheel
+    - ls dist  # print whl version
+    - twine upload --repository-url=http://pypi.int.petuum.com:8080/ -u "" -p "" dist/autodist*.whl
