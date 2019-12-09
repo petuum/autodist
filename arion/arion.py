@@ -1,9 +1,9 @@
 """User Interface."""
 
-import os
-import types
 from collections import namedtuple
 
+import os
+import types
 import numpy as np
 from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.eager import context
@@ -21,7 +21,7 @@ from autodist.kernel.graph_transformer import GraphTransformer
 from autodist.remapper import Remapper
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import Runner, RunnerConfig, WrappedSession
-from autodist.strategy.base import StrategyBuilder, StrategyCompiler
+from autodist.strategy.base import Strategy, StrategyCompiler
 from autodist.utils import logging
 from autodist.utils.code_transformer import transform
 
@@ -31,9 +31,9 @@ IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 class _AutoDistInterface:
 
-    def __init__(self, resource_spec_file, strategy_name=None, strategy_path=None, runner_config_file=None):
+    def __init__(self, resource_spec_file, strategy_builder, strategy_path=None, runner_config_file=None):
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
-        self._strategy_name = strategy_name
+        self._strategy_builder = strategy_builder
         self._strategy_path = strategy_path
         # TODO: deprecate the runner config
         self._runner_config = RunnerConfig(config_file=runner_config_file)
@@ -57,14 +57,15 @@ class _AutoDistInterface:
             (Strategy) Distributed strategy representation object.
         """
         self._original_graph_item.prepare()
-        return StrategyBuilder.build(self._original_graph_item, self._resource_spec, self._strategy_name)
+        return self._strategy_builder.build(self._original_graph_item, self._resource_spec)
 
     def _build_or_load_strategy(self):
         if IS_AUTODIST_CHIEF:
             s = self.build_strategy()
             s.serialize()
         else:
-            s = StrategyBuilder.load_strategy()
+            strategy_id = os.environ[Env.AUTODIST_STRATEGY_ID.name]
+            s = Strategy.deserialize(strategy_id)
         return s
 
     def _compile_strategy(self, strategy):

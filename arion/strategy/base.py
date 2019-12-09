@@ -1,62 +1,13 @@
 """Strategy Base."""
 
 import os
+from abc import ABC, abstractmethod
 from datetime import datetime
 
-from autodist.const import DEFAULT_SERIALIZATION_DIR, Env
+from autodist.const import DEFAULT_SERIALIZATION_DIR
+from autodist.graph_item import GraphItem
 from autodist.proto import strategy_pb2
 from autodist.resource_spec import ResourceSpec
-
-
-class StrategyBuilder:
-    """
-    A base builder for various strategies.
-
-    Returns:
-        [type]: [description]
-    """
-
-    def __init__(self, item, resource_spec: ResourceSpec):
-        self._item = item
-        self._resource_spec = resource_spec
-
-    @classmethod
-    def all_subclasses(cls):
-        """Get all subclasses recursively as a set."""
-        subclasses = set()
-        for subclass in cls.__subclasses__():
-            subclasses.add(subclass)
-            subclasses.update(subclass.all_subclasses())
-        return subclasses
-
-    @classmethod
-    def get_subclasses(cls):
-        """Get the mapping between strategy name and strategy classes."""
-        return {c.__name__: c for c in cls.all_subclasses()}
-
-    @classmethod
-    def build(cls, item, resource_spec, strategy_name):
-        """
-        Build strategy representation instance.
-
-        TODO: change the method name
-        """
-        if strategy_name not in cls.get_subclasses():
-            strategy_name = 'Auto'
-
-        o = cls.get_subclasses()[strategy_name](item, resource_spec)
-        strategy = o._build()  # pylint: disable=protected-access
-        return strategy
-
-    def _build(self):
-        pass
-
-    @classmethod
-    def load_strategy(cls):
-        """Load serialized strategy."""
-        strategy_id = os.environ[Env.AUTODIST_STRATEGY_ID.name]
-        o = Strategy.deserialize(strategy_id)
-        return o
 
 
 class Strategy:
@@ -131,6 +82,24 @@ class Strategy:
         new_strategy = strategy_pb2.Strategy()
         new_strategy.ParseFromString(data)
         return cls(strategy=new_strategy)
+
+
+class StrategyBuilder(ABC):
+    """A base builder for various strategies."""
+
+    @abstractmethod
+    def build(self, graph_item: GraphItem, resource_spec: ResourceSpec) -> Strategy:
+        """
+        Build strategy representation instance with a graph item and a resource spec.
+
+        Args:
+            graph_item (GraphItem):
+            resource_spec (ResourceSpec):
+
+        Returns:
+            (Strategy) A strategy representation instance.
+        """
+        raise NotImplementedError
 
 
 class StrategyCompiler:

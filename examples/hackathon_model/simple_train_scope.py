@@ -5,10 +5,15 @@ import numpy as np
 from absl import app
 
 from autodist import AutoDist
+from autodist.strategy.ps_strategy import PS
+from autodist.strategy.ps_lb_strategy import PSLoadBalancing
+from autodist.strategy.partitioned_ps_strategy import PartitionedPS
+from autodist.strategy.all_reduce_strategy import AllReduce
+from autodist.strategy.parallax_strategy import Parallax
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), '../resource_spec.yml')
 config_file = os.path.join(os.path.dirname(__file__), '../runner_config.yml')
-autodist = AutoDist(resource_spec_file, 'AllReduce', runner_config_file=config_file)
+autodist = AutoDist(resource_spec_file, AllReduce(), runner_config_file=config_file)
 
 vocab_size = 10000
 embedding_size = 16

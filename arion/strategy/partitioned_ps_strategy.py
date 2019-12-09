@@ -10,18 +10,19 @@ from autodist.proto import strategy_pb2
 class PartitionedPS(StrategyBuilder):
     """Partitioned PS Strategy with Greedy Load Balancer."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, local_proxy_variable=False):
+        self._local_proxy_variable = local_proxy_variable
         self.loads = {}
-        super().__init__(*args, **kwargs)
 
-    def _build(self):
+    def build(self, graph_item, resource_spec):
+        """Build it."""
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config
-        expr.graph_config.replicas.extend([k for k, v in self._resource_spec.gpu_devices])
+        expr.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
         # find all variables
-        variables = self._item.get_trainable_variables()
-        reduction_device_names = [k for k, _ in self._resource_spec.cpu_devices]
+        variables = graph_item.trainable_var_op_to_var.values()
+        reduction_device_names = [k for k, _ in resource_spec.cpu_devices]
         self.loads = {ps: 0.0 for ps in reduction_device_names}
 
         # Mark each variable to be synchronized with a Parameter Server
@@ -56,9 +57,9 @@ class PartitionedPS(StrategyBuilder):
         node.PSSynchronizer.sync = True
         return node
 
-    def get_num_shards(self, tensor):
+    @staticmethod
+    def get_num_shards(var):
         """Gets the minimum number of shards for a variable."""
-        var = self._item.trainable_var_op_to_var[tensor.op]
         if not var.initial_value.shape.ndims:
             return 1
 

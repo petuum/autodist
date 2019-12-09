@@ -64,7 +64,7 @@ def main(autodist):
             l_val, _, b_val = train_step(input=inputs_iterator.get_next())
             print('loss:', l_val)
 
-        if autodist._strategy_name == 'AllReduce':
+        if autodist._strategy_builder.__class__.__name__ == 'AllReduce':
             return
         # Integration Value Test:
         # It requires np.random.seed to be 123 on chief, 456 on worker.

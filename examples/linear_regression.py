@@ -7,13 +7,18 @@ import tensorflow as tf
 from tensorflow.python.training.training_util import get_or_create_global_step
 
 from autodist import AutoDist
+from autodist.strategy.ps_strategy import PS
+from autodist.strategy.ps_lb_strategy import PSLoadBalancing
+from autodist.strategy.partitioned_ps_strategy import PartitionedPS
+from autodist.strategy.all_reduce_strategy import AllReduce
+from autodist.strategy.parallax_strategy import Parallax
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
 config_file = os.path.join(os.path.dirname(__file__), 'runner_config.yml')
 
 
 def main(_):
-    autodist = AutoDist(resource_spec_file, 'PS', runner_config_file=config_file)
+    autodist = AutoDist(resource_spec_file, Parallax(), runner_config_file=config_file)
 
     TRUE_W = 3.0
     TRUE_b = 2.0

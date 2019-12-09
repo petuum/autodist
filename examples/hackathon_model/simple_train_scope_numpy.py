@@ -5,9 +5,9 @@ import numpy as np
 from absl import app
 
 from autodist import AutoDist
-
+from autodist.strategy.ps_strategy import PS
 resource_spec_file = os.path.join(os.path.dirname(__file__), '../resource_spec.yml')
-autodist = AutoDist(resource_spec_file, 'PS')
+autodist = AutoDist(resource_spec_file, PS())
 
 vocab_size = 10000
 embedding_size = 16
