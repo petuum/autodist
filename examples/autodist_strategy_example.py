@@ -5,8 +5,9 @@ import tensorflow as tf
 ############################################################
 # Change 1: Construct AutoDist with ResourceSpec
 from autodist import AutoDist
+from autodist.strategy.all_reduce_strategy import AllReduce
 resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
-d = AutoDist(resource_spec_file, 'PS')
+d = AutoDist(resource_spec_file, AllReduce())
 #############################################################
 
 NUM_DATAPOINTS = 100
@@ -22,7 +23,7 @@ train_labels = train_labels[0:NUM_DATAPOINTS]
 
 BATCH_SIZE = 32
 STEPS_PER_EPOCH = len(train_images) // BATCH_SIZE
-EPOCHS = 20
+EPOCHS = 5
 
 #############################################################
 # Change 2: Put Model under the Scope

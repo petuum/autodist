@@ -9,27 +9,28 @@ from autodist.proto import strategy_pb2
 class PSLoadBalancing(StrategyBuilder):
     """PS Strategy with Greedy Load Balancing."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, local_proxy_variable=False):
+        self._local_proxy_variable = local_proxy_variable
         self.loads = {}
-        super().__init__(*args, **kwargs)
 
-    def _build(self):
+    def build(self, graph_item, resource_spec):
+        """Build it."""
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config
-        expr.graph_config.replicas.extend([k for k, v in self._resource_spec.gpu_devices])
+        expr.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
         # find all variables
-        variables = self._item.get_trainable_variables()
-        reduction_device_names = [k for k, _ in self._resource_spec.cpu_devices]
+        variables = graph_item.get_trainable_variables()
+        reduction_device_names = [k for k, _ in resource_spec.cpu_devices]
         self.loads = {ps: 0.0 for ps in reduction_device_names}
 
         # Mark each variable to be synchronized with a Parameter Server
-        node_config = [self._gen_ps_node_config(var) for var in variables]
+        node_config = [self._gen_ps_node_config(var, self._local_proxy_variable) for var in variables]
         expr.node_config.extend(node_config)
 
         return expr
 
-    def _gen_ps_node_config(self, var):
+    def _gen_ps_node_config(self, var, local_proxy_variable):
         """
         Creates a NodeConfig specifying synchronization with Parameter Servers.
 
@@ -45,7 +46,7 @@ class PSLoadBalancing(StrategyBuilder):
         node = strategy_pb2.Strategy.Node()
         node.var_name = var.name
         node.PSSynchronizer.reduction_destinations.extend([min_ps])
-        node.PSSynchronizer.local_replication = False
+        node.PSSynchronizer.local_replication = local_proxy_variable
         node.PSSynchronizer.sync = True
         return node
 

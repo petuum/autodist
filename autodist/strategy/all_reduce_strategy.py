@@ -7,13 +7,14 @@ from autodist.proto import strategy_pb2, synchronizers_pb2
 class AllReduce(StrategyBuilder):
     """AllReduce Strategy."""
 
-    def _build(self):
+    def build(self, graph_item, resource_spec):
+        """Build it."""
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config
-        expr.graph_config.replicas.extend([k for k, v in self._resource_spec.gpu_devices])
+        expr.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
         # find all variables
-        variables = self._item.get_trainable_variables()
+        variables = graph_item.get_trainable_variables()
 
         # Mark each variable to be synchronized with allreduce
         node_config = [self._gen_all_reduce_node_config(var.name) for var in variables]
