@@ -1,8 +1,7 @@
 """A collection of useful functions for the kernel submodule."""
-from collections import defaultdict, deque
+from collections import deque
 
 from autodist.const import AUTODIST_REPLICA_PREFIX
-from autodist.kernel.common.op_info import STAGE_OP_TYPES
 
 
 def get_op_name(tensor_name):
@@ -149,6 +148,7 @@ def get_ancestors(start_ops, end_ops=None, include_control_inputs=False):
         if include_control_inputs:
             out.extend(op.control_inputs)
         return out
+
     return traverse(start_ops, end_ops=end_ops, neighbors_fn=get_neighbors)
 
 
@@ -202,16 +202,6 @@ def remove_control_input(op, op_to_remove):
     new_control_inputs.remove(op_to_remove)
     op._remove_all_control_inputs()
     op._add_control_inputs(new_control_inputs)
-
-
-def get_shared_name_to_stage_ops(input_ops):
-    """Get shared_name_to_stage_ops mapping."""
-    stage_ops = [op for op in input_ops if op.type in STAGE_OP_TYPES]
-    shared_name_to_stage_ops = defaultdict(list)
-    for stage_op in stage_ops:
-        shared_name = stage_op.get_attr("shared_name")
-        shared_name_to_stage_ops[shared_name].append(stage_op)
-    return shared_name_to_stage_ops
 
 
 def get_index_from_tensor_name(tensor_name):

@@ -12,6 +12,7 @@ class PSLoadBalancing(StrategyBuilder):
     def __init__(self, local_proxy_variable=False):
         self._local_proxy_variable = local_proxy_variable
         self.loads = {}
+        super().__init__()
 
     def build(self, graph_item, resource_spec):
         """Build it."""

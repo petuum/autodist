@@ -34,7 +34,10 @@ class Parallax(PSLoadBalancing, AllReduce):
             if isinstance(grad, ops.Tensor):  # this is a dense variable
                 config = self._gen_all_reduce_node_config(var.name, 'RING')
             else:  # sparse updates
-                config = self._gen_ps_node_config(var, self._local_proxy_variable)
+                config = self._gen_ps_node_config(
+                    var,
+                    False  # For Parallax Strategy, all PS vars are sparse which does not need proxy.
+                )
             node_config.append(config)
         expr.node_config.extend(node_config)
 
