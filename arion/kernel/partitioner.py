@@ -5,7 +5,7 @@ from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python import ops
 from tensorflow.python.ops import embedding_ops
-from tensorflow.python.ops import variable_scope as vs, array_ops
+from tensorflow.python.ops import variable_scope as vs, array_ops, math_ops
 from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
@@ -190,11 +190,12 @@ class VariablePartitioner(Kernel):
                     values=new_graph_item.graph.get_tensor_by_name(gradient.values.name),
                     dense_shape=new_graph_item.graph.get_tensor_by_name(gradient.dense_shape.name)
                 )
+                split_grad = self._split_indexed_slices(new_grad, len(var_list), var.shape[0],
+                                                        name=f"gradients/splits/sparse_split_{var_op_name}")
             else:
                 new_grad = new_graph_item.graph.get_tensor_by_name(gradient.name)
-
-            split_grad = array_ops.split(new_grad, len(var_list),
-                                         name=f"gradients/splits/split_{var_op_name}")
+                split_grad = array_ops.split(new_grad, len(var_list),
+                                             name=f"gradients/splits/split_{var_op_name}")
 
             for op in get_consumers(var_op):
                 op = new_graph_item.graph.get_operation_by_name(ops.prepend_name_scope(op.name, AUTODIST_TO_DELETE_SCOPE))
@@ -279,6 +280,18 @@ class VariablePartitioner(Kernel):
 
             new_graph_def.node.append(node)
         return new_graph_def
+
+    @staticmethod
+    def _split_indexed_slices(sp_input=None, num_split=None, dim_size=0, name=None):
+        size_per_shard = dim_size // num_split
+        all_indices = list(range(dim_size))
+        indices = [all_indices[0:i * size_per_shard] + all_indices[(i + 1) * size_per_shard:] for i in range(num_split)]
+        split_grads = []
+        for i in range(0, num_split):
+            s = array_ops.sparse_mask(sp_input, indices[i], name=name + f"-{i}")
+            s._indices = math_ops.floormod(s.indices, size_per_shard, name=name + f"-{i}/mod")
+            split_grads.append(s)
+        return split_grads
 
     @staticmethod
     def _prune_graphdef_node_inputs(node):
