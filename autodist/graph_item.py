@@ -37,11 +37,6 @@ def cached_property(fn, *args, **kwargs):
 _default_graph_item = None
 
 
-def get_default_graph_item():
-    """Get the default graph item of the current scope."""
-    return _default_graph_item
-
-
 def wrap_optimizer_init(fn):
     """Wraps the __init__ function of OptimizerV2 objects and stores the info in the default GraphItem."""
     def wrapper(*args, **kwargs):

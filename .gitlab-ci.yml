@@ -80,7 +80,7 @@ tests:
   artifacts:
     name: cov-report
     paths:
-      - htmlcov
+      - tests/htmlcov
     expire_in: 1 day
 
 .job_template: &dist_tests

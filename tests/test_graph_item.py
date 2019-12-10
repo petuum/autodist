@@ -87,13 +87,13 @@ def test_update_ops_for_optimizers(optimizer_class, kwargs):
 def test_graph_item_context_scope():
     g1 = ops.Graph()
     i1 = graph_item.GraphItem(graph=g1)
-    assert graph_item.get_default_graph_item() is None
+    assert graph_item._default_graph_item is None
     with i1.as_default() as item:
-        assert graph_item.get_default_graph_item() == i1
+        assert graph_item._default_graph_item == i1
         assert item._graph == g1
         assert ops.get_default_graph() == g1
         setattr(item, 'new_attr', 'new_value')
-    assert graph_item.get_default_graph_item() is None
+    assert graph_item._default_graph_item is None
     assert getattr(i1, 'new_attr') == 'new_value'
 
 

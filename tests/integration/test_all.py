@@ -24,7 +24,7 @@ resource_specs = [
     os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),  # single node with 2 GPUs
     os.path.join(os.path.dirname(__file__), 'resource_specs/r2.yml')  # single node with 1 GPU
 ]
-strategies = [PS(), PSLoadBalancing(), PartitionedPS(), AllReduce(), Parallax(),
+strategies = [PS(), PartitionedPS(local_proxy_variable=True), AllReduce(),
               PSLoadBalancing(local_proxy_variable=True), Parallax(local_proxy_variable=True)]
 
 
@@ -35,7 +35,7 @@ def test_all():
         for c in cases:
             if isinstance(s, AllReduce) and c not in [c0, c1]:
                 continue
-            if isinstance(s, AllReduce) or isinstance(s, Parallax) and r == resource_specs[1]:
+            if (isinstance(s, AllReduce) or isinstance(s, Parallax)) and r == resource_specs[1]:
                 continue
 
             def run():
