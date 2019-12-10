@@ -1,5 +1,6 @@
 """AllReduce Synchronizer."""
 from collections import defaultdict
+from itertools import count
 
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
@@ -27,9 +28,17 @@ class AllReduceSynchronizer(Synchronizer):
     (2) any other types of hybrid reduction of PS and Allreduce.
     """
 
+    _ids = count(0)
+
     def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer):
         self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(config.spec)
         self._compressor_type = synchronizers_pb2.AllReduceSynchronizer.Compressor.Name(config.compressor)
+        # TODO: make this configurable in the future
+        self._chunk_size = 128
+        # NOTE: python generator is not thread safe!!!
+        # Current assumption is this class will be used in
+        # a single thread.
+        self._chunk_id = next(self._ids) // self._chunk_size
         super().__init__()
 
     def in_graph_apply(self, graph_item, var_name):
@@ -75,7 +84,8 @@ class AllReduceSynchronizer(Synchronizer):
             conf.instance_key = get_collective_keys().get_instance_key(var_op_name)
             conf.merge_op = 'Add'
             conf.final_op = 'Div'
-            with ops.name_scope(replica_prefix(i)):
+            # "\/" is added for name scope reuse
+            with ops.name_scope(replica_prefix(i) + "-{}/".format(self._chunk_id)):
                 with ops.colocate_with(grad.op):
                     reduced_grad = compressors[i].reduce(grad, conf)
             update_consumers(grad_consumers, grad, reduced_grad)
