@@ -4,7 +4,7 @@ import os
 import hashlib
 
 import yaml
-from tensorflow.core.protobuf import config_pb2
+from tensorflow.core.protobuf import config_pb2, rewriter_config_pb2
 from tensorflow.python.client import timeline, session
 
 import autodist.const
@@ -63,6 +63,21 @@ class RunnerConfig:
         self.trace_level = getattr(config_pb2.RunOptions.TraceLevel,
                                    config.pop('trace_level', 'NO_TRACE'))
         self.log_graph = config.pop('log_graph', False)
+
+
+def get_session_config():
+    """Create a session config."""
+    session_config = config_pb2.ConfigProto()
+    session_config.allow_soft_placement = True
+
+    # enable scoped_allocator for collective_ops
+    rewrite_options = session_config.graph_options.rewrite_options
+    rewrite_options.scoped_allocator_optimization = (
+        rewriter_config_pb2.RewriterConfig.ON)
+    del rewrite_options.scoped_allocator_opts.enable_op[:]
+    rewrite_options.scoped_allocator_opts.enable_op.append('CollectiveReduce')
+
+    return session_config
 
 
 class Runner:
@@ -133,10 +148,11 @@ class Runner:
                 self._create_feed_dict(graph, args_ph_map)
 
                 target = self._cluster.get_local_session_target()
-                self._session = session.Session(target=target, config=config_pb2.ConfigProto(
-                    allow_soft_placement=True,
-                    # log_device_placement=True
-                ))
+                self._session = session.Session(
+                    target=target,
+                    graph=self._graph_item.graph,
+                    config=get_session_config()
+                )
                 atexit.register(self._clean)
 
                 # TensorFlow default initializations
@@ -179,10 +195,11 @@ class WrappedSession:
         self._cluster = cluster
 
         target = self._cluster.get_local_session_target()
-        self._session = session.Session(target=target, graph=self._graph_item.graph, config=config_pb2.ConfigProto(
-            allow_soft_placement=True,
-            # log_device_placement=True
-        ))
+        self._session = session.Session(
+            target=target,
+            graph=self._graph_item.graph,
+            config=get_session_config()
+        )
 
         # TensorFlow default initializations
         # TODO: Rethink. Should we do this?
