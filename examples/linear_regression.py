@@ -18,7 +18,9 @@ config_file = os.path.join(os.path.dirname(__file__), 'runner_config.yml')
 
 
 def main(_):
-    autodist = AutoDist(resource_spec_file, Parallax(), runner_config_file=config_file)
+    # autodist = AutoDist(resource_spec_file, Parallax(), runner_config_file=config_file)
+    # allreduce chunk size is configurable now.
+    autodist = AutoDist(resource_spec_file, AllReduce(128), runner_config_file=config_file)
 
     TRUE_W = 3.0
     TRUE_b = 2.0

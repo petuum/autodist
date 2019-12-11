@@ -25,4 +25,5 @@ message AllReduceSynchronizer {
     }
 
     Compressor compressor = 2;
+    int32 chunk_size = 3;
 }

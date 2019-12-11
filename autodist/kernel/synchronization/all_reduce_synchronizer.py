@@ -33,8 +33,7 @@ class AllReduceSynchronizer(Synchronizer):
     def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer):
         self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(config.spec)
         self._compressor_type = synchronizers_pb2.AllReduceSynchronizer.Compressor.Name(config.compressor)
-        # TODO: make this configurable in the future
-        self._chunk_size = 128
+        self._chunk_size = config.chunk_size
         # NOTE: python generator is not thread safe!!!
         # Current assumption is this class will be used in
         # a single thread.

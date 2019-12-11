@@ -7,6 +7,16 @@ from autodist.proto import strategy_pb2, synchronizers_pb2
 class AllReduce(StrategyBuilder):
     """AllReduce Strategy."""
 
+    def __init__(self, chunk_size=128):
+        """
+        Init function.
+
+        Args:
+            chunk_size (int): chunk_size is a positive integer
+                              used by scoped allocator.
+        """
+        self.chunk_size = chunk_size 
+
     def build(self, graph_item, resource_spec):
         """Build it."""
         expr = Strategy()
@@ -22,8 +32,9 @@ class AllReduce(StrategyBuilder):
 
         return expr
 
-    @staticmethod
-    def _gen_all_reduce_node_config(var_name, all_reduce_spec="AUTO", compressor="PowerSGDCompressor"):
+    # why do we need this to be staticmethod?
+    # @staticmethod
+    def _gen_all_reduce_node_config(self, var_name, all_reduce_spec="AUTO", compressor="PowerSGDCompressor"):
         """
         Creates a NodeConfig specifying synchronization with AllReduce.
 
@@ -41,4 +52,5 @@ class AllReduce(StrategyBuilder):
         node.var_name = var_name
         node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value(all_reduce_spec)
         node.AllReduceSynchronizer.compressor = synchronizers_pb2.AllReduceSynchronizer.Compressor.Value(compressor)
+        node.AllReduceSynchronizer.chunk_size = self.chunk_size
         return node
