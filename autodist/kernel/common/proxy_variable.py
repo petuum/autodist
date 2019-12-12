@@ -1,15 +1,15 @@
 """Implementations for the proxy variable in PS."""
 from collections import defaultdict
 
+from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 from tensorflow.python import ops
 from tensorflow.python.ops import variable_scope
-
 from tensorflow.python.util.compat import as_bytes
-from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common.resource_variable_utils import get_read_var_ops, get_read_var_tensor, gen_read_var_op
-from autodist.kernel.common.utils import get_consumers, update_consumers, replica_prefix, AUTODIST_REPLICA_PREFIX
+from autodist.kernel.common.utils import get_consumers, update_consumers, replica_prefix, AUTODIST_REPLICA_PREFIX, \
+    parse_optimizer_scope
 from autodist.utils import logging
 
 
@@ -35,6 +35,8 @@ class ProxyVariable:
         self._consumer_to_read_var_op = {c: o for o in self._read_var_ops for c in get_consumers(o)}
         self._read_var_op_to_consumers = {o: get_consumers(o) for o in self._read_var_ops}
 
+        self._optimizer_name_scope = parse_optimizer_scope(
+            graph_item.var_op_name_to_grad_info[resource_var.op.name][2].name)
         self._proxy_vars = []
         self._proxy_var_init_ops = []
         self._read_var_ops_mappings = defaultdict(dict)
@@ -77,10 +79,11 @@ class ProxyVariable:
     def update_colocation_group(self, get_colocation_op):
         """Update operations colocated with master variables to be colocated with mirror variables."""
         for op in self._graph_item.graph.get_operations():
-            # Do not update shared node
+            # Do not update shared node (including nodes in the optimizer)
             # Do not update operations within the variable scope of master var
             # Do not update the VarhandleOp itself
             if not op.name.startswith(AUTODIST_REPLICA_PREFIX) or \
+                    op.name.startswith(self._optimizer_name_scope) or \
                     op.name.startswith(self._this_op.name + '/') or \
                     (op.name.startswith(self._this_op.name) and op.type == 'VarHandleOp'):
                 continue
