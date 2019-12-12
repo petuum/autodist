@@ -50,6 +50,21 @@ def parse_name_scope(name):
     return ''
 
 
+def parse_optimizer_scope(update_op_name):
+    """
+    Given the name of an update_op, return its optimizer name scope.
+
+    Args:
+        update_op_name: the name of an update_op (usually ResourceApply).
+
+    Returns:
+        name_scope: the outermost name scope of the optimizer
+    """
+    first_pos = update_op_name.find('/')
+    second_pos = update_op_name.find('/', first_pos + 1)
+    return update_op_name[:second_pos + 1]
+
+
 def replica_prefix(replica_id):
     """
     Generate replica prefix based on replica id.
@@ -190,18 +205,21 @@ def update_control_consumers(control_consumer_ops, old_op, new_op):
         control_consumer_op._add_control_inputs(control_inputs)
 
 
-def remove_control_input(op, op_to_remove):
+def remove_from_control_consumers(control_consumer_ops, op_to_remove):
     """
-    Remove the op_to_remove from op's control inputs.
+    Remove the op_to_remove from the control inputs for each op in "control_consumer_ops".
 
     Args:
-        op: the op whose control input is to be removed
+        control_consumer_ops: a list of ops that have op_to_remove as their current control inputs
         op_to_remove: the op to be removed
     """
-    new_control_inputs = op.control_inputs
-    new_control_inputs.remove(op_to_remove)
-    op._remove_all_control_inputs()
-    op._add_control_inputs(new_control_inputs)
+    for control_consumer_op in control_consumer_ops:
+        control_inputs = list(control_consumer_op.control_inputs)
+        size = len(control_inputs)
+        control_inputs.remove(op_to_remove)
+        assert size - 1 == len(control_inputs)
+        control_consumer_op._remove_all_control_inputs()
+        control_consumer_op._add_control_inputs(control_inputs)
 
 
 def get_index_from_tensor_name(tensor_name):

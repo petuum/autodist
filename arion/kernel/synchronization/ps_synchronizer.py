@@ -12,8 +12,8 @@ from autodist.kernel.common import utils, resource_variable_utils
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common.resource_variable_utils import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
-    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, remove_control_input, \
-    get_index_from_tensor_name
+    update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, \
+    remove_from_control_consumers, get_index_from_tensor_name
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.kernel.common.proxy_variable import ProxyVariable
 from autodist.proto import synchronizers_pb2
@@ -187,8 +187,24 @@ class PSSynchronizer(Synchronizer):
                 continue
             this_var_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
             _, _, update_op = graph_item.var_op_name_to_grad_info[this_var_op_name]
-            for c_output in update_op._control_outputs:  # pylint: disable=protected-access
-                remove_control_input(c_output, update_op)
+            source_op = self._get_optimizer_source_op(update_op)
+            remove_from_control_consumers(get_control_consumers(source_op), source_op)
+
+    @staticmethod
+    def _get_optimizer_source_op(update_op):
+        """
+        Identify the additional no_op between update_op and train_op if it exists (for certain optimizers).
+
+        Args:
+            update_op
+
+        Returns:
+            source_op: the no_op if existed, otherwise the update_op itself.
+        """
+        group_deps = [op for op in get_control_consumers(update_op)
+                      if 'Adam' in op.name and 'group_deps' in op.name and op.type == 'NoOp']
+        source_op = group_deps[0] if group_deps else update_op
+        return source_op
 
     def between_graph_apply(self, graph_item, var_name):
         """
@@ -239,10 +255,11 @@ class PSSynchronizer(Synchronizer):
 
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
         is_trainable = var_op in graph_item.trainable_var_op_to_var
-        cc = get_control_consumers(var_update_op)
+        source_op = self._get_optimizer_source_op(var_update_op)
+        cc = get_control_consumers(source_op)
 
         with ops.device(var_op.device), ops.name_scope(""):
-            queue_ops = self._get_queue_ops(var_update_op, self.is_chief, is_trainable)
+            queue_ops = self._get_queue_ops(var_update_op, source_op, self.is_chief, is_trainable)
 
             # Only dense trainable variables are replicated locally
             if variable_replicator:
@@ -262,12 +279,12 @@ class PSSynchronizer(Synchronizer):
         self._place_post_grad_agg_ops(device_spec.DeviceSpecV2.from_string(self.target_device),
                                       self._var_op_to_agg_grad, {var_op: var_update_op} if is_trainable else {})
 
-        # Replace variable update op with finish_op (control input)
-        # or read_op (input)
-        update_control_consumers(cc, var_update_op, finish_op)
+        # Replace the control input of train_op to be finish_op
+        # Note(Hao): this cc is stale, i.e. cc \subset get_control_consumers(source_op)
+        update_control_consumers(cc, source_op, finish_op)
 
     # pylint: disable=too-many-branches
-    def _get_queue_ops(self, var_update_op, is_chief, is_trainable):
+    def _get_queue_ops(self, var_update_op, source_op, is_chief, is_trainable):
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
 
         var_update_sync_queues = \
@@ -279,7 +296,8 @@ class PSSynchronizer(Synchronizer):
         queue_ops = []
         if is_chief:
             if is_trainable:
-                var_update_deps = [self._var_op_to_accum_apply_op[var_op], var_update_op]
+                # var_update_deps = [self._var_op_to_accum_apply_op[var_op], var_update_op]
+                var_update_deps = [self._var_op_to_accum_apply_op[var_op], source_op]
             else:
                 var_update_deps = [var_update_op]
             # Chief enqueues tokens to all other workers
