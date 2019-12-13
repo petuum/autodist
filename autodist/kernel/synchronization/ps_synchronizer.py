@@ -217,8 +217,9 @@ class PSSynchronizer(Synchronizer):
         Returns:
             GraphItem: updated graph item.
         """
+        if not self._sync:
+            return graph_item
         item = graph_item
-
         # here the variable on replica:0 has been shared, so the original var_name won't work
         var_op_name = ops.prepend_name_scope(get_op_name(var_name), replica_prefix(0))
         gradient, target, update_op = item.var_op_name_to_grad_info[var_op_name]
@@ -228,8 +229,7 @@ class PSSynchronizer(Synchronizer):
                 proxy.update_colocation_group(item.get_colocation_op)
             self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = \
                 self._get_accumulation_ops(item, gradient, target, self.num_workers)
-            if self._sync:
-                self.add_sync_op(item, update_op, proxy)
+            self.add_sync_op(item, update_op, proxy)
         return item
 
     def add_sync_op(self, graph_item, var_update_op, variable_replicator=None):

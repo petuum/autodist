@@ -10,8 +10,9 @@ from autodist.proto import strategy_pb2
 class PartitionedPS(StrategyBuilder):
     """Partitioned PS Strategy with Greedy Load Balancer."""
 
-    def __init__(self, local_proxy_variable=False):
+    def __init__(self, local_proxy_variable=False, sync=True):
         self._local_proxy_variable = local_proxy_variable
+        self._sync = sync
         self.loads = {}
 
     def build(self, graph_item, resource_spec):
@@ -54,7 +55,7 @@ class PartitionedPS(StrategyBuilder):
         node.var_name = var.name
         node.PSSynchronizer.reduction_destinations.extend(min_ps)
         node.PSSynchronizer.local_replication = self._local_proxy_variable
-        node.PSSynchronizer.sync = True
+        node.PSSynchronizer.sync = self._sync
         return node
 
     @staticmethod

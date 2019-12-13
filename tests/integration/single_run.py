@@ -9,8 +9,7 @@ from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.strategy.ps_strategy import PS
 
 STRATEGIES_FOR_DISTRIBUTED_TESTS = {
-    'PS': PS(),
-    'PSLoadBalancing': PSLoadBalancing(),
+    'PS': PS(sync=False),
     'PartitionedPS': PartitionedPS(),
     'AllReduce': AllReduce(),
     'Parallax': Parallax(),

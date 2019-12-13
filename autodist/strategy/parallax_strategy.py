@@ -36,7 +36,8 @@ class Parallax(PSLoadBalancing, AllReduce):
             else:  # sparse updates
                 config = self._gen_ps_node_config(
                     var,
-                    False  # For Parallax Strategy, all PS vars are sparse which does not need proxy.
+                    False,  # For Parallax Strategy, all PS vars are sparse which does not need proxy.
+                    self._sync
                 )
             node_config.append(config)
         expr.node_config.extend(node_config)

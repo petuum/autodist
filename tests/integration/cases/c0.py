@@ -64,17 +64,16 @@ def main(autodist):
             l_val, _, b_val = train_step(input=inputs_iterator.get_next())
             print('loss:', l_val)
 
-        # if autodist._strategy_name in ['AllReduce']:
-        #     return
-        # Integration Value Test:
-        # It requires np.random.seed to be 123 on chief, 456 on worker.
-        # Variable b's gradients[1] == -4.17503 on chief, == -4.05530 on worker
-        num_workers = len(autodist._cluster.cluster_spec['worker'])
-        # When SGD learning rate == 0.01 and b is initialied by zero,
-        # the updated variable b value can be verified as below
-        if num_workers == 1:
-            assert np.allclose(b_val, 0.01 * 4.17503)
-        elif num_workers == 2:
-            # Between-graph dense conditional accumulator average verification
-            assert np.allclose(b_val, 0.01 * (4.17503 + 4.05530) / 2)
-            # TODO: between graph sparse verification
+        if getattr(autodist._strategy_builder, '_sync', True):
+            # Integration Value Test:
+            # It requires np.random.seed to be 123 on chief, 456 on worker.
+            # Variable b's gradients[1] == -4.17503 on chief, == -4.05530 on worker
+            num_workers = len(autodist._cluster.cluster_spec['worker'])
+            # When SGD learning rate == 0.01 and b is initialied by zero,
+            # the updated variable b value can be verified as below
+            if num_workers == 1:
+                assert np.allclose(b_val, 0.01 * 4.17503)
+            elif num_workers == 2:
+                # Between-graph dense conditional accumulator average verification
+                assert np.allclose(b_val, 0.01 * (4.17503 + 4.05530) / 2)
+                # TODO: between graph sparse verification
