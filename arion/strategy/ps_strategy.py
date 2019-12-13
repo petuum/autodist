@@ -7,8 +7,9 @@ from autodist.proto import strategy_pb2
 class PS(StrategyBuilder):
     """PS Strategy."""
 
-    def __init__(self, local_proxy_variable=False):
+    def __init__(self, local_proxy_variable=False, sync=True):
         self._local_proxy_variable = local_proxy_variable
+        self._sync = sync
 
     def build(self, graph_item, resource_spec):
         """Build PS strategy."""
@@ -21,13 +22,14 @@ class PS(StrategyBuilder):
         reduction_device_names = [k for k, _ in resource_spec.cpu_devices][0:1]
 
         # Mark each variable to be synchronized with a Parameter Server
-        node_config = [self._gen_ps_node_config(var.name, reduction_device_names, self._local_proxy_variable)
+        node_config = [self._gen_ps_node_config(var.name, reduction_device_names, self._local_proxy_variable,
+                                                self._sync)
                        for var in variables]
         expr.node_config.extend(node_config)
         return expr
 
     @staticmethod
-    def _gen_ps_node_config(var_name, reduction_destinations, local_proxy_variable):
+    def _gen_ps_node_config(var_name, reduction_destinations, local_proxy_variable, sync):
         """
         Creates a NodeConfig specifying synchronization with Parameter Servers.
 
@@ -42,5 +44,5 @@ class PS(StrategyBuilder):
         node.var_name = var_name
         node.PSSynchronizer.reduction_destinations.extend(reduction_destinations)
         node.PSSynchronizer.local_replication = local_proxy_variable
-        node.PSSynchronizer.sync = True
+        node.PSSynchronizer.sync = sync
         return node
