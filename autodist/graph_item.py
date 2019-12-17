@@ -218,7 +218,7 @@ class GraphItem:
         """
         return self._graph
 
-    @property
+    @cached_property
     def all_update_ops(self):
         """
         Get all ops in the graph that perform stateful operations.
