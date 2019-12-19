@@ -130,6 +130,7 @@ release_docs:
     - apt-get install -y git make rsync
     - pip install -r docs/requirements-docgen.txt
     - cd docs
+    - make clean
     - make apidoc
     - make html
     - mkdir -p ${ARTIFACT_ROOT}/${CI_PROJECT_PATH}
