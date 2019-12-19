@@ -57,7 +57,8 @@ def main(autodist):
                 for v in model.trainable_variables:
                     all_vars.append(v)
                 # grads = tape.gradient(loss, all_vars)
-                grads = tf.gradients(loss, all_vars)
+                # grads = tf.gradients(loss, all_vars)
+                grads = optimizer.get_gradients(loss, all_vars)
             update = optimizer.apply_gradients(zip(grads, all_vars))
 
             return loss, update

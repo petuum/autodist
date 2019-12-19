@@ -48,4 +48,4 @@ def test_all():
             p = Process(target=run)
             p.start()
             p.join()
-            assert p.exitcode == 0
+            assert p.exitcode == 0, f"FAILED running case {c} with resourcespec {r} and strategy {s}"
