@@ -90,6 +90,7 @@ class VariablePartitioner(Kernel):
             Set of ops to be deleted.
         """
         to_delete = set()
+        update_op_scopes = set()
         for var_name in vars_to_partition:
             var_op_name = get_op_name(var_name)
             var_op = self.graph_item.graph.get_operation_by_name(var_op_name)
@@ -103,10 +104,18 @@ class VariablePartitioner(Kernel):
             # Mark all ops part of the optimizer for deletion
             opt_name = self.graph_item.optimizer_args[0]._name
             top_level_scope = update_op.name[:update_op.name.find(opt_name) + len(opt_name)]
-            to_delete.update({o for o in self.graph_item.graph.get_operations() if o.name.startswith(top_level_scope)})
+            update_op_scopes.add(top_level_scope)
 
             # Update GraphItem Info
             self.info.pop_variable(var.name)
+
+        to_delete.update({o for o in self.graph_item.graph.get_operations()
+                          if any(o.name.startswith(top_level_scope) for top_level_scope in update_op_scopes)})
+        # If the user uses optimizer.get_gradients, gradients are stored under optimizer_name/gradients.
+        # We don't want to delete those.
+        # There could be other cases which require this logic to be made more robust, though.
+        to_delete = {o for o in to_delete
+                     if not any(o.name.startswith(tl_scope + '/gradients/') for tl_scope in update_op_scopes)}
         return to_delete
 
     def _batch_prepend_name_scope(self, to_rename, new_name_scope):
