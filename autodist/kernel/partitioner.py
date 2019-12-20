@@ -99,7 +99,13 @@ class VariablePartitioner(Kernel):
             consumers = get_consumers(var_op)
 
             # Mark var and all its consumers for deletion
-            to_delete.update([var_op], consumers)
+            consumers_to_delete = {c for c in consumers if c.type in (
+                'VarIsInitializedOp',
+                'AssignVariableOp',
+                'ReadVariableOp',
+                'ResourceGather'
+            )}
+            to_delete.update([var_op, update_op], consumers_to_delete)
 
             # Mark all ops part of the optimizer for deletion
             opt_name = self.graph_item.optimizer_args[0]._name
