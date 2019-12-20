@@ -42,7 +42,11 @@ class PartitionedPS(StrategyBuilder):
         Returns:
             Dict: the config dict for the node.
         """
-        num_shards = self.get_num_shards(var)
+        if "bn/" in var.name:
+            # No partitioning
+            num_shards = 1
+        else:
+            num_shards = self.get_num_shards(var)
         sorted_ps = sorted(self.loads, key=self.loads.get)
         if num_shards > len(self.loads):
             # If there's more shards than servers, round-robin in greedy order
