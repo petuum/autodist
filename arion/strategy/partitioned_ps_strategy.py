@@ -42,7 +42,7 @@ class PartitionedPS(StrategyBuilder):
         Returns:
             Dict: the config dict for the node.
         """
-        if "bn/" in var.name:
+        if "bn/" in var.name or "batch_normalization" in var.name:
             # No partitioning
             num_shards = 1
         else:
