@@ -241,11 +241,21 @@ class GraphItem:
             update_op_scope = parse_name_scope(op.name)
             is_initialization = update_op_scope == var_scope
             is_saving = update_op_scope.startswith('save')  # is this safe if AutoDist appends "save" in the future?
-            if on_trainable_variable and not is_initialization and not is_saving:
+
+            # TODO(future): support one variable -> multiple update ops (see AdamWeightDecay optimizer)
+            if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
                 res[var_op.name] = expected_var_ops[var_op] + (op, )
         return res
+
+    def _is_auxiliary(self, update_op):
+        """Check whether a specific update_op is an auxiliary op that should not be considered."""
+        # Skip the AssignSub in AdamWeightDecay
+        if 'AdamWeightDecay/AdamWeightDecay/' in update_op.name and update_op.type == 'AssignSubVariableOp' and \
+                any([control_op in self.all_update_ops for control_op in update_op._control_outputs]):
+            return True
+        return False
 
     @property
     def grad_list(self):
