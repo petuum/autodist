@@ -179,56 +179,59 @@ class VariablePartitioner(Kernel):
             List of new variables.
         """
         new_grads, new_vars = [], []
-        for var_name, shards in vars_to_partition.items():
-            var_op_name = get_op_name(var_name)
-            var_op = self.graph_item.graph.get_operation_by_name(var_op_name)
-            var = self.graph_item.trainable_var_op_to_var[var_op]
-            gradient = self.graph_item.var_op_name_to_grad_info[var_op_name][0]
+        with new_graph_item.graph.as_default():
+            for var_name, shards in vars_to_partition.items():
+                var_op_name = get_op_name(var_name)
+                var_op = self.graph_item.graph.get_operation_by_name(var_op_name)
+                var = self.graph_item.trainable_var_op_to_var[var_op]
+                gradient = self.graph_item.var_op_name_to_grad_info[var_op_name][0]
 
-            # Create partitioned variable and split gradients
-            num_shards = len(shards)
-            partitioner = fixed_size_partitioner(num_shards)
-            initial_value = new_graph_item.graph.get_tensor_by_name(var.initial_value.name)
-            partitioned_var = vs.get_variable(var_op.name, shape=None, initializer=initial_value,
-                                              partitioner=partitioner, validate_shape=False, use_resource=True)
-            partitioned_var_tensor = partitioned_var.as_tensor()
-            var_list = partitioned_var._variable_list
+                # Create partitioned variable and split gradients
+                num_shards = len(shards)
+                partitioner = fixed_size_partitioner(num_shards)
+                initial_value = new_graph_item.graph.get_tensor_by_name(var.initial_value.name)
+                partitioned_var = vs.get_variable(var_op.name, shape=None, initializer=initial_value,
+                                                  partitioner=partitioner, validate_shape=False, use_resource=True)
+                partitioned_var_tensor = partitioned_var.as_tensor()
+                var_list = partitioned_var._variable_list
 
-            # Distribute the partitioned variable
-            for device, var_slice in zip(shards, var_list):
-                var_slice.op._set_device_from_string(device)
+                # Distribute the partitioned variable
+                for device, var_slice in zip(shards, var_list):
+                    var_slice.op._set_device_from_string(device)
 
-            if isinstance(gradient, ops.IndexedSlices):
-                # Sparse variable
-                new_grad = ops.IndexedSlices(
-                    indices=new_graph_item.graph.get_tensor_by_name(gradient.indices.name),
-                    values=new_graph_item.graph.get_tensor_by_name(gradient.values.name),
-                    dense_shape=new_graph_item.graph.get_tensor_by_name(gradient.dense_shape.name)
-                )
-                split_grad = self._split_indexed_slices(new_grad, len(var_list), var.shape[0],
-                                                        name=f"gradients/splits/sparse_split_{var_op_name}")
-            else:
-                new_grad = new_graph_item.graph.get_tensor_by_name(gradient.name)
-                split_grad = array_ops.split(new_grad, len(var_list),
-                                             name=f"gradients/splits/split_{var_op_name}")
+                if isinstance(gradient, ops.IndexedSlices):
+                    # Sparse variable
+                    new_grad = ops.IndexedSlices(
+                        indices=new_graph_item.graph.get_tensor_by_name(gradient.indices.name),
+                        values=new_graph_item.graph.get_tensor_by_name(gradient.values.name),
+                        dense_shape=new_graph_item.graph.get_tensor_by_name(gradient.dense_shape.name)
+                    )
+                    split_grad = self._split_indexed_slices(new_grad, len(var_list), var.shape[0],
+                                                            name=f"gradients/splits/sparse_split_{var_op_name}")
+                else:
+                    new_grad = new_graph_item.graph.get_tensor_by_name(gradient.name)
+                    split_grad = array_ops.split(new_grad, len(var_list),
+                                                 name=f"gradients/splits/split_{var_op_name}")
 
-            for op in get_consumers(var_op):
-                op = new_graph_item.graph.get_operation_by_name(ops.prepend_name_scope(op.name, AUTODIST_TO_DELETE_SCOPE))
-                if op.type == "ResourceGather":
-                    # TODO: Will this work for every case?
-                    # The second input to a ResourceGather op is always the indices per the opdef
-                    emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs._inputs[1])
-                    update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
-                elif op.type == "ReadVariableOp":
-                    update_consumers(get_consumers(op), op.outputs[0], partitioned_var_tensor)
+                for op in get_consumers(var_op):
+                    op = new_graph_item.graph.get_operation_by_name(
+                        ops.prepend_name_scope(op.name, AUTODIST_TO_DELETE_SCOPE)
+                    )
+                    if op.type == "ResourceGather":
+                        # TODO: Will this work for every case?
+                        # The second input to a ResourceGather op is always the indices per the opdef
+                        emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs._inputs[1])
+                        update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
+                    elif op.type == "ReadVariableOp":
+                        update_consumers(get_consumers(op), op.outputs[0], partitioned_var_tensor)
 
-            self._update_node_config(var, var_list)
+                self._update_node_config(var, var_list)
 
-            self.info.update(variables=var_list, replace=False)
-            new_vars.extend(var_list)
-            new_grads.extend(split_grad)
-            new_graph_item.extend_gradient_info(split_grad, var_list)
-            new_graph_item.pop_gradient_info(var.name)
+                self.info.update(variables=var_list, replace=False)
+                new_vars.extend(var_list)
+                new_grads.extend(split_grad)
+                new_graph_item.extend_gradient_info(split_grad, var_list)
+                new_graph_item.pop_gradient_info(var.name)
         new_graph_item.info = self.info.copy()
         for var, grad in unpartitioned_vars.items():
             new_grads.append(new_graph_item.graph.get_tensor_by_name(grad))
