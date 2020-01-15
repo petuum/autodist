@@ -53,6 +53,10 @@ class AllReduceSynchronizer(Synchronizer):
         Returns:
             GraphItem
         """
+        # Skip alldreduce synchronizer when rank <= 1
+        if self.num_replicas * self.num_workers <= 1:
+            return graph_item
+
         item = graph_item
         var_op_name = get_op_name(var_name)
 
@@ -69,6 +73,9 @@ class AllReduceSynchronizer(Synchronizer):
 
     def _collect_dense_gradients(self, graph_item, var_op_name):
         """Append collective ops after the gradient is calculated."""
+        if self.num_replicas * self.num_workers <= 1:
+            raise ValueError('CollectiveOps requires collective group size > 1')
+
         compressors = defaultdict(lambda: Compressor.create(self._compressor_type, var_op_name))
 
         for i in range(0, self.num_replicas):
@@ -95,6 +102,8 @@ class AllReduceSynchronizer(Synchronizer):
         if self.num_workers > 1:
             raise NotImplementedError('Currently the collective all_gather is being fixed for multi-node execution. '
                                       'Please choose another strategy.')
+        if self.num_replicas * self.num_workers <= 1:
+            raise ValueError('CollectiveOps requires collective group size > 1')
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
             grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
