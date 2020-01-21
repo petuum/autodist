@@ -1,6 +1,7 @@
 """Coordinator."""
 
 import sys
+import os
 import threading
 import atexit
 
@@ -38,7 +39,8 @@ class Coordinator:
                 # Build the command
                 env = {
                     Env.AUTODIST_WORKER.name: replica_host,
-                    Env.AUTODIST_STRATEGY_ID.name: self._strategy.id
+                    Env.AUTODIST_STRATEGY_ID.name: self._strategy.id,
+                    Env.SYS_DATA_PATH.name: os.environ.get("SYS_DATA_PATH", "")
                 }
                 cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
                 cmd_main = ["python"] + sys.argv

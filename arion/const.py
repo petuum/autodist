@@ -19,6 +19,7 @@ class Env(Enum):
 
     AUTODIST_WORKER = auto()
     AUTODIST_STRATEGY_ID = auto()
+    SYS_DATA_PATH = auto()
 
 
 MAX_INT64 = int(2 ** 63 - 1)
