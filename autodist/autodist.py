@@ -1,5 +1,5 @@
 """User Interface."""
-
+import sys
 from collections import namedtuple
 
 import os
@@ -147,7 +147,7 @@ class _V2Graph(_GraphModeInterface):
                 return remap_return_func(runner.run(new_fetches, args, kwargs, args_ph_map, iter_fd))
             except KeyboardInterrupt:
                 logging.info('KeyboardInterrupt')
-                exit(1)
+                sys.exit(1)
 
         return strategy, run_fn
 

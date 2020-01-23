@@ -3,6 +3,8 @@
 from tensorflow.python import ops, import_graph_def
 from tensorflow.python.framework import device_spec, kernels
 from tensorflow.python.framework.device_spec import DeviceSpecV2
+from tensorflow.python.ops.control_flow_ops import WhileContext
+from tensorflow.python.ops.control_flow_util import GetWhileContext
 from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 
 from autodist.graph_item import GraphItem
@@ -54,11 +56,27 @@ class Replicator(Kernel):
         Returns: The new graph item
         """
         item = GraphItem(graph=ops.Graph())
+        fwd_ctx, bwd_ctx = self._collect_while_context(graph_item.graph)
         with item.graph.as_default():
             gdef = graph_item.graph.as_graph_def()
             for i in range(self._num_local_replicas):
+                # Replicate ops
                 with ops.device(self._replica_device_placer(replica_id=i)):
                     import_graph_def(gdef, name=replica_prefix(i))
+
+                # Replicate while_loop context (control_flow) if needed.
+                # The order matters -- We must replicate bwd context first, then forward context.
+                # TODO(Zeya): To handle cases when there are nested while loops, in which we must replicate
+                #  parent context first and then child context. See:
+                #  https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/control_flow_ops.py#L938
+                if bwd_ctx:
+                    for ctx in bwd_ctx:
+                        _ = WhileContext(context_def=ctx.to_proto(), grad_state=ctx._grad_state,
+                                         import_scope=replica_prefix(i))
+                if fwd_ctx:
+                    for ctx in fwd_ctx:
+                        _ = WhileContext(context_def=ctx.to_proto(), grad_state=ctx._grad_state,
+                                         import_scope=replica_prefix(i))
 
             # update gradient info
             for i in range(self._num_local_replicas):
@@ -103,3 +121,18 @@ class Replicator(Kernel):
             return new_device
 
         return placer
+
+    @staticmethod
+    def _collect_while_context(graph):
+        """Collect forward while context with backward while context."""
+        fwd_ctx = set()
+        bwd_ctx = set()
+        for op in graph.get_operations():
+            ctx = GetWhileContext(op)
+            if ctx:
+                #TODO: support tape.gradient, "gradients" as name scope is only for tf.gradient
+                if 'gradients' in ctx.name:
+                    bwd_ctx.add(ctx)
+                else:
+                    fwd_ctx.add(ctx)
+        return fwd_ctx, bwd_ctx

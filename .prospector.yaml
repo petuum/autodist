@@ -11,6 +11,7 @@ ignore-paths:
   - examples
   - scripts
   - tests
+  - autodist/proto/
 
 ignore-patterns:
   - setup.py
@@ -37,6 +38,7 @@ pylint:
     - not-context-manager
     - no-else-return
     - protected-access
+    - unnecessary-comprehension
   options:
     max-line-length: 120
     ignored-argument-names: arg|args|kwargs

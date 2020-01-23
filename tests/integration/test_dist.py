@@ -9,7 +9,8 @@ cases = [
     "c0",  # TensorFlow 2.0 basics
     "c1",  # Keras basics
     "c2",  # Sparse basics
-    "c3"  # Numpy basics
+    "c3",  # Numpy basics
+    "c4"   # Control flow while_loop
 ]
 
 resource_specs = [
@@ -21,7 +22,11 @@ resource_specs = [
 def test_dist():
     combinations = itertools.product(resource_specs, STRATEGIES_FOR_DISTRIBUTED_TESTS.keys(), cases)
     for r, s, c in combinations:
+        # skip allreduce for sparse variables (TensorFlow bug)
         if s == 'AllReduce' and c not in ["c0", "c1"]:
+            continue
+        # skip while_loop case for partitionPS (buggy)
+        if s == 'PartitionedPS' and c == 'c4':
             continue
         cmd = ("python /home/autodist/autodist/tests/integration/single_run.py "
                "--case={} --strategy={} --resource={}").format(c, s, r)
