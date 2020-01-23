@@ -11,14 +11,15 @@ from autodist.strategy.parallax_strategy import Parallax
 from autodist.strategy.partitioned_ps_strategy import PartitionedPS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.strategy.ps_strategy import PS
-from .cases import c0, c1, c2, c3, v1_interface
+from .cases import c0, c1, c2, c3, c4, v1_interface
 
 cases = [
     v1_interface,  # v1-style interfaces
     c0,  # TensorFlow 2.0 basics
     c1,  # Keras basics
     c2,  # Sparse basics
-    c3  # Numpy basics
+    c3,  # Numpy basics
+    c4   # Control flow while_loop
 ]
 resource_specs = [
     os.path.join(os.path.dirname(__file__), 'resource_specs/r0.yml'),  # single node with 2 GPUs
@@ -33,9 +34,11 @@ def test_all():
     combinations = itertools.product(resource_specs, strategies)
     for r, s in combinations:
         for c in cases:
+            # skip allreduce for sparse variables (TensorFlow bug)
             if isinstance(s, AllReduce) and c not in [c0, c1]:
                 continue
-            if (isinstance(s, AllReduce) or isinstance(s, Parallax)) and r == resource_specs[1]:
+            # skip while_loop case for partitionPS (buggy)
+            if isinstance(s, PartitionedPS) and c == c4:
                 continue
 
             def run():

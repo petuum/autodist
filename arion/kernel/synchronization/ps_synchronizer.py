@@ -36,7 +36,7 @@ class PSSynchronizer(Synchronizer):
         Apply in-graph ps synchronization.
 
         Args:
-            graph_item: the old graph item, immutable
+            graph_item: the old graph item
             var_name: the variable name w/o replica prefix
 
         Returns:
@@ -74,9 +74,9 @@ class PSSynchronizer(Synchronizer):
         Update inputs of consumers of the variable on replica > 0 to variable on replica=`master_replica`.
 
         Args:
-            graph_item:
-            var_name:
-            master_replica:
+            graph_item: the old graph item
+            var_op_name: the name of the variable op of the variable to be shared
+            master_replica: the index of master replica (default to 0)
         """
         for i in range(0, self.num_replicas):
             if i == master_replica:

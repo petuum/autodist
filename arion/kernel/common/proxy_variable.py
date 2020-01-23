@@ -138,7 +138,7 @@ class ProxyVariable:
         for consumer_op in self._consumer_to_read_var_op:
             if consumer_op in self._proxy_var_init_ops:
                 continue
-            elif consumer_op.name.startswith(AUTODIST_REPLICA_PREFIX):
+            if consumer_op.name.startswith(AUTODIST_REPLICA_PREFIX):
                 if len(self._proxy_vars) > 1:
                     raise ValueError('Now we only create one proxy per variable at most...')
                 self._update_consumer(self._proxy_vars[0], consumer_op)
