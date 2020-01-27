@@ -1,10 +1,13 @@
 """Experimental Patch on TF."""
+
+from collections import deque
+
 from tensorflow.python.framework import ops
 from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
-from autodist.utils import logging
 from autodist.graph_item import wrap_optimizer_init, wrap_optimizer_apply_gradient
+from autodist.utils import logging
 
 
 class PatchTensorFlow:
@@ -29,6 +32,11 @@ class PatchTensorFlow:
     @staticmethod
     def patch_optimizers():
         """Patch all instances of OptimizerV2 for us to store optimizer and gradient information."""
-        for subclass in optimizer_v2.OptimizerV2.__subclasses__():
+        q = deque([subclass for subclass in optimizer_v2.OptimizerV2.__subclasses__()])
+        while q:
+            subclass = q.popleft()
+            for subsubclass in subclass.__subclasses__():
+                q.append(subsubclass)
             subclass.__init__ = wrap_optimizer_init(subclass.__init__)
             subclass.apply_gradients = wrap_optimizer_apply_gradient(subclass.apply_gradients)
+            logging.warning('Optimizer type: %s has been patched' % (subclass.__name__))

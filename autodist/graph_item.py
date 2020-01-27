@@ -43,6 +43,12 @@ def wrap_optimizer_init(fn):
         # args[0] should be `self`, which is an object of type == optimizer class
         containing_class = type(args[0])
         class_name = containing_class.__name__
+
+        # For calls like super(AdamWeightDecay, self).__init__(*args, **kwargs), the containing_class.__name__
+        # returns the current class (AdamWeightDecay) instead of the parent class (Adam).
+        # Avoid patching this pattern by checking fn.__qualname__.
+        if not fn.__qualname__.startswith(class_name):
+            return fn(*args, **kwargs)
         if _default_graph_item and kwargs.pop('update', True):
             _default_graph_item.extend_optimizer_info(containing_class, *args, **kwargs)
             logging.debug('Patched optimizer: {} \nwith args: {} \nkwargs: {}'.format(class_name, args, kwargs))

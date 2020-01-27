@@ -17,7 +17,6 @@ import signal
 import subprocess
 import sys
 
-import autodist.utils.server_starter
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, Env
 from autodist.utils import logging
 from autodist.utils.network import remote_pre_start_tf_server, remote_exec, is_local_address, colored
@@ -118,6 +117,9 @@ class Cluster:
 
     def start(self):
         """Start."""
+        # pylint: disable=import-outside-toplevel
+        import autodist.utils.server_starter
+
         # atexit registration should be placed
         #   - before the beginning of the start
         #   (to ensure the clean termination if the start fails in its half way); and
