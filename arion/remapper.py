@@ -113,11 +113,12 @@ class Remapper:
             # For fetches that are stateful operations (i.e. train_op), fetch them on all replicas
             # For fetches that are tensors or variables, only fetch it on master_replica
             if fetch_type is ops.Operation and remap[type(fetch)](master_replica_name).op_def.is_stateful:
-                logging.warning('Fetch %s is remapped to all replicas' % fetch.name)
+                # TODO: resume de-duplicated warning during FetchMappper refactor
+                # logging.warning('Fetch %s is remapped to all replicas' % fetch.name)
                 return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
                         for i in range(self.num_local_replica)]
             else:
-                logging.warning('Fetch %s is remapped to %s' % (fetch.name, master_replica_name))
+                # logging.warning('Fetch %s is remapped to %s' % (fetch.name, master_replica_name))
                 return [remap[type(fetch)](master_replica_name)]
                 # For Debugging:
                 # return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))

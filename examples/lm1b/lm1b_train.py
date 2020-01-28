@@ -20,8 +20,7 @@ flags.DEFINE_integer('log_frequency', 100,
                      """How many steps between two runop logs.""")
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), '../resource_spec.yml')
-config_file = os.path.join(os.path.dirname(__file__), '../runner_config.yml')
-autodist = AutoDist(resource_spec_file, PS(), config_file)
+autodist = AutoDist(resource_spec_file, PS())
 
 
 def gen_lm1b_train_dataset(file_pattern, num_step):

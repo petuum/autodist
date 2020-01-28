@@ -1,11 +1,10 @@
 """User Interface."""
+import atexit
 import sys
 from collections import namedtuple
 
 import os
-import types
 import numpy as np
-from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
@@ -18,12 +17,10 @@ from autodist.graph_item import GraphItem
 from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.graph_transformer import GraphTransformer
-from autodist.remapper import Remapper
 from autodist.resource_spec import ResourceSpec
-from autodist.runner import Runner, RunnerConfig, WrappedSession
+from autodist.runner import WrappedSession
 from autodist.strategy.base import Strategy, StrategyCompiler
 from autodist.utils import logging
-from autodist.utils.code_transformer import transform
 
 IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
@@ -31,12 +28,10 @@ IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 class _AutoDistInterface:
 
-    def __init__(self, resource_spec_file, strategy_builder, strategy_path=None, runner_config_file=None):
+    def __init__(self, resource_spec_file, strategy_builder, strategy_path=None):
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
         self._strategy_builder = strategy_builder
         self._strategy_path = strategy_path
-        # TODO: deprecate the runner config
-        self._runner_config = RunnerConfig(config_file=runner_config_file)
 
         self._original_graph_item = None
         # TODO: separate the control
@@ -93,11 +88,7 @@ class _GraphModeInterface(_AutoDistInterface):
         assert not context.executing_eagerly()
         self._original_graph_item = GraphItem(graph=ops.get_default_graph())
 
-
-class _V1Graph(_GraphModeInterface):
-
-    def create_distributed_session(self, *args, **kwargs):
-        """Create a Session object to execute the default graph in a distributed manner."""
+    def _build(self):
         strategy = self._build_or_load_strategy()
         compiled_strategy = self._compile_strategy(strategy)
         transformed_graph_item = GraphTransformer(
@@ -105,12 +96,27 @@ class _V1Graph(_GraphModeInterface):
             cluster=self._cluster,
             graph_item=self._original_graph_item
         ).transform()
-        remapper = Remapper(compiled_strategy, self._cluster)
 
+        # End: Graph Construction, Begin: Running
         self._setup(strategy)
 
-        # TODO: use the outer args
-        return WrappedSession(graph_item=transformed_graph_item, remap_io=remapper.remap_io, cluster=self._cluster)
+        return compiled_strategy, transformed_graph_item
+
+    def _create_distributed_session(self):
+        """Create a Session object to execute the default graph in a distributed manner."""
+        compiled_strategy, transformed_graph_item = self._build()
+        return WrappedSession(
+            cluster=self._cluster,
+            graph_item=transformed_graph_item,
+            compiled_strategy=compiled_strategy,
+        )
+
+
+class _V1Graph(_GraphModeInterface):
+
+    def create_distributed_session(self):
+        """Create a Session object to execute the default graph in a distributed manner."""
+        return self._create_distributed_session()
 
 
 class _V2Graph(_GraphModeInterface):
@@ -119,37 +125,9 @@ class _V2Graph(_GraphModeInterface):
     def __init__(self, *args, **kwargs):
         self._cache = {}
         self._args_ph_map = {}
-        self._iter_fd = None
+        self._fd = {}
+        self._ph_feed_index = {}
         super().__init__(*args, **kwargs)
-
-    def _build(self, fetches):
-        """Core Logic."""
-        strategy = self._build_or_load_strategy()
-        compiled_strategy = self._compile_strategy(strategy)
-        transformed_graph_item = GraphTransformer(
-            compiled_strategy=compiled_strategy,
-            cluster=self._cluster,
-            graph_item=self._original_graph_item
-        ).transform()
-
-        # remap fetches and returns
-        remapper = Remapper(compiled_strategy, self._cluster)
-        new_fetches, _, remap_return_func = remapper.remap_io(transformed_graph_item, fetches)
-
-        runner = Runner(
-            graph_item=transformed_graph_item,
-            cluster=self._cluster,
-            config=self._runner_config
-        )
-
-        def run_fn(args, kwargs, args_ph_map, iter_fd):
-            try:
-                return remap_return_func(runner.run(new_fetches, args, kwargs, args_ph_map, iter_fd))
-            except KeyboardInterrupt:
-                logging.info('KeyboardInterrupt')
-                sys.exit(1)
-
-        return strategy, run_fn
 
     def _get_new_args(self, args, kwargs):
         # Insert placeholders in place of ndarrays
@@ -171,51 +149,76 @@ class _V2Graph(_GraphModeInterface):
                 kwargs_with_ph[k] = v
         return tuple(args_with_ph), kwargs_with_ph
 
-    def _build_and_run(self, fn, *args, **kwargs):
-        # we first assume one fn only build one type of graph
-        cache_id = hash(self.CacheKey(fn))
-        cached = cache_id in self._cache
+    def _create_feed_dict(self, graph, args_ph_map):
+        """
+        Create the FeedDict.
 
-        # At the first run of the training function
-        if not cached:
-            # Build the graph
-            # Feed the args with placeholders
-            args_with_ph, kwargs_with_ph = self._get_new_args(args, kwargs)
-            fetches = fn(*args_with_ph, **kwargs_with_ph)
+        We have to remap the inputs (args and kwargs) to the right placeholder
+          created in the *replicated* graph. args_ph_map holds a map of placeholder
+          *names* to the argument tensor. Note that there are N copies of a
+          placeholder for N replicas and we have to feed all of them with tensors.
+          The mapping looks like original graph -> replicated graph -> argument
+          index.
+        """
+        for op in graph.get_operations():
+            if op.type == "Placeholder":
+                ph = op.outputs[0]
+                ph_name = op.name.split('/')[-1]
+                if ph_name in args_ph_map:
+                    self._fd[ph] = None
+                    self._ph_feed_index[ph] = args_ph_map[ph_name]
 
-            # Build the strategy and get the runner with distributed graph
-            strategy, run_fn = self._build(fetches)
-            # The boundary of graph construction and runtime
-            self._setup(strategy)
-            # Cache the runner
-            self._cache[cache_id] = run_fn
+    def _refill_fd(self, args, kwargs):
+        """
+        Refill the FeedDict with the numeric fn args and kwargs.
 
-        run_fn = self._cache[cache_id]
-        return run_fn(args, kwargs, self._args_ph_map, self._iter_fd)
-
-    def make_dataset_iterator(self, dataset):
-        """Takes a dataset or a function and returns an iterator."""
-        if isinstance(dataset, types.FunctionType):
-            dataset_fn_xform = transform(dataset)
-            ds, fd = dataset_fn_xform()
-            if fd:
-                # we found some tensors that we've replaced with placeholders
-                ds_iter = dataset_ops.make_initializable_iterator(ds)
-                self._iter_fd = fd
-                return ds_iter.get_next()
+        Use the index populated in _ph_feed_index to quickly assign the right
+          argument to the right placeholder.
+        """
+        for x in self._fd:
+            if isinstance(self._ph_feed_index[x], int):
+                self._fd[x] = args[self._ph_feed_index[x]]
             else:
-                ds_iter = dataset_ops.make_one_shot_iterator(ds)
-                return ds_iter.get_next()
+                self._fd[x] = kwargs[self._ph_feed_index[x]]
+        return self._fd
 
-        ds_iter = dataset_ops.make_one_shot_iterator(dataset)
-        return ds_iter.get_next()
+    def _build_fn(self, fn, *args, **kwargs):
+        # Build the graph
+        # Feed the args with placeholders
+        args_with_ph, kwargs_with_ph = self._get_new_args(args, kwargs)
+        fetches = fn(*args_with_ph, **kwargs_with_ph)
+
+        # Build the strategy and get the runner with distributed graph
+        session = self._create_distributed_session()
+        self._create_feed_dict(session._graph_item.graph, self._args_ph_map)
+        refill_feed_dict = self._refill_fd
+
+        def run_fn(args, kwargs):
+            try:
+                # fill out the feed_dict with new batch
+                feed_dict = refill_feed_dict(args, kwargs)
+                return session.run(fetches, feed_dict)
+            except KeyboardInterrupt:
+                logging.info('KeyboardInterrupt')
+                sys.exit(1)
+        return run_fn
 
     def function(self, fn):
         """Decorator Interface."""
-        __build_and_run = self._build_and_run
+        _cache = self._cache
+        _build_fn = self._build_fn
 
         def wrapper(*args, **kwargs):
-            return __build_and_run(fn, *args, **kwargs)
+            # we first assume one fn only build one type of graph
+            cache_id = hash(_V2Graph.CacheKey(fn))
+            cached = cache_id in _cache
+
+            # At the first run of the training function
+            if not cached:
+                # Cache the runner
+                _cache[cache_id] = _build_fn(fn, *args, **kwargs)
+                atexit.register(lambda: _cache.pop(cache_id))
+            return _cache[cache_id](args, kwargs)
 
         return wrapper
 
