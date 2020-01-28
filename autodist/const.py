@@ -19,6 +19,7 @@ class Env(Enum):
 
     AUTODIST_WORKER = auto()
     AUTODIST_STRATEGY_ID = auto()
+    AUTODIST_MIN_LOG_LEVEL = auto()
     SYS_DATA_PATH = auto()
 
 

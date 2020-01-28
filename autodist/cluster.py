@@ -128,7 +128,7 @@ class Cluster:
         #   lower level modules will normally be imported
         #   before higher level modules and thus must be cleaned up later).
         atexit.register(self.terminate)
-
+        envs = {Env.AUTODIST_MIN_LOG_LEVEL.name: os.environ.get(Env.AUTODIST_MIN_LOG_LEVEL.name, 'ERROR')}
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
@@ -140,10 +140,11 @@ class Cluster:
                         '--job_name=%s' % job_name,
                         '--task_index=%d' % task_index
                     ]
-                    cmd = [sys.executable, '-m', module_name] + args
+                    cmd = ['{}={}'.format(k, v) for k, v in envs.items()] + \
+                          [sys.executable, '-m', module_name] + args
 
                     # pylint: disable=subprocess-popen-preexec-fn
-                    proc = subprocess.Popen(cmd, preexec_fn=os.setsid)
+                    proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
                     self.subprocesses.append(proc)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.
@@ -163,7 +164,8 @@ class Cluster:
                         '--job_name=%s' % job_name,
                         '--task_index=%d' % task_index
                     ]
-                    bash = ['python', '-u', file] + args
+                    bash = ['{}={}'.format(k, v) for k, v in envs.items()] + \
+                           ['python', '-u', file] + args
                     proc = remote_exec(bash, hostname=address, ssh_config=self.ssh_config)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.

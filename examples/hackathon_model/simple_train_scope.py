@@ -3,6 +3,7 @@ import time
 import tensorflow as tf
 import numpy as np
 from absl import app
+from tensorflow.core.protobuf import config_pb2
 
 from autodist import AutoDist
 from autodist.strategy.ps_strategy import PS
@@ -12,13 +13,12 @@ from autodist.strategy.all_reduce_strategy import AllReduce
 from autodist.strategy.parallax_strategy import Parallax
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), '../resource_spec.yml')
-config_file = os.path.join(os.path.dirname(__file__), '../runner_config.yml')
-autodist = AutoDist(resource_spec_file, PS(), runner_config_file=config_file)
+autodist = AutoDist(resource_spec_file, PS())
 
 vocab_size = 10000
 embedding_size = 16
 hidden_dim = 16
-max_steps = 10
+max_steps = 101
 batch_size = 128
 log_frequency = 100
 
@@ -95,7 +95,8 @@ def main(_):
         loss_fn, train_op = model.train_fn(my_iterator)
         sess = autodist.create_distributed_session()
         for local_step in range(max_steps):
-            loss, _ = sess.run(fetches=[loss_fn, train_op])
+            loss, _ = sess.run(fetches=[loss_fn, train_op],
+                               options=config_pb2.RunOptions(trace_level=config_pb2.RunOptions.NO_TRACE))
             if local_step % log_frequency == 0:
                 cur_time = time.time()
                 elapsed_time = cur_time - prev_time
@@ -104,5 +105,7 @@ def main(_):
                 print("Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" % (
                     local_step, cur_time - prev_time, wps, loss))
                 prev_time = cur_time
+
+    print('ending...')
 
 app.run(main)

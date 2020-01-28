@@ -1,26 +1,42 @@
 """Runner."""
-import atexit
-import os
 import hashlib
+import os
 
-import yaml
 from tensorflow.core.protobuf import config_pb2, rewriter_config_pb2
 from tensorflow.python.client import timeline, session
 
 import autodist.const
-from autodist.utils import logging
 from autodist.const import Env, MAX_INT32
+from autodist.remapper import Remapper
+from autodist.utils import logging
 
 
-RUN_OPTIONS = config_pb2.RunOptions()
-# Force every worker session to use different collective graph keys,
-# thus to make session run has different TensorFlow step_ids when fetching collective_op.
-# A different step_id avoids skipping re-initialization of a rendezvous object.
-# Shared step_id may cause racing for different sessions, across which some variable is shared.
-# For more information, please refer to TensorFlow worker.proto: `collective_graph_key`
-RUN_OPTIONS.experimental.collective_graph_key = int(
-    hashlib.md5(os.environ.get(Env.AUTODIST_WORKER.name, '').encode()).hexdigest(), 16
-) % MAX_INT32
+def get_default_session_config():
+    """Create a default session config."""
+    session_config = config_pb2.ConfigProto()
+    session_config.allow_soft_placement = True
+
+    # enable scoped_allocator for collective_ops
+    rewrite_options = session_config.graph_options.rewrite_options
+    rewrite_options.scoped_allocator_optimization = (
+        rewriter_config_pb2.RewriterConfig.ON)
+    del rewrite_options.scoped_allocator_opts.enable_op[:]
+    rewrite_options.scoped_allocator_opts.enable_op.append('CollectiveReduce')
+    return session_config
+
+
+def get_default_run_options():
+    """Create a default run option."""
+    run_options = config_pb2.RunOptions()
+    # Force every worker session to use different collective graph keys,
+    # thus to make session run has different TensorFlow step_ids when fetching collective_op.
+    # A different step_id avoids skipping re-initialization of a rendezvous object.
+    # Shared step_id may cause racing for different sessions, across which some variable is shared.
+    # For more information, please refer to TensorFlow worker.proto: `collective_graph_key`
+    run_options.experimental.collective_graph_key = int(
+        hashlib.md5(os.environ.get(Env.AUTODIST_WORKER.name, '').encode()).hexdigest(), 16
+    ) % MAX_INT32
+    return run_options
 
 
 # TODO(Hao): could extend this to use tfprof (though I don't
@@ -37,183 +53,37 @@ def _log_timeline(run_metadata, name='timeline', step=0):
         logging.info('Traced timeline written to: %s' % p)
 
 
-# Future: convert this to protobuf
-class RunnerConfig:
-    """Meta configurations of the runner."""
-
-    def __init__(self, config_file=None):
-        """
-        Read runner configurations from a config file.
-
-        Be default, no trace will be captured and the log level is set to INFO.
-        It is fine to not provide a config file on non-chief nodes; in that case, those nodes will
-        adopt the default RunnerConfig.
-
-
-        Args:
-            config_file (string, optional): file path to the config file . Defaults to None.
-        """
-        self.trace_level = config_pb2.RunOptions.NO_TRACE
-        self.log_graph = True
-        if config_file and os.path.isfile(config_file):
-            self._from_config_file(config_file)
-
-    def _from_config_file(self, config_file):
-        config = yaml.safe_load(open(config_file, 'r'))
-        self.trace_level = getattr(config_pb2.RunOptions.TraceLevel,
-                                   config.pop('trace_level', 'NO_TRACE'))
-        self.log_graph = config.pop('log_graph', False)
-
-
-def get_session_config():
-    """Create a session config."""
-    session_config = config_pb2.ConfigProto()
-    session_config.allow_soft_placement = True
-
-    # enable scoped_allocator for collective_ops
-    rewrite_options = session_config.graph_options.rewrite_options
-    rewrite_options.scoped_allocator_optimization = (
-        rewriter_config_pb2.RewriterConfig.ON)
-    del rewrite_options.scoped_allocator_opts.enable_op[:]
-    rewrite_options.scoped_allocator_opts.enable_op.append('CollectiveReduce')
-
-    return session_config
-
-
-class Runner:
-    """Runner in worker process."""
-
-    def __init__(self, graph_item, cluster, config=None):
-        self._cluster = cluster
-        self._graph_item = graph_item
-        self._config = config or RunnerConfig()
-
-        self._session = None
-        self._fd = {}
-        self._ph_feed_index = {}
-
-    def _clean(self):
-        logging.debug('Tearing down clients...')
-        # Resetting the variable reference triggers the garbage collection when it jumps out the local
-        self._session = None
-
-    # We have to remap the inputs (args and kwargs) to the right placeholder
-    # created in the *replicated* graph. args_ph_map holds a map of placeholder
-    # *names* to the argument tensor. Note that there are N copies of a
-    # placeholder for N replicas and we have to feed all of them with tensors.
-    # The mapping looks like original graph -> replicated graph -> argument
-    # index
-    def _create_feed_dict(self, graph, args_ph_map):
-        for op in graph.get_operations():
-            if op.type == "Placeholder":
-                ph = op.outputs[0]
-                ph_name = op.name.split('/')[-1]
-                if ph_name in args_ph_map:
-                    self._fd[ph] = None
-                    self._ph_feed_index[ph] = args_ph_map[ph_name]
-
-    # use the index populated in _ph_feed_index to quickly assign the right
-    # argument to the right placeholder
-    def _refill_fd(self, args, kwargs):
-        for x in self._fd:
-            if isinstance(self._ph_feed_index[x], int):
-                self._fd[x] = args[self._ph_feed_index[x]]
-            else:
-                self._fd[x] = kwargs[self._ph_feed_index[x]]
-
-    def _init_ds_iterator(self, iter_fd, graph):
-        if not iter_fd:
-            return
-
-        # we create new fd for the replicated graph
-        def remap(old_fd):
-            fd = {}
-            for op in graph.get_operations():
-                if op.type == "Placeholder":
-                    for k, v in old_fd.items():
-                        if op.name.split('/')[-1] == k.name.split(':')[0]:
-                            fd[op.outputs[0]] = v
-            return fd
-
-        remap_fd = remap(iter_fd)
-        # initialize the replicated iterators with the new fd
-        for op in graph.get_operations():
-            if op.type == "MakeIterator":
-                self._session.run(op, feed_dict=remap_fd)
-
-    def run(self, fetches, args=None, kwargs=None, args_ph_map=None, iter_fd=None):
-        """Execute distributed graph."""
-        with self._graph_item.graph.as_default() as graph:
-            if not self._session:
-                self._create_feed_dict(graph, args_ph_map)
-
-                target = self._cluster.get_local_session_target()
-                self._session = session.Session(
-                    target=target,
-                    graph=self._graph_item.graph,
-                    config=get_session_config()
-                )
-                atexit.register(self._clean)
-
-                # TensorFlow default initializations
-                # TODO: Rethink. Should we do this?
-                self._session.run(
-                    self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
-                )
-                self._init_ds_iterator(iter_fd, graph)
-
-            # fill out the feed_dict with new batch
-            self._refill_fd(args, kwargs)
-
-            if self._config.trace_level > config_pb2.RunOptions.NO_TRACE:
-                options = config_pb2.RunOptions(
-                    trace_level=self._config.trace_level
-                )
-                RUN_OPTIONS.MergeFrom(options)
-                run_metadata = config_pb2.RunMetadata()
-                p = self._session.run(fetches,
-                                      options=RUN_OPTIONS,
-                                      run_metadata=run_metadata,
-                                      feed_dict=self._fd)
-                _log_timeline(run_metadata)
-            else:
-                p = self._session.run(fetches, feed_dict=self._fd, options=RUN_OPTIONS)
-
-        return p
-
-    # TODO: v2 way of execution
-    # def run_v2():
-    # to_func(self.distributed_graph)()
-
-
-class WrappedSession:
+class WrappedSession(session.Session):
     """Wrapped Session."""
 
-    def __init__(self, graph_item, remap_io, cluster):
-        self._graph_item = graph_item
-        self._remap_io = remap_io
+    def __init__(self, cluster, graph_item, compiled_strategy):
         self._cluster = cluster
+        self._graph_item = graph_item
+        self._remap_io = Remapper(compiled_strategy, cluster).remap_io
 
-        target = self._cluster.get_local_session_target()
-        self._session = session.Session(
-            target=target,
+        super(WrappedSession, self).__init__(
+            target=self._cluster.get_local_session_target(),
             graph=self._graph_item.graph,
-            config=get_session_config()
+            config=get_default_session_config()
         )
-
         # TensorFlow default initializations
         # TODO: Rethink. Should we do this?
-        self._session.run(
+        super(WrappedSession, self).run(
             self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
         )
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Wrapped Session.run."""
         new_fetches, new_feed_dict, remap_return_func = self._remap_io(self._graph_item, fetches, feed_dict)
+        _options = get_default_run_options()
         if options:
-            RUN_OPTIONS.MergeFrom(options)
-        return remap_return_func(
-            self._session.run(
-                new_fetches, feed_dict=new_feed_dict, options=RUN_OPTIONS, run_metadata=run_metadata
-            )
+            _options.MergeFrom(options)  # options merges (while overwrites) into RUN_OPTIONS
+        is_tracing = _options.trace_level > config_pb2.RunOptions.NO_TRACE
+        if not run_metadata and is_tracing:
+            run_metadata = config_pb2.RunMetadata()
+        res = super(WrappedSession, self).run(
+            new_fetches, feed_dict=new_feed_dict, options=_options, run_metadata=run_metadata
         )
+        if is_tracing:
+            _log_timeline(run_metadata)
+        return remap_return_func(res)
