@@ -42,7 +42,11 @@ def gen_read_var_op(var_handle_op, dtype):
 
 def get_read_var_tensor(var_handle_op):
     """Given a resource handle, get the tensor of its default readable value."""
-    for read_var_op in get_read_var_ops(var_handle_op):
-        if read_var_op.name.endswith("/Read/ReadVariableOp"):
-            return read_var_op.outputs[0]
-    return None
+    if var_handle_op.type == 'VarHandleOp':
+        for read_var_op in get_read_var_ops(var_handle_op):
+            if read_var_op.name.endswith("/Read/ReadVariableOp"):
+                return read_var_op.outputs[0]
+    if len(var_handle_op.outputs) > 1:
+        raise ValueError("Can't get the variable reading tensor from '{}'. "
+                         "It may not be a proper variable op.".format(var_handle_op.name))
+    return var_handle_op.outputs[0]

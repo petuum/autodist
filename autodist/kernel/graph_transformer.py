@@ -90,6 +90,12 @@ class GraphTransformer:
                                                     sorted({d.to_string() for d in replica_devices}),
                                                     is_chief=self._cluster.is_chief())
 
+    @property
+    def num_local_replicas(self):
+        """Return the number of local replicas."""
+        assert self._num_local_replicas != 0  # ensure initialized
+        return self._num_local_replicas
+
     def _in_graph_apply(self, graph_item: GraphItem):
         """
         Perform in-graph synchronization of the graph.

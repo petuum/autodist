@@ -7,7 +7,6 @@ from tensorflow.python.client import timeline, session
 
 import autodist.const
 from autodist.const import Env, MAX_INT32
-from autodist.remapper import Remapper
 from autodist.utils import logging
 
 
@@ -56,10 +55,10 @@ def _log_timeline(run_metadata, name='timeline', step=0):
 class WrappedSession(session.Session):
     """Wrapped Session."""
 
-    def __init__(self, cluster, graph_item, compiled_strategy):
+    def __init__(self, cluster, graph_item, remapper):
         self._cluster = cluster
         self._graph_item = graph_item
-        self._remap_io = Remapper(compiled_strategy, cluster).remap_io
+        self._remapper = remapper
 
         super(WrappedSession, self).__init__(
             target=self._cluster.get_local_session_target(),
@@ -74,16 +73,16 @@ class WrappedSession(session.Session):
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Wrapped Session.run."""
-        new_fetches, new_feed_dict, remap_return_func = self._remap_io(self._graph_item, fetches, feed_dict)
         _options = get_default_run_options()
         if options:
             _options.MergeFrom(options)  # options merges (while overwrites) into RUN_OPTIONS
         is_tracing = _options.trace_level > config_pb2.RunOptions.NO_TRACE
         if not run_metadata and is_tracing:
             run_metadata = config_pb2.RunMetadata()
-        res = super(WrappedSession, self).run(
-            new_fetches, feed_dict=new_feed_dict, options=_options, run_metadata=run_metadata
-        )
+        with self._remapper.as_default():
+            res = super(WrappedSession, self).run(
+                fetches, feed_dict=feed_dict, options=_options, run_metadata=run_metadata
+            )
         if is_tracing:
             _log_timeline(run_metadata)
-        return remap_return_func(res)
+        return res

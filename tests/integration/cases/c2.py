@@ -59,7 +59,7 @@ def main(autodist):
             # gradients = tape.gradient(loss, trainables)
             # strategy requires users to provide the train_op handle
             train_op = self.optimizer.apply_gradients(zip(gradients, trainables))
-            return loss, train_op
+            return loss, train_op, self.emb
 
     (train_data, train_labels), (test_data, test_labels) = tf.keras.datasets.imdb.load_data(num_words=vocab_size)
     train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data,
@@ -79,7 +79,7 @@ def main(autodist):
         prev_time = time.time()
         for local_step in range(max_steps):
             # fetch train_op and loss
-            loss, _ = model.train_fn(my_iterator)
+            loss, _, _ = model.train_fn(my_iterator)
             # loss, _ = autodist.run(model.train_fn, my_iterator)
             if local_step % log_frequency == 0:
                 cur_time = time.time()
