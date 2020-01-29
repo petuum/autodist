@@ -13,7 +13,7 @@ from autodist.strategy.all_reduce_strategy import AllReduce
 from autodist.strategy.parallax_strategy import Parallax
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), '../resource_spec.yml')
-autodist = AutoDist(resource_spec_file, PS())
+autodist = AutoDist(resource_spec_file, PartitionedPS())
 
 vocab_size = 10000
 embedding_size = 16
@@ -71,7 +71,7 @@ class SimpleModel():
         #gradients = tape.gradient(loss, trainables)
         # strategy requires users to provide the train_op handle
         train_op = self.optimizer.apply_gradients(zip(gradients, trainables))
-        return loss, train_op
+        return loss, train_op, gradients
 
 
 def main(_):
@@ -92,7 +92,7 @@ def main(_):
         model = SimpleModel()
         prev_time = time.time()
         # fetch train_op and loss
-        loss_fn, train_op = model.train_fn(my_iterator)
+        loss_fn, train_op, gradients = model.train_fn(my_iterator)
         sess = autodist.create_distributed_session()
         for local_step in range(max_steps):
             loss, _ = sess.run(fetches=[loss_fn, train_op],
@@ -105,7 +105,8 @@ def main(_):
                 print("Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" % (
                     local_step, cur_time - prev_time, wps, loss))
                 prev_time = cur_time
-
+        print(sess.run(model.emb))
+        print(sess.run(gradients[0]))
     print('ending...')
 
 app.run(main)

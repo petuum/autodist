@@ -1,125 +1,157 @@
 """Feed and Fetch Remapper."""
+import contextlib
 
-from tensorflow.python.framework import device_spec, ops
+from tensorflow.python.client.session import _REGISTERED_EXPANSIONS
+from tensorflow.python.framework import ops
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
-
 from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
 from autodist.kernel.common.utils import replica_prefix
-from autodist.utils import logging
 
 
 class Remapper:
     """Feed and Fetch Remapper."""
 
-    def __init__(self, compiled_strategy, cluster):
-        self._strategy = compiled_strategy
-        self._cluster = cluster
+    _default_remapper = None
+    _default_registered_expansions = []
+    _remap_fn = {
+        ops.Tensor: lambda graph, name: graph.as_graph_element(name),
+        ops.Operation: lambda graph, name: graph.as_graph_element(name),
+        ResourceVariable: lambda graph, name: get_read_var_tensor(graph.get_tensor_by_name(name).op)
+    }
 
-    @property
-    def num_local_replica(self):
-        """Infer the nubmer of replica on this local machine."""
-        replica_devices = \
-            {device_spec.DeviceSpecV2.from_string(s) for s in self._strategy.graph_config.replicas}
-        return len({
-            d for d in replica_devices
-            if self._cluster.get_local_address() == self._cluster.get_address_from_task(d.job, d.task)
-        })
+    def __init__(self, graph_transformer, graph_item):
+        self._graph_transformer = graph_transformer
+        self._graph_item = graph_item
 
-    def remap_io(self, graph_item, fetches, feed_dict=None):
+    def _remap_feed(self, feed, feed_val=None):
         """
-        Remap the user-provided fetches to the right list of fetches after graph transformations.
+        Remap the feeds to the right element in the transformed graph.
 
-        It returns a list of new fetches that are necessary for distributed execution, e.g. in AllReduce,
-        the train ops on all replicas need to be fetched in order to trigger the execution on all replicas.
-        It also returns a remap_return_func that will be called in runner to map the actual fetched results (which
-        are supposed be a superset of the original fetches from users code) back to user-desired results.
+        For example, there are N copies of a placeholder for N replicas
+          and we have to feed all of them with tensors.
 
         Args:
-            graph_item: the transformed graph item
-            fetches: the original fetches from user code
-            feed_dict: the original feed_dict from user code
+            feed: feed graph element
+            feed_val: feed value
 
         Returns:
-            new_fetches (list) : a list of new fetches for execution
-            remap_return_func (function): a function that maps the fetched results back to original fetches
-
+            List of (new_feed, new_feed_value) pairs
         """
-        if not isinstance(fetches, (tuple, list)):
-            fetches = [fetches]
+        try:
+            transformed_feeds = [self._graph_item.graph.as_graph_element(feed.name)]
+        except KeyError:
+            # Temporary Workaround for SYM-9004
+            transformed_feeds = [
+                ops.prepend_name_scope(feed.name, replica_prefix(i))
+                for i in range(self._graph_transformer.num_local_replicas)
+            ]
+        if feed_val is not None:
+            # TODO: map placeholders on different replicas to different values
+            transformed_feeds = [(f, feed_val) for f in transformed_feeds]
+        return transformed_feeds
 
-        def remap_return_func(returns):
-            ret = [returns[name_to_remapped_indices[fetch.name]]
-                   for fetch in fetches]
-            return ret if len(ret) > 1 else ret[0]
-
-        # TODO: Handle Feed Fetch for both Graph and FuncGraph in the style of tensorflow.python.client._HandleFetch
-        new_fetches, name_to_remapped_indices = self._remap_fetches(graph_item.graph, fetches)
-        new_feed_dict = self._remap_feed_dict(graph_item.graph, feed_dict)
-        return new_fetches, new_feed_dict, remap_return_func
-
-    def _remap_feed_dict(self, graph, feed_dict):
-        if feed_dict is None:
-            return None
-        new_feed_dict = {}
-        for t, v in feed_dict.items():
-            try:
-                d = {graph.get_tensor_by_name(t.name): v}
-            except KeyError:
-                # Temporary Workaround for SYM-9004
-                d = {ops.prepend_name_scope(t.name, replica_prefix(i)): v for i in range(self.num_local_replica)}
-                logging.warning('Feed key %s is remapped to all replicas for the same value.' % t.name)
-            new_feed_dict.update(d)
-        return new_feed_dict
-
-    def _remap_fetches(self, graph, fetches):
-        """
-        Remap the fetches in graph following rules below.
-
-        For fetches that are stateful operations (i.e. train_op), fetch them on all replicas.
-        For fetches that are tensors or variables, only fetch it on master_replica.
-
-        Args:
-            graph (ops.Graph): The graph to be executed
-            fetches (list): a list of fetches by users
-
-        Returns:
-            remapped_fetches (list): a list of fetches remapped
-            name_to_remapped_indices (dict): a map from the name of the original fetch to its index in the new fetches
-
-        """
-        index = 0
-        name_to_remapped_indices = {}
-        remapped_fetches = []
-        for fetch in fetches:
-            remapped_fetch = self.__remap_fetch(graph, fetch)
-            name_to_remapped_indices[fetch.name] = index
-            remapped_fetches.extend(remapped_fetch)
-            index += len(remapped_fetch)
-        return remapped_fetches, name_to_remapped_indices
-
-    def __remap_fetch(self, graph, fetch):
-        remap = {
-            ops.Tensor: graph.get_tensor_by_name,
-            ops.Operation: graph.get_operation_by_name,
-            ResourceVariable: lambda name: get_read_var_tensor(graph.get_tensor_by_name(name).op)
-        }
+    def _remap_fetch(self, fetch):
+        """Remap the user-provided fetches to the right list of fetches after graph transformations."""
+        graph = self._graph_item.graph
+        _remap_fn = Remapper._remap_fn
         fetch_type = type(fetch)
         try:
-            if fetch_type not in remap:
-                raise TypeError('Fetch type {} not supported.'.format(fetch_type))
-            return [remap[fetch_type](fetch.name)]
+            transformed_fetch = [_remap_fn[fetch_type](graph, fetch.name)]
         except KeyError:
             master_replica_name = ops.prepend_name_scope(fetch.name, replica_prefix(0))
+            master_replica_fetch = _remap_fn[fetch_type](graph, master_replica_name)
             # For fetches that are stateful operations (i.e. train_op), fetch them on all replicas
-            # For fetches that are tensors or variables, only fetch it on master_replica
-            if fetch_type is ops.Operation and remap[type(fetch)](master_replica_name).op_def.is_stateful:
-                # TODO: resume de-duplicated warning during FetchMappper refactor
-                # logging.warning('Fetch %s is remapped to all replicas' % fetch.name)
-                return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
-                        for i in range(self.num_local_replica)]
+            # For other fetches, only fetch it on master_replica (
+            #   for partitioned vars, it corresponds to the concat one as_tensor
+            # )
+            if fetch_type is ops.Operation and master_replica_fetch.op_def.is_stateful:
+                transformed_fetch = [
+                    _remap_fn[fetch_type](graph, ops.prepend_name_scope(fetch.name, replica_prefix(i)))
+                    for i in range(self._graph_transformer.num_local_replicas)
+                ]
             else:
-                # logging.warning('Fetch %s is remapped to %s' % (fetch.name, master_replica_name))
-                return [remap[type(fetch)](master_replica_name)]
-                # For Debugging:
-                # return [remap[type(fetch)](ops.prepend_name_scope(fetch.name, replica_prefix(i)))
-                #        for i in range(self.num_local_replica)]
+                transformed_fetch = [master_replica_fetch]
+        return transformed_fetch, lambda fetched_vals: fetched_vals[0]
+
+    def _set_default(self):
+        """Switch the current global default mapper to be the current one and register conversion functions."""
+        assert Remapper._default_remapper is None
+        _autodist_fetch_fn = self._remap_fetch
+        _autodist_feed_fn = self._remap_feed
+        for i, expansion in enumerate(_REGISTERED_EXPANSIONS):
+
+            tensor_type, fetch_fn, feed_fn, feed_fn_for_partial_run = expansion
+            # Register nested conversion functions while keeping the function types
+            # tensor_type: type
+            # fetch_fn: fetch -> (List[fetch], List[fetched_val] -> final_fetched_val)
+            # feed_fn: (feed, feed_val) -> List[(feed, feed_val)]
+            # feed_fn_for_partial_run: feed -> List[feed]
+
+            def nested_fetch_fn(fetch, fetch_fn=fetch_fn):
+                """
+                Two-level nested fetch function.
+
+                TensorFlow ElementMapper Fetch Expansion -> AutoDist Fetch Expansion ->
+                AutoDist Fetch Values Contraction -> TensorFlow ElementMapper Fetch Values Contraction
+
+                Note that `fetch_fn(local_var)=fetch_fn(instant_outer_var)` is to avoid cell-var-from-loop issue.
+                """
+                fetches, contract_fn = fetch_fn(fetch)
+                final_fetches = []
+                inner_contract_fns = {}
+                for f in fetches:
+                    ff, fn = _autodist_fetch_fn(f)
+                    i, j = len(final_fetches), len(final_fetches) + len(ff)
+                    final_fetches.extend(ff)
+                    inner_contract_fns[(i, j)] = fn
+                return final_fetches, lambda fetched_vals: contract_fn([
+                    fn(fetched_vals[i:j]) for (i, j), fn in sorted(inner_contract_fns.items())
+                ])
+
+            def nested_feed_fn(feed, feed_val, feed_fn=feed_fn):
+                feeds = feed_fn(feed, feed_val)
+                final_feeds = []
+                for fd, fv in feeds:
+                    ff = _autodist_feed_fn(fd, fv)
+                    final_feeds.extend(ff)
+                return final_feeds
+
+            def nested_feed_fn_for_partial_run(feed, feed_fn_for_partial_run=feed_fn_for_partial_run):
+                feeds = feed_fn_for_partial_run(feed)
+                final_feeds = []
+                for fd in feeds:
+                    ff = _autodist_feed_fn(fd)
+                    final_feeds.extend(ff)
+                return final_feeds
+
+            # Backup the _REGISTERED_EXPANSTION[i]
+            Remapper._default_registered_expansions.append(expansion)
+            # Write the new _REGISTERED_EXPANSTION[i]
+            _REGISTERED_EXPANSIONS[i] = (
+                tensor_type,
+                nested_fetch_fn,
+                nested_feed_fn,
+                nested_feed_fn_for_partial_run
+            )
+
+        Remapper._default_remapper = self
+
+    def _is_default(self):
+        """Whether the current remapper is the default one."""
+        return Remapper._default_remapper == self
+
+    @staticmethod
+    def _clear_default():
+        """Un-register conversion functions and clear default remapper."""
+        _REGISTERED_EXPANSIONS[:] = Remapper._default_registered_expansions[:]
+        Remapper._default_registered_expansions = []
+        Remapper._default_remapper = None
+
+    @contextlib.contextmanager
+    def as_default(self):
+        """Ensure the current one as the default remapper; otherwise switch to it."""
+        if self._is_default():
+            raise SyntaxError('Nested remapper context is invalid.')
+        self._set_default()
+        yield self
+        Remapper._clear_default()

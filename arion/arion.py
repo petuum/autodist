@@ -1,9 +1,9 @@
 """User Interface."""
 import atexit
+import os
 import sys
 from collections import namedtuple
 
-import os
 import numpy as np
 from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
@@ -14,9 +14,9 @@ from autodist.cluster import Cluster
 from autodist.const import Env
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
-from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.graph_transformer import GraphTransformer
+from autodist.remapper import Remapper
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import WrappedSession
 from autodist.strategy.base import Strategy, StrategyCompiler
@@ -91,24 +91,25 @@ class _GraphModeInterface(_AutoDistInterface):
     def _build(self):
         strategy = self._build_or_load_strategy()
         compiled_strategy = self._compile_strategy(strategy)
-        transformed_graph_item = GraphTransformer(
+        graph_transformer = GraphTransformer(
             compiled_strategy=compiled_strategy,
             cluster=self._cluster,
             graph_item=self._original_graph_item
-        ).transform()
+        )
+        transformed_graph_item = graph_transformer.transform()
+        remapper = Remapper(graph_transformer, transformed_graph_item)
 
         # End: Graph Construction, Begin: Running
         self._setup(strategy)
-
-        return compiled_strategy, transformed_graph_item
+        return transformed_graph_item, remapper
 
     def _create_distributed_session(self):
         """Create a Session object to execute the default graph in a distributed manner."""
-        compiled_strategy, transformed_graph_item = self._build()
+        transformed_graph_item, remapper = self._build()
         return WrappedSession(
             cluster=self._cluster,
             graph_item=transformed_graph_item,
-            compiled_strategy=compiled_strategy,
+            remapper=remapper,
         )
 
 
@@ -124,8 +125,6 @@ class _V2Graph(_GraphModeInterface):
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
-        self._args_ph_map = {}
-        self._fd = {}
         self._ph_feed_index = {}
         super().__init__(*args, **kwargs)
 
@@ -137,70 +136,52 @@ class _V2Graph(_GraphModeInterface):
             if isinstance(arg, np.ndarray):
                 ph = array_ops.placeholder(dtype=arg.dtype, shape=arg.shape)
                 args_with_ph.append(ph)
-                self._args_ph_map[get_op_name(ph.name)] = i
+                self._ph_feed_index[ph] = i
             else:
                 args_with_ph.append(arg)
         for (k, v) in kwargs.items():
             if isinstance(v, np.ndarray):
                 ph = array_ops.placeholder(dtype=v.dtype, shape=v.shape)
                 kwargs_with_ph[k] = ph
-                self._args_ph_map[get_op_name(ph.name)] = k  # note key name
+                self._ph_feed_index[ph] = k
             else:
                 kwargs_with_ph[k] = v
         return tuple(args_with_ph), kwargs_with_ph
 
-    def _create_feed_dict(self, graph, args_ph_map):
-        """
-        Create the FeedDict.
-
-        We have to remap the inputs (args and kwargs) to the right placeholder
-          created in the *replicated* graph. args_ph_map holds a map of placeholder
-          *names* to the argument tensor. Note that there are N copies of a
-          placeholder for N replicas and we have to feed all of them with tensors.
-          The mapping looks like original graph -> replicated graph -> argument
-          index.
-        """
-        for op in graph.get_operations():
-            if op.type == "Placeholder":
-                ph = op.outputs[0]
-                ph_name = op.name.split('/')[-1]
-                if ph_name in args_ph_map:
-                    self._fd[ph] = None
-                    self._ph_feed_index[ph] = args_ph_map[ph_name]
-
-    def _refill_fd(self, args, kwargs):
+    def _refill_fd(self, *args, **kwargs):
         """
         Refill the FeedDict with the numeric fn args and kwargs.
 
         Use the index populated in _ph_feed_index to quickly assign the right
           argument to the right placeholder.
         """
-        for x in self._fd:
-            if isinstance(self._ph_feed_index[x], int):
-                self._fd[x] = args[self._ph_feed_index[x]]
+        fd = {}
+        for ph, index in self._ph_feed_index.items():
+            if isinstance(index, int):
+                fd[ph] = args[index]
             else:
-                self._fd[x] = kwargs[self._ph_feed_index[x]]
-        return self._fd
+                fd[ph] = kwargs[index]
+        return fd
 
     def _build_fn(self, fn, *args, **kwargs):
         # Build the graph
         # Feed the args with placeholders
         args_with_ph, kwargs_with_ph = self._get_new_args(args, kwargs)
+        refill_feed_dict = self._refill_fd
         fetches = fn(*args_with_ph, **kwargs_with_ph)
 
         # Build the strategy and get the runner with distributed graph
         session = self._create_distributed_session()
-        self._create_feed_dict(session._graph_item.graph, self._args_ph_map)
-        refill_feed_dict = self._refill_fd
 
-        def run_fn(args, kwargs):
+        def run_fn(*args, **kwargs):
             try:
                 # fill out the feed_dict with new batch
-                feed_dict = refill_feed_dict(args, kwargs)
+                feed_dict = refill_feed_dict(*args, **kwargs)
                 return session.run(fetches, feed_dict)
             except KeyboardInterrupt:
                 logging.info('KeyboardInterrupt')
                 sys.exit(1)
+
         return run_fn
 
     def function(self, fn):
@@ -218,7 +199,7 @@ class _V2Graph(_GraphModeInterface):
                 # Cache the runner
                 _cache[cache_id] = _build_fn(fn, *args, **kwargs)
                 atexit.register(lambda: _cache.pop(cache_id))
-            return _cache[cache_id](args, kwargs)
+            return _cache[cache_id](*args, **kwargs)
 
         return wrapper
 
