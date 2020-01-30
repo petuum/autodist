@@ -16,6 +16,10 @@ class Parallax(PSLoadBalancing, AllReduce):
     has reportedly better performance on dense gradient updates.
     """
 
+    def __init__(self, chunk_size=128, local_proxy_variable=False, sync=True):
+        PSLoadBalancing.__init__(self, local_proxy_variable, sync)
+        AllReduce.__init__(self, chunk_size)
+
     # pylint: disable=attribute-defined-outside-init
     def build(self, graph_item, resource_spec):
         """Build it."""
