@@ -1,11 +1,11 @@
 """AutoDist logger."""
 
+import datetime
 import logging as _logging
 import os
 import sys as _sys
-import traceback as _traceback
 import threading
-import datetime
+import traceback as _traceback
 
 import autodist.const
 
@@ -16,7 +16,7 @@ log_dir = os.path.join(autodist.const.DEFAULT_WORKING_DIR, 'logs')
 os.makedirs(log_dir, exist_ok=True)
 log_file_path = os.path.join(log_dir,
                              datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '.log')
-default_log_format = '[%(asctime)s:%(filename)s#L%(lineno)d:%(levelname)s]: %(message)s'
+default_log_format = '[PID#%(process)s:%(asctime)s:%(filename)s#L%(lineno)d:%(levelname)s]: %(message)s'
 
 
 # Hao: Below two functions are copied from TensorFlow
@@ -38,7 +38,7 @@ def _get_caller(offset=3):
 
 # The definition of `findCaller` changed in Python 3.2
 if _sys.version_info.major >= 3 and _sys.version_info.minor >= 2:
-    def _logger_find_caller(stack_info=False): 
+    def _logger_find_caller(stack_info=False):
         code, frame = _get_caller(4)
         sinfo = None
         if stack_info:
@@ -57,13 +57,7 @@ else:
 
 
 def get_logger():
-    """
-    Return AutoDist logger instance.
-
-    # Simplify the logger code from TensorFlow, and combine it with the piper logger
-    # tf_logging: https://github.com/tensorflow/tensorflow/blob/r2.0/tensorflow/python/platform/tf_logging.py
-    # piper logger: https://gitlab.int.petuum.com/internal/piper-team/piper/blob/master/piper/core/utils/logger.py
-    """
+    """Get the AutoDist logger instance."""
     global _logger
     if _logger:
         return _logger
@@ -73,19 +67,21 @@ def get_logger():
         if _logger:
             return _logger
         logger = _logging.getLogger('autodist')
+        # If this attribute evaluates to true,
+        # events logged to this logger will be passed to the handlers of higher level (ancestor) loggers,
+        # in addition to any handlers attached to this logger.
+        logger.propagate = False
         logger.findCaller = _logger_find_caller
-        # Note: If users use ABSL logging, the formatter and handlers will be rewritten following absl's 
-        # as ABSL hacks into python logging and adds a handler to its root logger.
-        if not _logging.getLogger().handlers:
-            formatter = _logging.Formatter(default_log_format)
-            # create file handler
-            file_handler = _logging.FileHandler(log_file_path)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-            # by default _sys.stderr
-            stream_handler = _logging.StreamHandler()
-            stream_handler.setFormatter(formatter)
-            logger.addHandler(stream_handler)
+        formatter = _logging.Formatter(default_log_format)
+        # create file handler
+        file_handler = _logging.FileHandler(log_file_path)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+        # by default _sys.stderr
+        stream_handler = _logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+
         _logger = logger
         return _logger
     finally:
