@@ -51,8 +51,13 @@ class LM:
                                name='W_P',
                                trainable=True,
                                dtype=tf.float32)
-        # self.optimizer = tf.optimizers.Adagrad(FLAGS.learning_rate, initial_accumulator_value=1.0)
-        self.optimizer = tf.optimizers.SGD(lr=FLAGS.learning_rate)
+        major_version, _, _ = tf.version.VERSION.split('.')
+        if major_version == '1':
+            # self.optimizer = tf.train.AdagradOptimizer(learning_rate=0.2)
+            self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate)
+        else:
+            # self.optimizer = tf.optimizers.Adagrad(FLAGS.learning_rate, initial_accumulator_value=1.0)
+            self.optimizer = tf.optimizers.SGD(lr=FLAGS.learning_rate)
         self.c = np.zeros([FLAGS.batch_size, self.state_size], dtype=np.float32)
         self.h = np.zeros([FLAGS.batch_size, self.projected_size], dtype=np.float32)
 

@@ -25,14 +25,34 @@ DENSE_VAR_UPDATE_OP_TYPES = {
     "ResourceApplyRMSProp": (7,),
     "AssignAddVariableOp": (1,),
     "AssignSubVariableOp": (1,),
+    "AssignAdd": (1,),
+    "AssignSub": (1,),
+    # TODO: Verify Assign as update op
     "AssignVariableOp": (1,),
+    "Assign": (1,),
+    #
+    "ApplyAdaMax": (8,),
+    "ApplyAdadelta": (6,),
+    "ApplyAdagrad": (3,),
+    "ApplyAdagradDA": (3,),
+    "ApplyAdagradV2": (3,),
+    "ApplyAdam": (9,),
+    "ApplyAddSign": (6,),
+    "ApplyCenteredRMSProp": (8,),
+    "ApplyFtrl": (3,),
+    "ApplyFtrlV2": (3,),
+    "ApplyGradientDescent": (2,),
+    "ApplyMomentum": (3,),
+    "ApplyPowerSign": (6,),
+    "ApplyProximalAdagrad": (5,),
+    "ApplyProximalGradientDescent": (4,),
+    "ApplyRMSProp": (7,),
 }
 
 # For sparse operations:
 # First: indices
 # Second: updates
 SPARSE_VAR_UPDATE_OP_TYPES = {
-    "ResourceScatterUpdate": (1, 2,),
     "ResourceScatterAdd": (1, 2,),
     "ResourceScatterSub": (1, 2,),
     "ResourceScatterMul": (1, 2,),
@@ -42,6 +62,7 @@ SPARSE_VAR_UPDATE_OP_TYPES = {
     "ResourceScatterNdAdd": (1, 2,),
     "ResourceScatterNdSub": (1, 2,),
     "ResourceScatterNdUpdate": (1, 2,),
+    "ResourceScatterUpdate": (1, 2,),
     "ResourceSparseApplyAdadelta": (7, 6,),
     "ResourceSparseApplyAdagrad": (4, 3,),
     "ResourceSparseApplyAdagradV2": (4, 3,),
@@ -54,6 +75,27 @@ SPARSE_VAR_UPDATE_OP_TYPES = {
     "ResourceSparseApplyProximalAdagrad": (6, 5,),
     "ResourceSparseApplyProximalGradientDescent": (5, 4,),
     "ResourceSparseApplyRMSProp": (8, 7,),
+    "ScatterAdd": (1, 2,),
+    "ScatterSub": (1, 2,),
+    "ScatterMul": (1, 2,),
+    "ScatterDiv": (1, 2,),
+    "ScatterMax": (1, 2,),
+    "ScatterMin": (1, 2,),
+    "ScatterNdAdd": (1, 2,),
+    "ScatterNdSub": (1, 2,),
+    "ScatterNdUpdate": (1, 2,),
+    "ScatterUpdate": (1, 2,),
+    "SparseApplyAdadelta": (7, 6,),
+    "SparseApplyAdagrad": (4, 3,),
+    "SparseApplyAdagradV2": (4, 3,),
+    "SparseApplyAdagradDA": (4, 3,),
+    "SparseApplyCenteredRMSProp": (9, 8,),
+    "SparseApplyFtrl": (4, 3,),
+    "SparseApplyFtrlV2": (4, 3,),
+    "SparseApplyMomentum": (4, 3,),
+    "SparseApplyProximalAdagrad": (6, 5,),
+    "SparseApplyProximalGradientDescent": (5, 4,),
+    "SparseApplyRMSProp": (8, 7,),
 }
 
 UNSTAGE_OP_TYPES = ["Unstage"]
@@ -100,4 +142,16 @@ MUTABLE_STATE_OPS = {
     "MutableDenseHashTableV2",
     "VarHandleOp",
     "BoostedTreesEnsembleResourceHandleOp"
+}
+
+MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS = {
+    # VarHandleOp
+    'VarIsInitializedOp',
+    'AssignVariableOp',
+    'ReadVariableOp',
+    'ResourceGather',
+    # Variable & VariableV2
+    'Assign',
+    'Identity',
+    # TODO(trevin): strict checking for partitioner deletions
 }

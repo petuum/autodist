@@ -40,13 +40,11 @@ def main(_):
     inputs_iterator = MyIterator()
     print('I am going to a scope.')
     with tf.Graph().as_default() as g, autodist.scope():
-        print(g)
         # x = placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
 
         W = tf.Variable(5.0, name='W', dtype=tf.float64)
         b = tf.Variable(0.0, name='b', dtype=tf.float64)
 
-        @autodist.function
         def train_step(input):
 
             def y(x):
@@ -55,8 +53,11 @@ def main(_):
             def l(predicted_y, desired_y):
                 return tf.reduce_mean(tf.square(predicted_y - desired_y))
 
-            optimizer = tf.optimizers.SGD(0.01)
-            # optimizer.iterations = get_or_create_global_step()
+            major_version, _, _ = tf.version.VERSION.split('.')
+            if major_version == '1':
+                optimizer = tf.train.GradientDescentOptimizer(0.01)
+            else:
+                optimizer = tf.optimizers.SGD(0.01)
 
             with tf.GradientTape() as tape:
                 loss = l(y(input), outputs)
@@ -66,12 +67,13 @@ def main(_):
                 gradients = tf.gradients(loss, vs)
 
                 train_op = optimizer.apply_gradients(zip(gradients, vs))
-                print(optimizer.iterations)
-            return loss, train_op, optimizer.iterations, b
+            return loss, train_op, b
 
+        fetches = train_step(inputs_iterator.get_next())
+        session = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
-            l, t, i, b = train_step(input=inputs_iterator.get_next())
-            print('node: {}, step: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), i, l, b))
+            l, t, b = session.run(fetches)
+            print('node: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), l, b))
 
     print('I am out of scope')
 

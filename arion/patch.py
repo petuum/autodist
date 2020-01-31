@@ -3,8 +3,9 @@
 from collections import deque
 
 from tensorflow.python.framework import ops
-from tensorflow.python.keras.optimizer_v2 import optimizer_v2
+from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
+from tensorflow.python.training.optimizer import Optimizer as OptimizerV1
 
 from autodist.graph_item import wrap_optimizer_init, wrap_optimizer_apply_gradient
 from autodist.utils import logging
@@ -16,6 +17,7 @@ class PatchTensorFlow:
     @staticmethod
     def patch_var_reading():
         """It only works with tf.gradients but not tape.gradients."""
+
         def value(self):
             """A cached operation which reads the value of this variable."""
             if self._cached_value is not None:
@@ -32,7 +34,7 @@ class PatchTensorFlow:
     @staticmethod
     def patch_optimizers():
         """Patch all instances of OptimizerV2 for us to store optimizer and gradient information."""
-        q = deque([subclass for subclass in optimizer_v2.OptimizerV2.__subclasses__()])
+        q = deque([subclass for subclass in OptimizerV2.__subclasses__() + OptimizerV1.__subclasses__()])
         while q:
             subclass = q.popleft()
             for subsubclass in subclass.__subclasses__():

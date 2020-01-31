@@ -91,7 +91,7 @@ class AllReduceSynchronizer(Synchronizer):
             conf.merge_op = 'Add'
             conf.final_op = 'Div'
             # "\/" is added for name scope reuse
-            with ops.name_scope(replica_prefix(i) + "-{}/".format(self._chunk_id)):
+            with ops.name_scope(replica_prefix(i) + "/collective-chunk-{}/".format(self._chunk_id)):
                 with ops.colocate_with(grad.op):
                     reduced_grad = compressors[i].reduce(grad, conf)
             update_consumers(grad_consumers, grad, reduced_grad)

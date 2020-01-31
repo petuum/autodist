@@ -1,7 +1,6 @@
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.training.training_util import get_or_create_global_step
 
 
 def main(autodist):
@@ -45,7 +44,6 @@ def main(autodist):
         ])
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
         optimizer = tf.keras.optimizers.SGD()
-        optimizer.iterations = get_or_create_global_step()
 
         @d.function
         def train_step(inputs):
