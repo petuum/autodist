@@ -118,7 +118,7 @@ class Cluster:
     def start(self):
         """Start."""
         # pylint: disable=import-outside-toplevel
-        import autodist.utils.server_starter
+        from autodist.utils import server_starter
 
         # atexit registration should be placed
         #   - before the beginning of the start
@@ -135,7 +135,7 @@ class Cluster:
                 if is_local_address(address) or self.is_chief(address):  # TODO: more rigorous checking
                     json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
 
-                    module_name = autodist.utils.server_starter.__name__
+                    module_name = server_starter.__name__
                     args = [
                         '--job_name=%s' % job_name,
                         '--task_index=%d' % task_index
@@ -154,12 +154,12 @@ class Cluster:
                 else:  # remote
                     remote_pre_start_tf_server(
                         DEFAULT_WORKING_DIR,
-                        tf_server_starter_filepath=autodist.utils.server_starter.__file__,
+                        tf_server_starter_filepath=server_starter.__file__,
                         cluster_spec=self.cluster_spec,
                         hostname=address,
                         ssh_config=self.ssh_config
                     )
-                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(autodist.utils.server_starter.__file__))
+                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(server_starter.__file__))
                     args = [
                         '--job_name=%s' % job_name,
                         '--task_index=%d' % task_index

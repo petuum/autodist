@@ -45,8 +45,13 @@ class SimpleModel():
                               name='b2',
                               trainable=True,
                               dtype=tf.float32)
-        # self.optimizer = tf.optimizers.Adagrad(learning_rate=0.2, initial_accumulator_value=1.0)
-        self.optimizer = tf.optimizers.Adam(learning_rate=0.2)
+        major_version, _, _ = tf.version.VERSION.split('.')
+        if major_version == '1':
+            # self.optimizer = tf.train.AdagradOptimizer(learning_rate=0.2)
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=0.2)
+        else:
+            # self.optimizer = tf.optimizers.Adagrad(learning_rate=0.2, initial_accumulator_value=1.0)
+            self.optimizer = tf.optimizers.Adam(learning_rate=0.2)
 
     def forward(self, x, y):
         # embedding layer

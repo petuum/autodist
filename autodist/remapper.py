@@ -4,6 +4,8 @@ import contextlib
 from tensorflow.python.client.session import _REGISTERED_EXPANSIONS
 from tensorflow.python.framework import ops
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
+from tensorflow.python.ops.variables import RefVariable
+
 from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
 from autodist.kernel.common.utils import replica_prefix
 
@@ -16,6 +18,7 @@ class Remapper:
     _remap_fn = {
         ops.Tensor: lambda graph, name: graph.as_graph_element(name),
         ops.Operation: lambda graph, name: graph.as_graph_element(name),
+        RefVariable: lambda graph, name: graph.as_graph_element(name),
         ResourceVariable: lambda graph, name: get_read_var_tensor(graph.get_tensor_by_name(name).op)
     }
 
@@ -51,7 +54,15 @@ class Remapper:
         return transformed_feeds
 
     def _remap_fetch(self, fetch):
-        """Remap the user-provided fetches to the right list of fetches after graph transformations."""
+        """
+        Remap the user-provided fetches to the right list of fetches after graph transformations.
+
+        Cases:
+            * If original fetch exists (which is not affected by graph transformation), fetch the original.
+            * Otherwise, for fetches that are train_ops, fetch them on all replicas;
+            * for other fetches, only fetch it on master replica.
+                * For example, for partitioned vars, it corresponds to the concat one as_tensor on the first replica.
+        """
         graph = self._graph_item.graph
         _remap_fn = Remapper._remap_fn
         fetch_type = type(fetch)
@@ -60,11 +71,14 @@ class Remapper:
         except KeyError:
             master_replica_name = ops.prepend_name_scope(fetch.name, replica_prefix(0))
             master_replica_fetch = _remap_fn[fetch_type](graph, master_replica_name)
-            # For fetches that are stateful operations (i.e. train_op), fetch them on all replicas
-            # For other fetches, only fetch it on master_replica (
-            #   for partitioned vars, it corresponds to the concat one as_tensor
-            # )
-            if fetch_type is ops.Operation and master_replica_fetch.op_def.is_stateful:
+
+            def is_train_op(op):
+                # In TF2: train_op as AssignAddVariableOp
+                # In TF1 (being deprecated): no_op with a groups of stateful ops as control dependencies
+                # TODO(unless deprecating): make the checking as strict as possible
+                return op.op_def.is_stateful or op.op_def.name == 'NoOp'
+
+            if fetch_type is ops.Operation and is_train_op(master_replica_fetch):
                 transformed_fetch = [
                     _remap_fn[fetch_type](graph, ops.prepend_name_scope(fetch.name, replica_prefix(i)))
                     for i in range(self._graph_transformer.num_local_replicas)
@@ -81,6 +95,7 @@ class Remapper:
         for i, expansion in enumerate(_REGISTERED_EXPANSIONS):
 
             tensor_type, fetch_fn, feed_fn, feed_fn_for_partial_run = expansion
+
             # Register nested conversion functions while keeping the function types
             # tensor_type: type
             # fetch_fn: fetch -> (List[fetch], List[fetched_val] -> final_fetched_val)

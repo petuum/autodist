@@ -43,15 +43,18 @@ def main(autodist):
 
         @autodist.function
         def train_step(input):
-            optimizer = tf.optimizers.SGD(0.01)
+            major_version, _, _ = tf.version.VERSION.split('.')
+            if major_version == '1':
+                optimizer = tf.train.GradientDescentOptimizer(0.01)
+            else:
+                optimizer = tf.optimizers.SGD(0.01)
             loss = l(f(input), outputs)
             vs = [W, b]
             # gradients = tape.gradient(target=loss, sources=vs)
             gradients = tf.gradients(loss, vs)
             train_op = optimizer.apply_gradients(zip(gradients, vs))
-            print(optimizer.iterations)
-            return loss, train_op, optimizer.iterations, b
+            return loss, train_op, b
 
         for epoch in range(EPOCHS):
-            l, t, i, b = train_step(input=inputs_iterator.get_next())
-            print('node: {}, step: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), i, l, b))
+            l, t, b = train_step(input=inputs_iterator.get_next())
+            print('node: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), l, b))

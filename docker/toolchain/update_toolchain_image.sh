@@ -22,11 +22,14 @@ code=$?
 if [ $code -ne 0 ]; then
     # image does not exist. Build and push it
     echo "Image not found in $DOCKER_REGISTRY. Building it locally..."
-    docker build -t "$DOCKER_REGISTRY:$MD5TAG" -f $ROOT_DIR/docker/toolchain/Dockerfile $ROOT_DIR
+    # TensorFlow 2
+    docker build -t "$DOCKER_REGISTRY:$MD5TAG" -f $ROOT_DIR/docker/toolchain/update_auto_tf2.Dockerfile $ROOT_DIR
     docker push $DOCKER_REGISTRY:$MD5TAG
     docker tag "$DOCKER_REGISTRY:$MD5TAG" "$DOCKER_REGISTRY:ci_latest"
     docker push "$DOCKER_REGISTRY:ci_latest"
+    # TensorFlow 1
+    docker build -t "$DOCKER_REGISTRY:ci_latest_tf1" -f $ROOT_DIR/docker/toolchain/update_auto_tf1.Dockerfile $ROOT_DIR
+    docker push "$DOCKER_REGISTRY:ci_latest_tf1"
 else
     echo "Image found! We will just use that one."
 fi
-

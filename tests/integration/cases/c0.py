@@ -2,7 +2,6 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.python.training.training_util import get_or_create_global_step
 from autodist.const import Env
 
 
@@ -11,7 +10,7 @@ def main(autodist):
     TRUE_W = 3.0
     TRUE_b = 2.0
     NUM_EXAMPLES = 1000
-    EPOCHS = 2
+    EPOCHS = 1
 
     # For Integration Value Test: (For more information, check the assertions below)
     seed = 456 if bool(os.environ.get(Env.AUTODIST_WORKER.name)) else 123
@@ -37,7 +36,7 @@ def main(autodist):
         W = tf.Variable(5.0, name='W', dtype=tf.float64)
         b = tf.Variable(0.0, name='b', dtype=tf.float64)
 
-        @autodist.function
+        # @autodist.function
         def train_step(input):
 
             def y(x):
@@ -46,8 +45,11 @@ def main(autodist):
             def l(predicted_y, desired_y):
                 return tf.reduce_mean(tf.square(predicted_y - desired_y))
 
-            optimizer = tf.optimizers.SGD(0.01)
-            optimizer.iterations = get_or_create_global_step()
+            major_version, _, _ = tf.version.VERSION.split('.')
+            if major_version == '1':
+                optimizer = tf.train.GradientDescentOptimizer(0.01)
+            else:
+                optimizer = tf.optimizers.SGD(0.01)
 
             with tf.GradientTape() as tape:
                 loss = l(y(input), outputs)
@@ -59,10 +61,14 @@ def main(autodist):
                 train_op = optimizer.apply_gradients(zip(gradients, vs))
             return loss, train_op, b
 
-        assert EPOCHS == 2
+        assert EPOCHS == 1
+        fetches = train_step(inputs_iterator.get_next())
+        session = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
-            l_val, _, b_val = train_step(input=inputs_iterator.get_next())
+            l_val, _, _ = session.run(fetches)
             print('loss:', l_val)
+            # Seperate the fetches of var to guarantee the state
+            b_val = session.run(b)
 
         if getattr(autodist._strategy_builder, '_sync', True):
             # Integration Value Test:

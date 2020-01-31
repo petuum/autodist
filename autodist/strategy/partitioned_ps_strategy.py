@@ -68,8 +68,7 @@ class PartitionedPS(StrategyBuilder):
         if not var.initial_value.shape.ndims:
             return 1
 
-        # TODO(Trevin): Do not partition vars when there is only one reduction destination (1 node).
-        n = var.initial_value.shape[0]
+        n = int(var.initial_value.shape[0])
         for i in range(2, n):
             if n % i == 0:
                 return i

@@ -7,21 +7,42 @@ from tensorflow.python.ops.resource_variable_ops import _maybe_set_handle_data
 from autodist.kernel.common.utils import get_consumers
 
 
-def get_read_var_ops(var_handle_op, exclude_snapshot=False):
+def is_read_var_op(op):
+    """Is ReadVariableOp for ResourceVariable, Identity for RefVariable."""
+    return op.type == "ReadVariableOp" or op.type == 'Identity'
+
+
+def get_read_var_ops(var_op, exclude_snapshot=False):
     """
     Given a resource handle op, get all its read variable ops.
 
     Args:
-        var_handle_op: the varhandleop of the resource variable of interest.
+        var_op: VarHandleOp for ResourceVariable, VariableV2 or Variable for RefVariable
         exclude_snapshot (False): whether to skip the default ReadVariableOp bundled (i.e. "/Read/ReadVariableOp").
+            no extra snapshot to exclude for RefVariable, even if `exclude_snapshot=True`.
 
     Returns:
-        list: list of ReadVariableOps of it.
+        list: list of read var ops of it.
     """
-    read_var_ops = {consumer for consumer in get_consumers(var_handle_op) if consumer.type == "ReadVariableOp"}
+    read_var_ops = {
+        consumer for consumer in get_consumers(var_op)
+        if is_read_var_op(consumer)
+    }
     if exclude_snapshot:
         read_var_ops = {op for op in read_var_ops if not op.name.endswith("/Read/ReadVariableOp")}
     return read_var_ops
+
+
+def get_read_var_tensor(var_op):
+    """Given a resource handle, get the tensor of its default readable value."""
+    if var_op.type == 'VarHandleOp':
+        for read_var_op in get_read_var_ops(var_op):
+            if read_var_op.name.endswith("/Read/ReadVariableOp"):
+                return read_var_op.outputs[0]
+    elif var_op.type == 'VariableV2' or is_read_var_op(var_op):
+        return var_op.outputs[0]
+    raise ValueError("Can't get the variable reading tensor from '{}'. "
+                     "It may not be a proper variable op.".format(var_op.name))
 
 
 def gen_read_var_op(var_handle_op, dtype):
@@ -38,15 +59,3 @@ def gen_read_var_op(var_handle_op, dtype):
         tape.record_operation(
             "ReadVariableOp", [result], [var_handle_op], lambda x: [x])
     return result
-
-
-def get_read_var_tensor(var_handle_op):
-    """Given a resource handle, get the tensor of its default readable value."""
-    if var_handle_op.type == 'VarHandleOp':
-        for read_var_op in get_read_var_ops(var_handle_op):
-            if read_var_op.name.endswith("/Read/ReadVariableOp"):
-                return read_var_op.outputs[0]
-    if len(var_handle_op.outputs) > 1:
-        raise ValueError("Can't get the variable reading tensor from '{}'. "
-                         "It may not be a proper variable op.".format(var_handle_op.name))
-    return var_handle_op.outputs[0]

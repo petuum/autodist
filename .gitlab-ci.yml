@@ -58,16 +58,12 @@ build_wheel:
     expire_in: 1 day
 
 
-tests:
+.job_template: &tests_template
   stage: test
-  image: '${TOOLCHAIN_IMAGE}'
   except:
     # - master # For dev coverage report
     - /^release-.+$/
     - tags
-  tags:
-    - gpu_runner
-    - master_node
   before_script:
     # dist as artifacts from build_wheel
     - ls dist  # print whl version
@@ -82,6 +78,25 @@ tests:
     paths:
       - tests/htmlcov
     expire_in: 1 day
+
+tests:
+  <<: *tests_template
+  image: '${TOOLCHAIN_IMAGE}'
+  tags:
+    - gpu_runner
+    - master_node
+
+test_tf1:
+  <<: *tests_template
+  image: '${TOOLCHAIN_IMAGE}_tf1'
+  tags:
+    - gpu_runner
+    - worker_node
+  except:
+    # Master as dev follows fast-forward commits, so
+    #   if tf1 tests are passed on branch,
+    #   we only need one test job for coverage report.
+    - master
 
 .job_template: &dist_tests
   stage: test_dist

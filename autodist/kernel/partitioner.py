@@ -10,6 +10,8 @@ from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
 from autodist.graph_item import GraphItem, Info
+from autodist.kernel.common.op_info import MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS
+from autodist.kernel.common.resource_variable_utils import is_read_var_op
 from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers, parse_name_scope
 from autodist.kernel.kernel import Kernel
 from autodist.utils import logging
@@ -42,7 +44,6 @@ class VariablePartitioner(Kernel):
         # Create new variables and ops in the new graph
         new_graph_item.copy_gradient_info_from(self.graph_item)
         new_vars = self._create_new_vars(new_graph_item, vars_to_partition, unpartitioned_vars)
-
         # Remove the ops that are marked for deletion
         new_graph_def = self._delete_marked_ops(new_graph_item, AUTODIST_TO_DELETE_SCOPE)
 
@@ -90,7 +91,17 @@ class VariablePartitioner(Kernel):
             Set of ops to be deleted.
         """
         to_delete = set()
+
+        # Mark all ops part of the optimizer for deletion
         update_op_scopes = set()
+        opt_name = self.graph_item.optimizer_args[0]._name
+        for var_op_name, (_, _, update_op) in self.graph_item.var_op_name_to_grad_info.items():
+            top_level_scope_opt = update_op.name[:update_op.name.find(opt_name) + len(opt_name)]
+            # An optimizer can create all its relevant ops under the top level optimizer scope
+            update_op_scopes.add(top_level_scope_opt)
+            #   as well as nested optimizer scopes under each variable name scope
+            update_op_scopes.add(var_op_name + '/' + opt_name)
+
         for var_name in vars_to_partition:
             var_op_name = get_op_name(var_name)
             var_op = self.graph_item.graph.get_operation_by_name(var_op_name)
@@ -99,18 +110,8 @@ class VariablePartitioner(Kernel):
             consumers = get_consumers(var_op)
 
             # Mark var and all its consumers for deletion
-            consumers_to_delete = {c for c in consumers if c.type in (
-                'VarIsInitializedOp',
-                'AssignVariableOp',
-                'ReadVariableOp',
-                'ResourceGather'
-            )}
+            consumers_to_delete = {c for c in consumers if c.type in MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS}
             to_delete.update([var_op, update_op], consumers_to_delete)
-
-            # Mark all ops part of the optimizer for deletion
-            opt_name = self.graph_item.optimizer_args[0]._name
-            top_level_scope = update_op.name[:update_op.name.find(opt_name) + len(opt_name)]
-            update_op_scopes.add(top_level_scope)
 
             # Update GraphItem Info
             self.info.pop_variable(var.name)
@@ -218,11 +219,14 @@ class VariablePartitioner(Kernel):
                         ops.prepend_name_scope(op.name, AUTODIST_TO_DELETE_SCOPE)
                     )
                     if op.type == "ResourceGather":
-                        # TODO: Will this work for every case?
+                        # Only Resource Variable needs to be taken care of
+                        #   because ResourceGather consumes resource tensor rather than the tensor of read_var_op
+                        # TODO: Is there any case where the op.type == "ResourceGather"
+                        #  but we can't use embedding_lookup_v2 to reconstruct the op consuming a partitioned resource
                         # The second input to a ResourceGather op is always the indices per the opdef
                         emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs._inputs[1])
                         update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
-                    elif op.type == "ReadVariableOp":
+                    if is_read_var_op(op):
                         update_consumers(get_consumers(op), op.outputs[0], partitioned_var_tensor)
 
                 self._update_node_config(var, var_list)
@@ -334,6 +338,7 @@ def fixed_size_partitioner(num_shards, axis=0):
     A partition function usable as the `partitioner` argument to
     `variable_scope` and `get_variable`.
     """
+
     def _partitioner(shape, **unused_args):
         partitions_list = [1] * len(shape)
         partitions_list[axis] = min(num_shards, shape.dims[axis].value)
