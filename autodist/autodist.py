@@ -1,7 +1,6 @@
 """User Interface."""
 import atexit
 import os
-import sys
 from collections import namedtuple
 
 import numpy as np
@@ -106,11 +105,20 @@ class _GraphModeInterface(_AutoDistInterface):
     def _create_distributed_session(self):
         """Create a Session object to execute the default graph in a distributed manner."""
         transformed_graph_item, remapper = self._build()
-        return WrappedSession(
+
+        _distributed_session = WrappedSession(
             cluster=self._cluster,
             graph_item=transformed_graph_item,
             remapper=remapper,
         )
+
+        def _del(sess=_distributed_session):
+            """Enforce the sess to be closed before the cluster termination in the atexit stack."""
+            sess.__del__()
+            logging.info('Closing session...')
+        atexit.register(_del)
+
+        return _distributed_session
 
 
 class _V1Graph(_GraphModeInterface):
@@ -174,13 +182,9 @@ class _V2Graph(_GraphModeInterface):
         session = self._create_distributed_session()
 
         def run_fn(*args, **kwargs):
-            try:
-                # fill out the feed_dict with new batch
-                feed_dict = refill_feed_dict(*args, **kwargs)
-                return session.run(fetches, feed_dict)
-            except KeyboardInterrupt:
-                logging.info('KeyboardInterrupt')
-                sys.exit(1)
+            # fill out the feed_dict with new batch
+            feed_dict = refill_feed_dict(*args, **kwargs)
+            return session.run(fetches, feed_dict)
 
         return run_fn
 
@@ -196,6 +200,9 @@ class _V2Graph(_GraphModeInterface):
 
             # At the first run of the training function
             if not cached:
+                if _cache:
+                    raise NotImplementedError("AutoDist currently only stably supports "
+                                              "one 'autodist.function' across the scope.")
                 # Cache the runner
                 _cache[cache_id] = _build_fn(fn, *args, **kwargs)
                 atexit.register(lambda: _cache.pop(cache_id))
