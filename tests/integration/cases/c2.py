@@ -13,8 +13,12 @@ def main(autodist):
 
     class SimpleModel:
         def __init__(self):
-            self.emb = tf.Variable(tf.random.uniform([vocab_size, embedding_size]),
-                                   name='emb',
+            self.emb1 = tf.Variable(tf.random.uniform([vocab_size, embedding_size]),
+                                   name='emb1',
+                                   trainable=True,
+                                   dtype=tf.float32)
+            self.emb2 = tf.Variable(tf.random.uniform([vocab_size, embedding_size]),
+                                   name='emb2',
                                    trainable=True,
                                    dtype=tf.float32)
             self.w1 = tf.Variable(tf.random.uniform([embedding_size, hidden_dim]),
@@ -43,7 +47,11 @@ def main(autodist):
 
         def forward(self, x, y):
             # embedding layer
-            x = tf.nn.embedding_lookup(self.emb, x)
+            x, z = tf.nn.embedding_lookup(self.emb1, x), tf.nn.embedding_lookup(self.emb2, x)
+            # Conditional (so we don't partition self.emb2)
+            z = tf.cond(tf.reduce_sum(z) > 0, lambda: tf.identity(z), lambda: tf.identity(z))
+            # Combine
+            x = .5 * (x + z)
             # global average pool
             x = tf.math.reduce_mean(x, axis=1)
             # dense
@@ -60,12 +68,12 @@ def main(autodist):
             x, y = xy
             # with tf.GradientTape() as tape:
             loss = self.forward(x, y)
-            trainables = [self.emb, self.w1, self.b1, self.w2, self.b2]
+            trainables = [self.emb1, self.emb2, self.w1, self.b1, self.w2, self.b2]
             gradients = tf.gradients(loss, trainables)
             # gradients = tape.gradient(loss, trainables)
             # strategy requires users to provide the train_op handle
             train_op = self.optimizer.apply_gradients(zip(gradients, trainables))
-            return loss, train_op, self.emb
+            return loss, train_op, self.emb1, self.emb2
 
     (train_data, train_labels), (test_data, test_labels) = tf.keras.datasets.imdb.load_data(num_words=vocab_size)
     train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data,
@@ -85,7 +93,7 @@ def main(autodist):
         prev_time = time.time()
         for local_step in range(max_steps):
             # fetch train_op and loss
-            loss, _, _ = model.train_fn(my_iterator)
+            loss, _, _, _ = model.train_fn(my_iterator)
             # loss, _ = autodist.run(model.train_fn, my_iterator)
             if local_step % log_frequency == 0:
                 cur_time = time.time()

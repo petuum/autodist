@@ -45,12 +45,21 @@ class VariablePartitioner(Kernel):
         new_graph_item.copy_gradient_info_from(self.graph_item)
         new_vars = self._create_new_vars(new_graph_item, vars_to_partition, unpartitioned_vars)
         # Remove the ops that are marked for deletion
-        new_graph_def = self._delete_marked_ops(new_graph_item, AUTODIST_TO_DELETE_SCOPE)
+        output_graph_item = self._delete_marked_ops(new_graph_item, AUTODIST_TO_DELETE_SCOPE)
 
-        self.info.update(
-            variables=list(set(new_graph_item.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES) + new_vars)),
-            replace=True)
-        output_graph_item = GraphItem(graph_def=new_graph_def)
+        # Update graph item with proper variable information
+        # The new list contains:
+        # 1) The new vars we created (`new_vars`)
+        # 2) The new vars the optimizer created (`new_globals`)
+        # 3) The old untrainable vars that weren't deleted during partitioning (`untrainable_vars`)
+        new_vars = set(new_vars)
+        new_globals = set(new_graph_item.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES))
+        deleted_tensor_names = {o.outputs[0].name for o in to_delete if o.outputs}
+        untrainable_vars = [v for v in self.graph_item.info.untrainable_variables
+                            if v.variable_name not in deleted_tensor_names]
+        new_var_list = list(new_globals | new_vars) + untrainable_vars
+
+        self.info.update(variables=new_var_list, replace=True)
         output_graph_item.info = self.info.copy()
         output_graph_item.copy_gradient_info_from(new_graph_item)
 
@@ -75,7 +84,7 @@ class VariablePartitioner(Kernel):
                 logging.info("Partitioning variable {} across {}".format(node.var_name, shards))
             else:
                 grad, _, _ = self.graph_item.var_op_name_to_grad_info[get_op_name(node.var_name)]
-                unpartitioned_vars[node.var_name] = grad.name
+                unpartitioned_vars[node.var_name] = grad
         return vars_to_partition, unpartitioned_vars
 
     def _get_ops_to_delete(self, vars_to_partition):
@@ -140,8 +149,17 @@ class VariablePartitioner(Kernel):
         new_graph_def = graph_pb2.GraphDef()
         new_graph_def.library.Clear()
         new_graph_def.library.CopyFrom(og_graph_def.library)
+        control_flow_contexts = {}
+
         for node in og_graph_def.node:
             op = self.graph_item.graph.get_operation_by_name(node.name)
+
+            # Save control flow context to add it back later
+            # Since it is not automatically set based on the attr's in the graph def
+            ctx = op._get_control_flow_context()
+            if ctx:
+                control_flow_contexts[op.name] = ctx
+
             if op in to_rename:
                 node.name = ops.prepend_name_scope(node.name, new_name_scope)
 
@@ -160,7 +178,13 @@ class VariablePartitioner(Kernel):
 
             new_graph_def.node.append(node)
 
-        return GraphItem(graph_def=new_graph_def)
+        # Re-add control flow contexts
+        new_graph_item = GraphItem(graph_def=new_graph_def)
+        for op in new_graph_item.graph.get_operations():
+            if op.name in control_flow_contexts:
+                op._set_control_flow_context(control_flow_contexts[op.name])
+
+        return new_graph_item
 
     # pylint: disable=too-many-locals
     def _create_new_vars(self, new_graph_item, vars_to_partition, unpartitioned_vars):
@@ -238,7 +262,16 @@ class VariablePartitioner(Kernel):
                 new_graph_item.pop_gradient_info(var.name)
         new_graph_item.info = self.info.copy()
         for var, grad in unpartitioned_vars.items():
-            new_grads.append(new_graph_item.graph.get_tensor_by_name(grad))
+            if isinstance(grad, ops.IndexedSlices):
+                # Sparse variable
+                grad = ops.IndexedSlices(
+                    indices=new_graph_item.graph.get_tensor_by_name(grad.indices.name),
+                    values=new_graph_item.graph.get_tensor_by_name(grad.values.name),
+                    dense_shape=new_graph_item.graph.get_tensor_by_name(grad.dense_shape.name)
+                )
+            else:
+                grad = new_graph_item.graph.get_tensor_by_name(grad.name)
+            new_grads.append(grad)
             new_vars.append(
                 new_graph_item.trainable_var_op_to_var[new_graph_item.graph.get_operation_by_name(get_op_name(var))])
         with new_graph_item.graph.as_default():
@@ -285,9 +318,18 @@ class VariablePartitioner(Kernel):
         new_graph_def = graph_pb2.GraphDef()
         new_graph_def.library.Clear()
         new_graph_def.library.CopyFrom(graph_def.library)
+        control_flow_contexts = {}
+
         for node in graph_def.node:
             if parse_name_scope(node.name).startswith(name_scope):
                 continue
+
+            # Save control flow context to add it back later
+            # Since it is not automatically set based on the attr's in the graph def
+            op = graph_item.graph.get_operation_by_name(node.name)
+            ctx = op._get_control_flow_context()
+            if ctx:
+                control_flow_contexts[op.name] = ctx
 
             for idx, input_name in enumerate(node.input):
                 if parse_name_scope(input_name).startswith(name_scope):
@@ -301,7 +343,14 @@ class VariablePartitioner(Kernel):
             self._prune_graphdef_node_inputs(node)
 
             new_graph_def.node.append(node)
-        return new_graph_def
+
+        # Re-add control flow contexts
+        new_graph_item = GraphItem(graph_def=new_graph_def)
+        for op in new_graph_item.graph.get_operations():
+            if op.name in control_flow_contexts:
+                op._set_control_flow_context(control_flow_contexts[op.name])
+
+        return new_graph_item
 
     @staticmethod
     def _split_indexed_slices(sp_input=None, num_split=None, dim_size=0, name=None):
@@ -338,7 +387,6 @@ def fixed_size_partitioner(num_shards, axis=0):
     A partition function usable as the `partitioner` argument to
     `variable_scope` and `get_variable`.
     """
-
     def _partitioner(shape, **unused_args):
         partitions_list = [1] * len(shape)
         partitions_list[axis] = min(num_shards, shape.dims[axis].value)

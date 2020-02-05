@@ -91,6 +91,11 @@ class Info:
         """Trainable Variables."""
         return [v for v in self.variables if v.trainable]
 
+    @property
+    def untrainable_variables(self):
+        """Untrainable Variables."""
+        return [v for v in self.variables if not v.trainable]
+
     def _add_variable(self, var):
         """Add a variable to info tracker."""
         if isinstance(var, VariableDef):
