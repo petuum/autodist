@@ -426,7 +426,7 @@ class PSSynchronizer(Synchronizer):
                     shape=tensor.get_shape(),
                     shared_name=var_op.name + "/grad_accum")
                 # Get a copy of consumers list before creating accum_apply_op
-                grad_consumers = [c for c in grad.consumers()]
+                grad_consumers = list(grad.consumers())
                 accum_apply_op = grad_accum.apply_grad(
                     grad, local_step=MAX_INT64,
                     name=grad.op.name + '_accum_apply_grad')
@@ -443,8 +443,8 @@ class PSSynchronizer(Synchronizer):
                     shape=grad.shape,
                     shared_name=var_op.name + "/grad_accum")
                 # Get a copy of consumers list before creating accum_apply_op
-                indices_consumers = [c for c in indices.consumers()]
-                grad_consumers = [c for c in grad.consumers()]
+                indices_consumers = list(indices.consumers())
+                grad_consumers = list(grad.consumers())
                 accum_apply_op = grad_accum.apply_indexed_slices_grad(
                     grad_indexed_slices, local_step=MAX_INT64,
                     name=grad.op.name + '_accum_apply_grad')

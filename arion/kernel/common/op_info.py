@@ -144,6 +144,24 @@ MUTABLE_STATE_OPS = {
     "BoostedTreesEnsembleResourceHandleOp"
 }
 
+CONTROL_FLOW_OPS = {
+    "Abort",
+    "ControlTrigger",
+    "Enter",
+    "Exit",
+    "LoopCond",
+    "Merge",
+    "NextIteration",
+    "NoOp",
+    "RefEnter",
+    "RefExit",
+    "RefMerge",
+    "RefNextIteration",
+    "RefSelect",
+    "RefSwitch",
+    "Switch",
+}
+
 MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS = {
     # VarHandleOp
     'VarIsInitializedOp',

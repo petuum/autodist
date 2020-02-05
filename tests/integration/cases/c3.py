@@ -7,6 +7,7 @@ import tensorflow as tf
 from autodist import AutoDist
 from tensorflow.python.training.training_util import get_or_create_global_step
 
+
 def main(autodist):
 
     d = autodist

@@ -30,10 +30,7 @@ class Cluster:
         self._chief = resource_spec.chief
         self.cluster_spec = self._get_default_cluster_spec(resource_spec)
         self._full_addresses = [full_address for tasks in self.cluster_spec.values() for full_address in tasks]
-        self._address_to_port = {
-            ip: port
-            for ip, port in (a.split(':') for a in self._full_addresses)
-        }
+        self._address_to_port = dict(a.split(':') for a in self._full_addresses)
         self._task_to_address = {
             (job_name, task_index): a.split(':')[0]
             for job_name, tasks in self.cluster_spec.items()
