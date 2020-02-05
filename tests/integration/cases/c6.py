@@ -71,20 +71,24 @@ def main(autodist):
 
             return ta.stack(), new_state
 
-        optimizer = tf.keras.optimizers.Adam(0.1)
+        major_version, _, _ = tf.version.VERSION.split('.')
+        if major_version == '1':
+            # self.optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+            optimizer = tf.train.AdamOptimizer(learning_rate=0.1)
+        else:
+            # self.optimizer = tf.optimizers.Adagrad(learning_rate=0.1, initial_accumulator_value=1.0)
+            optimizer = tf.optimizers.Adam(learning_rate=0.1)
+
         outputs = []
         for t in range(3):
             _, o = loop_fn(t)
             outputs.append(o)
         output1 = tf.expand_dims(tf.reduce_mean(tf.concat(outputs, axis=0), axis=0), axis=0)
-        print(output1.shape)
-        print(y.shape)
         output = tf.matmul(output1, qq)
-        print(output.shape)
         var_list = variables.trainable_variables() + ops.get_collection(ops.GraphKeys.TRAINABLE_RESOURCE_VARIABLES)
-        loss = tf.compat.v1.nn.softmax_cross_entropy_with_logits(y, output)
-        grad = optimizer.get_gradients(loss, var_list)
-        train_op = optimizer.apply_gradients(zip(grad, var_list))
+        loss = tf.compat.v1.nn.softmax_cross_entropy_with_logits(labels=y, logits=output)
+        grads = tf.gradients(loss, var_list)
+        train_op = optimizer.apply_gradients(zip(grads, var_list))
         return train_op, output
 
     with tf.Graph().as_default(), autodist.scope():
