@@ -251,7 +251,13 @@ class VariablePartitioner(Kernel):
                         emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs._inputs[1])
                         update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
                     if is_read_var_op(op):
-                        update_consumers(get_consumers(op), op.outputs[0], partitioned_var_tensor)
+                        # Without our modification, Reference Vars in TF have a read op associated with them.
+                        # TF can sometimes look for this and expect it to exist (e.g. in graph.as_graph_element)
+                        # so we add one back to avoid errors.
+                        # read_out is already the output tensor of the generated identity op
+                        read_out = array_ops.identity(partitioned_var_tensor,
+                                                      name=ops.prepend_name_scope("read", var_op_name))
+                        update_consumers(get_consumers(op), op.outputs[0], read_out)
 
                 self._update_node_config(var, var_list)
 
