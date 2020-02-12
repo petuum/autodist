@@ -69,7 +69,7 @@ class ProxyVariable:
         """Create and return new update ops for mirror vars."""
         with ops.device(worker_device):
             with ops.control_dependencies(grad_apply_finished):
-                updated_value = gen_read_var_op(self._this_op.outputs[0], self._dtype)  # create new read var op
+                updated_value = gen_read_var_op(self._this_op, self._dtype)  # create new read var op
         update_ops = []
         for proxy_var in self._proxy_vars:
             with ops.device(proxy_var.device):

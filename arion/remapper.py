@@ -83,6 +83,24 @@ class Remapper:
                     _remap_fn[fetch_type](graph, ops.prepend_name_scope(fetch.name, replica_prefix(i)))
                     for i in range(self._graph_transformer.num_local_replicas)
                 ]
+
+                ####################################################################
+                # # For Debugging Local Replicas
+                ####################################################################
+                # transformed_fetch = [
+                #     _remap_fn[ops.Tensor](graph, ops.prepend_name_scope(
+                #         'Mean:0',
+                #         replica_prefix(i)))
+                #     for i in range(self._graph_transformer.num_local_replicas)
+                # ]
+                # transformed_fetch = [_remap_fn[ops.Tensor](graph,
+                #     ops.prepend_name_scope(
+                #         'sampled_softmax_loss/embedding_lookup:0',
+                #         replica_prefix(1)
+                #     )
+                # )]
+                ####################################################################
+                print('###', transformed_fetch)
             else:
                 transformed_fetch = [master_replica_fetch]
         return transformed_fetch, lambda fetched_vals: fetched_vals[0]

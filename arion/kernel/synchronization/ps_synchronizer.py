@@ -14,7 +14,7 @@ from autodist.kernel.common.proxy_variable import ProxyVariable
 from autodist.kernel.common.resource_variable_utils import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
     update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, \
-    remove_from_control_consumers, get_index_from_tensor_name
+    remove_from_control_consumers, get_index_from_tensor_name, update_colocation_group
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.proto import synchronizers_pb2
 
@@ -45,11 +45,12 @@ class PSSynchronizer(Synchronizer):
         """
         item = graph_item
         var_op_name = get_op_name(var_name)
+        master_replica_index = 0
 
         with item.graph.as_default():
-            self._prune_control_dependencies(item, var_op_name, master_replica=0)
-            self._share_variable(item, var_op_name, master_replica=0)
-            master_var_name = ops.prepend_name_scope(var_name, replica_prefix(0))
+            self._prune_control_dependencies(item, var_op_name, master_replica=master_replica_index)
+            self._share_variable(item, var_op_name, master_replica=master_replica_index)
+            master_var_name = ops.prepend_name_scope(var_name, replica_prefix(master_replica_index))
             master_var_op_name = get_op_name(master_var_name)
             grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
             agg_grad = self._aggregate_gradients(item, old_update_op=update_op, old_grad=grad, old_target=target)
@@ -58,7 +59,7 @@ class PSSynchronizer(Synchronizer):
         for i in range(self.num_replicas):
             var_name_to_remove = ops.prepend_name_scope(var_name, replica_prefix(i))
             item.pop_gradient_info(var_name=var_name_to_remove)
-            if i != 0:
+            if i != master_replica_index:
                 item.info.pop_variable(var_name=var_name_to_remove)
         item.extend_gradient_info(
             grads=[agg_grad],
@@ -104,13 +105,17 @@ class PSSynchronizer(Synchronizer):
                 new_read_var_op_name = ops.prepend_name_scope(ops.strip_name_scope(read_var_op.name, replica_prefix(i)),
                                                               replica_prefix(master_replica))
                 new_read_var_op = graph_item.graph.get_operation_by_name(new_read_var_op_name)
-                update_consumers(get_consumers(read_var_op), read_var_op.outputs[0], new_read_var_op.outputs[0])
+                consumers = get_consumers(read_var_op)
+                update_consumers(consumers, read_var_op.outputs[0], new_read_var_op.outputs[0])
+                update_colocation_group(consumers, read_var_op, new_read_var_op)
 
             # update the consumers of VarhandleOp to use the handle on replica=master_replica
             new_handle_op_name = ops.prepend_name_scope(ops.strip_name_scope(this_var_op_name, replica_prefix(i)),
                                                         replica_prefix(master_replica))
             new_handle_op = graph_item.graph.get_operation_by_name(new_handle_op_name)
-            update_consumers(list(handle_consumers), this_var_op.outputs[0], new_handle_op.outputs[0])
+            handle_consumers = list(handle_consumers)
+            update_consumers(handle_consumers, this_var_op.outputs[0], new_handle_op.outputs[0])
+            update_colocation_group(handle_consumers, this_var_op, new_handle_op)
 
     def _aggregate_gradients(self, graph_item, old_update_op, old_grad, old_target):
         """
