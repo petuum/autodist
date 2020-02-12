@@ -1,7 +1,10 @@
 """A collection of useful functions for the kernel submodule."""
 from collections import deque
 
-from autodist.const import AUTODIST_REPLICA_PREFIX
+from tensorflow_core.core.framework.attr_value_pb2 import AttrValue
+from tensorflow_core.python.util.compat import as_bytes
+
+from autodist.const import AUTODIST_REPLICA_PREFIX, COLOCATION_PREFIX
 
 
 def get_op_name(tensor_name):
@@ -203,6 +206,23 @@ def update_control_consumers(control_consumer_ops, old_op, new_op):
         assert size == len(control_inputs)
         control_consumer_op._remove_all_control_inputs()
         control_consumer_op._add_control_inputs(control_inputs)
+
+
+def update_colocation_group(ops, old_op, new_op):
+    """
+    For each op in ops, we replace the colocation group as old_op to colocation group as new_op.
+
+    Args:
+        ops: operations to update
+        old_op: the op having the old colocation group
+        new_op: the op having the new colocation group
+    """
+    old_groups = old_op.colocation_groups() or [COLOCATION_PREFIX + as_bytes(new_op.name)]
+    new_groups = new_op.colocation_groups() or [COLOCATION_PREFIX + as_bytes(new_op.name)]
+    for op in ops:
+        if op.colocation_groups() == old_groups:
+            op._set_attr("_class", AttrValue(list=AttrValue.ListValue(s=new_groups)))
+            assert op.colocation_groups() == new_groups
 
 
 def remove_from_control_consumers(control_consumer_ops, op_to_remove):

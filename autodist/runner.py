@@ -14,6 +14,7 @@ def get_default_session_config():
     """Create a default session config."""
     session_config = config_pb2.ConfigProto()
     session_config.allow_soft_placement = True
+    # session_config.log_device_placement = True
 
     # enable scoped_allocator for collective_ops
     rewrite_options = session_config.graph_options.rewrite_options
@@ -35,6 +36,7 @@ def get_default_run_options():
     run_options.experimental.collective_graph_key = int(
         hashlib.md5(os.environ.get(Env.AUTODIST_WORKER.name, '').encode()).hexdigest(), 16
     ) % MAX_INT32
+    # run_options.trace_level = config_pb2.RunOptions.FULL_TRACE
     return run_options
 
 
