@@ -40,4 +40,4 @@ class PatchTensorFlow:
             q.extend(list(subclass.__subclasses__()))
             subclass.__init__ = wrap_optimizer_init(subclass.__init__)
             subclass.apply_gradients = wrap_optimizer_apply_gradient(subclass.apply_gradients)
-            logging.warning('Optimizer type: %s has been patched' % subclass.__name__)
+            logging.info('Optimizer type: %s has been patched' % subclass.__name__)

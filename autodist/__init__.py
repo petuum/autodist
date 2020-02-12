@@ -9,14 +9,14 @@ from .const import Env
 from .patch import PatchTensorFlow
 from .utils import logging
 
-logging.set_verbosity(os.environ.get(Env.AUTODIST_MIN_LOG_LEVEL.name, 'DEBUG'))
+logging.set_verbosity(os.environ.get(Env.AUTODIST_MIN_LOG_LEVEL.name, 'INFO'))
 
 # Runtime compatibility checking
-COMPAT_VERSIONS = [1.15, 2.0]
+COMPAT_VERSIONS = [1.15, 2.1]
 float_major_minor_version = float(version.VERSION[:version.VERSION.rfind('.')])
-if float_major_minor_version not in COMPAT_VERSIONS:
-    logging.error('AutoDist is only compatible with tensorflow-gpu=={}, but the current version is {}'.format(
-        COMPAT_VERSIONS,
+if not COMPAT_VERSIONS[0] <= float_major_minor_version <= COMPAT_VERSIONS[1]:
+    logging.error('AutoDist is only compatible with `tensorflow-gpu>={}, <={}`, but the current version is {}'.format(
+        COMPAT_VERSIONS[0], COMPAT_VERSIONS[1],
         float_major_minor_version
     ))
     sys.exit(1)
