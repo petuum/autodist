@@ -63,11 +63,11 @@ class _AutoDistInterface:
         return s
 
     def _compile_strategy(self, strategy):
-        logging.info('Raw strategy: %s' % strategy)
+        logging.debug('Raw strategy: %s' % strategy)
         device_resolver = DeviceResolver(self._cluster)
         compiled_strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str). \
             compile(strategy)
-        logging.info('Compiled strategy: %s' % compiled_strategy)
+        logging.debug('Compiled strategy: %s' % compiled_strategy)
         return compiled_strategy
 
     def _setup(self, strategy):

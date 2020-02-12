@@ -45,7 +45,7 @@ class PartitionedPS(StrategyBuilder):
         Returns:
             Dict: the config dict for the node.
         """
-        if (len(self.loads) == 1 and not AUTODIST_IS_TESTING) or \
+        if (len(self.loads) < 1 and not AUTODIST_IS_TESTING) or \
                 any((o.type in CONTROL_FLOW_OPS for o in get_consumers(var.op))):
             # Don't partition if there is only one reduction device or if the variable is connected to control flow
             # For stability, we err on the side of not partitioning over potentially breaking

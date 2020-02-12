@@ -248,7 +248,7 @@ class VariablePartitioner(Kernel):
                         # TODO: Is there any case where the op.type == "ResourceGather"
                         #  but we can't use embedding_lookup_v2 to reconstruct the op consuming a partitioned resource
                         # The second input to a ResourceGather op is always the indices per the opdef
-                        emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs._inputs[1])
+                        emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs[1])
                         update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
                     if is_read_var_op(op):
                         # Without our modification, Reference Vars in TF have a read op associated with them.
@@ -267,6 +267,7 @@ class VariablePartitioner(Kernel):
                 new_graph_item.extend_gradient_info(split_grad, var_list)
                 new_graph_item.pop_gradient_info(var.name)
         new_graph_item.info = self.info.copy()
+        all_vars, all_grads = new_vars, new_grads
         for var, grad in unpartitioned_vars.items():
             if isinstance(grad, ops.IndexedSlices):
                 # Sparse variable
@@ -277,13 +278,16 @@ class VariablePartitioner(Kernel):
                 )
             else:
                 grad = new_graph_item.graph.get_tensor_by_name(grad.name)
-            new_grads.append(grad)
-            new_vars.append(
-                new_graph_item.trainable_var_op_to_var[new_graph_item.graph.get_operation_by_name(get_op_name(var))])
+            all_grads.append(grad)
+            var = new_graph_item.trainable_var_op_to_var[new_graph_item.graph.get_operation_by_name(get_op_name(var))]
+            # TensorFlow expects the following to not mess autodist with the tf.distribute
+            if (not hasattr(var, "_distribute_strategy")) or var._distribute_strategy:
+                setattr(var, "_distribute_strategy", None)
+            all_vars.append(var)
         with new_graph_item.graph.as_default():
             optimizer = self.graph_item.optimizer(*self.graph_item.optimizer_args[1:],
                                                   **self.graph_item.optimizer_kwargs)
-            _ = optimizer.apply_gradients(zip(new_grads, new_vars))
+            _ = optimizer.apply_gradients(zip(all_grads, all_vars))
         return new_vars
 
     def _update_node_config(self, var, var_list):

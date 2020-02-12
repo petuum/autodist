@@ -20,7 +20,7 @@ def test_parse_name_scope():
         with ops.control_dependencies([no_op(name='my_op')]):
             b = constant_op.constant(6)
         name_scope = 'name_scope'
-        new_name = ops.prepend_name_scope(b.op._node_def.input[0], name_scope)
+        new_name = ops.prepend_name_scope(b.op.node_def.input[0], name_scope)
         assert new_name == '^name_scope/my_op'
         assert name_scope == utils.parse_name_scope(new_name)
 

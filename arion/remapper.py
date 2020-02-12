@@ -8,6 +8,7 @@ from tensorflow.python.ops.variables import RefVariable
 
 from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
 from autodist.kernel.common.utils import replica_prefix
+from autodist.utils import logging
 
 
 class Remapper:
@@ -100,7 +101,7 @@ class Remapper:
                 #     )
                 # )]
                 ####################################################################
-                print('###', transformed_fetch)
+                logging.debug('Fetch mapped from {} to {}'.format(fetch, transformed_fetch))
             else:
                 transformed_fetch = [master_replica_fetch]
         return transformed_fetch, lambda fetched_vals: fetched_vals[0]

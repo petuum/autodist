@@ -1,11 +1,11 @@
-# Development Requirements
+# Requirements
 numpy
 paramiko
 protobuf==3.11.0
 pyyaml
 gast==0.2.2
 
-# Tests Requirements
+# Dev Requirements
 pytest
 pytest-cov
 pydocstyle
