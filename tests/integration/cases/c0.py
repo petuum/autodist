@@ -31,15 +31,15 @@ def main(autodist):
 
     inputs_iterator = MyIterator()
     with tf.Graph().as_default(), autodist.scope():
-        # x = placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
+        x = tf.compat.v1.placeholder(shape=[None], dtype=tf.float32)
+        y = tf.compat.v1.placeholder(shape=[None], dtype=tf.float32)
 
-        W = tf.Variable(5.0, name='W', dtype=tf.float64)
-        b = tf.Variable(0.0, name='b', dtype=tf.float64)
+        W = tf.Variable(5.0, name='W')
+        b = tf.Variable(0.0, name='b')
 
-        # @autodist.function
-        def train_step(input):
+        def train_step(x):
 
-            def y(x):
+            def f(x):
                 return W * x + b
 
             def l(predicted_y, desired_y):
@@ -52,7 +52,7 @@ def main(autodist):
                 optimizer = tf.optimizers.SGD(0.01)
 
             with tf.GradientTape() as tape:
-                loss = l(y(input), outputs)
+                loss = l(f(x), y)
                 vs = [W, b]
 
                 # gradients = tape.gradient(target=loss, sources=vs)
@@ -62,10 +62,10 @@ def main(autodist):
             return loss, train_op, b
 
         assert EPOCHS == 1
-        fetches = train_step(inputs_iterator.get_next())
+        fetches = train_step(x)
         session = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
-            l_val, _, _ = session.run(fetches)
+            l_val, _, _ = session.run(fetches=fetches, feed_dict={x: inputs_iterator.get_next(), y: outputs})
             print('loss:', l_val)
             # Seperate the fetches of var to guarantee the state
             b_val = session.run(b)
