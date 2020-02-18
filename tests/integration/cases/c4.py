@@ -13,19 +13,9 @@ def main(autodist):
     noises = np.random.randn(NUM_EXAMPLES)
     outputs = inputs * TRUE_W + TRUE_b + noises
 
-    class MyIterator:
-        def initialize(self):
-            return tf.zeros(1)
-
-        def get_next(self):
-            # a fake one
-            return inputs
-
     with tf.Graph().as_default() as g, autodist.scope():
         W = tf.Variable(5.0, name='W', dtype=tf.float64)
         b = tf.Variable(0.0, name='b', dtype=tf.float64)
-
-        inputs_iterator = MyIterator()
 
         def l(predicted_y, desired_y):
             return tf.reduce_mean(tf.square(predicted_y - desired_y))
@@ -42,13 +32,13 @@ def main(autodist):
             return final_x
 
         @autodist.function
-        def train_step(input):
+        def train_step(inputs, outputs):
             major_version, _, _ = tf.version.VERSION.split('.')
             if major_version == '1':
                 optimizer = tf.train.GradientDescentOptimizer(0.01)
             else:
                 optimizer = tf.optimizers.SGD(0.01)
-            loss = l(f(input), outputs)
+            loss = l(f(inputs), outputs)
             vs = [W, b]
             # gradients = tape.gradient(target=loss, sources=vs)
             gradients = tf.gradients(loss, vs)
@@ -56,5 +46,5 @@ def main(autodist):
             return loss, train_op, b
 
         for epoch in range(EPOCHS):
-            l, t, b = train_step(input=inputs_iterator.get_next())
+            l, t, b = train_step(inputs, outputs)
             print('node: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), l, b))

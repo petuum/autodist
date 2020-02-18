@@ -1,5 +1,6 @@
 """Feed and Fetch Remapper."""
 import contextlib
+import numpy as np
 
 from tensorflow.python.client.session import _REGISTERED_EXPANSIONS
 from tensorflow.python.framework import ops
@@ -44,14 +45,24 @@ class Remapper:
         try:
             transformed_feeds = [self._graph_item.graph.as_graph_element(feed.name)]
         except KeyError:
-            # Temporary Workaround for SYM-9004
             transformed_feeds = [
-                ops.prepend_name_scope(feed.name, replica_prefix(i))
+                self._graph_item.graph.as_graph_element(
+                    ops.prepend_name_scope(feed.name, replica_prefix(i))
+                )
                 for i in range(self._graph_transformer.num_local_replicas)
             ]
+
         if feed_val is not None:
-            # TODO: map placeholders on different replicas to different values
-            transformed_feeds = [(f, feed_val) for f in transformed_feeds]
+            num_replicated_feeds = len(transformed_feeds)
+            # If we have replicated placeholders with undefined (polymorphic) shape, we split the feed_val across it;
+            #  otherwise we feed all replicated placeholders the same feed_val
+            if num_replicated_feeds > 1 and not feed.shape.is_fully_defined():
+                polymorphic_dim = feed.shape.as_list().index(None)  # first leftmost undefined shape index
+                feed_vals = np.array_split(np.asarray(feed_val), num_replicated_feeds, axis=polymorphic_dim)
+                transformed_feeds = list(zip(transformed_feeds, feed_vals))
+            else:
+                transformed_feeds = [(f, feed_val) for f in transformed_feeds]
+
         return transformed_feeds
 
     def _remap_fetch(self, fetch):

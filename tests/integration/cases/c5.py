@@ -1,51 +1,60 @@
+import sys
+
 import numpy as np
+import os
 import tensorflow as tf
+
+from autodist import AutoDist
+from tensorflow.python.training.training_util import get_or_create_global_step
+
 
 def main(autodist):
 
-    TRUE_W = 3.0
-    TRUE_b = 2.0
-    NUM_EXAMPLES = 1000
-    EPOCHS = 10
+    d = autodist
 
-    inputs = np.random.randn(NUM_EXAMPLES)
-    noises = np.random.randn(NUM_EXAMPLES)
-    outputs = inputs * TRUE_W + TRUE_b + noises
+    fashion_mnist = tf.keras.datasets.fashion_mnist
 
-    print('I am going to a scope.')
-    with tf.Graph().as_default(), autodist.scope():
-        x = tf.compat.v1.placeholder(shape=[NUM_EXAMPLES], dtype=tf.float32)
+    (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
-        W = tf.Variable(5.0, name='W')
-        b = tf.Variable(0.0, name='b')
+    train_images = train_images[:, :, :, None]
+    test_images = test_images[:, :, :, None]
 
-        def train_step(x):
+    train_images = train_images / np.float32(255)
+    test_images = test_images / np.float32(255)
 
-            def y(x):
-                return W * x + b
+    BATCH_SIZE = 128
 
-            def l(predicted_y, desired_y):
-                return tf.reduce_mean(tf.square(predicted_y - desired_y))
+    EPOCHS = 1
+    train_steps_per_epoch = min(100, len(train_images) // BATCH_SIZE)
 
-            major_version, _, _ = tf.version.VERSION.split('.')
-            if major_version == '1':
-                optimizer = tf.train.GradientDescentOptimizer(0.01)
-            else:
-                optimizer = tf.optimizers.SGD(0.01)
+    with tf.Graph().as_default(), d.scope():
+        model = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(32, 3, activation='relu'),
+            tf.keras.layers.MaxPooling2D(),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dropout(0.1),
+            tf.keras.layers.Dense(10, activation='softmax')
+        ])
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
+        optimizer = tf.keras.optimizers.SGD()
 
-            loss = l(y(x), outputs)
-            vs = [W, b]
+        @d.function
+        def train_step(x, y):
+            with tf.GradientTape() as tape:
+                y_hat = model(x, training=True)
+                loss = loss_fn(y, y_hat)
+                all_vars = []
+                for v in model.trainable_variables:
+                    all_vars.append(v)
+                grads = tf.gradients(loss, all_vars)
+            update = optimizer.apply_gradients(zip(grads, all_vars))
 
-            gradients = tf.gradients(loss, vs)
+            return loss, update, optimizer.iterations
 
-            train_op = optimizer.apply_gradients(zip(gradients, vs))
-            return loss, train_op, b
-
-        symbol = train_step(x)
-        sess = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
-            l, t, b = sess.run(fetches=symbol, feed_dict={x: inputs})
-            print('node: {}, step: {}, loss: {}\nb:{}'.format(autodist._cluster.get_local_address(), epoch, l, b))
-
-    print('I am out of scope')
+            j = 0
+            for _ in range(train_steps_per_epoch):
+                loss, _, i = train_step(train_images[j:j+BATCH_SIZE], y=train_labels[j:j+BATCH_SIZE])
+                print(f"step: {i}, train_loss: {loss}")
+                j += BATCH_SIZE
 

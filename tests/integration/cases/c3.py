@@ -28,6 +28,9 @@ def main(autodist):
     train_steps_per_epoch = min(100, len(train_images) // BATCH_SIZE)
 
     with tf.Graph().as_default(), d.scope():
+        x = tf.keras.Input(shape=(28, 28, 1))
+        y = tf.keras.Input(shape=())
+
         model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, 3, activation='relu'),
             tf.keras.layers.MaxPooling2D(),
@@ -38,23 +41,23 @@ def main(autodist):
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
         optimizer = tf.keras.optimizers.SGD()
 
-        @d.function
         def train_step(x, y):
-            with tf.GradientTape() as tape:
-                y_hat = model(x, training=True)
-                loss = loss_fn(y, y_hat)
-                all_vars = []
-                for v in model.trainable_variables:
-                    all_vars.append(v)
-                grads = tf.gradients(loss, all_vars)
+            y_hat = model(x, training=True)
+            loss = loss_fn(y, y_hat)
+            all_vars = []
+            for v in model.trainable_variables:
+                all_vars.append(v)
+            grads = tf.gradients(loss, all_vars)
             update = optimizer.apply_gradients(zip(grads, all_vars))
 
             return loss, update, optimizer.iterations
 
+        fetches = train_step(x, y)
+        sess = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
             j = 0
             for _ in range(train_steps_per_epoch):
-                loss, _, i = train_step(train_images[j:j+BATCH_SIZE], y=train_labels[j:j+BATCH_SIZE])
+                loss, _, i = sess.run(fetches, {x: train_images[j:j+BATCH_SIZE], y: train_labels[j:j+BATCH_SIZE]})
                 print(f"step: {i}, train_loss: {loss}")
                 j += BATCH_SIZE
 
