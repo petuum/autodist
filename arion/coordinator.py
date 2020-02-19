@@ -40,7 +40,8 @@ class Coordinator:
                 env = {
                     Env.AUTODIST_WORKER.name: replica_host,
                     Env.AUTODIST_STRATEGY_ID.name: self._strategy.id,
-                    Env.SYS_DATA_PATH.name: os.environ.get("SYS_DATA_PATH", "")
+                    Env.SYS_DATA_PATH.name: os.environ.get("SYS_DATA_PATH", ""),
+                    Env.SYS_RESOURCE_PATH.name: os.environ.get("SYS_RESOURCE_PATH", "")
                 }
                 cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
                 cmd_main = ["python"] + sys.argv
