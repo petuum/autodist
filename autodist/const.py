@@ -21,6 +21,7 @@ class Env(Enum):
     AUTODIST_STRATEGY_ID = auto()
     AUTODIST_MIN_LOG_LEVEL = auto()
     SYS_DATA_PATH = auto()
+    SYS_RESOURCE_PATH = auto()
 
 
 MAX_INT64 = int(2 ** 63 - 1)
