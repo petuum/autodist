@@ -1,6 +1,5 @@
 """User Interface."""
 import atexit
-import os
 from collections import namedtuple
 
 import numpy as np
@@ -9,8 +8,8 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
-from autodist.cluster import Cluster
-from autodist.const import Env
+from autodist.network import Cluster, SSHCluster
+from autodist.const import ENV
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.device.resolver import DeviceResolver
@@ -21,7 +20,7 @@ from autodist.runner import WrappedSession
 from autodist.strategy.base import Strategy, StrategyCompiler
 from autodist.utils import logging
 
-IS_AUTODIST_WORKER = bool(os.environ.get(Env.AUTODIST_WORKER.name))
+IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 
@@ -34,7 +33,7 @@ class _AutoDistInterface:
 
         self._original_graph_item = None
         # TODO: separate the control
-        self._cluster: Cluster = Cluster(self._resource_spec)  # which can be also defined with strategy
+        self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
         self._coordinator: Coordinator
 
     @tf_contextlib.contextmanager
@@ -58,7 +57,8 @@ class _AutoDistInterface:
             s = self.build_strategy()
             s.serialize()
         else:
-            strategy_id = os.environ[Env.AUTODIST_STRATEGY_ID.name]
+            strategy_id = ENV.AUTODIST_STRATEGY_ID.val
+            assert strategy_id
             s = Strategy.deserialize(strategy_id)
         return s
 

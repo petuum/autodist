@@ -3,4 +3,3 @@
 nodes:
   - address: localhost
     gpus: [0]
-    chief: true

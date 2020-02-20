@@ -5,7 +5,8 @@ from enum import Enum
 import re
 import yaml
 
-from autodist.utils.network import SSHConfig
+from autodist.network import SSHConfigMap, is_loopback_address
+from autodist.utils import logging
 
 
 class Connectivity(Enum):
@@ -47,7 +48,8 @@ class ResourceSpec:
         self.__gpu_devices = None
         self.__num_gpus = None
         self.__chief_address = None
-        self.__ssh_config = dict()
+        self.__ssh_config_map = dict()
+        self.__ssh_group = dict()
 
         # set self.__devices
         self._from_resource_info(resource_file)
@@ -98,9 +100,14 @@ class ResourceSpec:
         return self.__num_gpus
 
     @property
-    def ssh_config(self):
+    def ssh_config_map(self):
         """Configurations for SSH."""
-        return self.__ssh_config
+        return self.__ssh_config_map
+
+    @property
+    def ssh_group(self):
+        """SSH Group for each node."""
+        return self.__ssh_group
 
     def _add_device(self, device_spec):
         if device_spec.name_string() not in self.__devices:
@@ -112,20 +119,43 @@ class ResourceSpec:
             return
 
         resource_info = yaml.safe_load(open(resource_file, 'r'))
+        num_nodes = len(resource_info.get('nodes', {}))
 
         for node in resource_info.pop('nodes', {}):
             host_address = node['address']
-            host_cpu = DeviceSpec(host_address)
-            if node.get('chief', False):
+
+            if is_loopback_address(host_address) and num_nodes > 1:
+                raise ValueError("Can't (currently) use a loopback address when there are multiple nodes.")
+
+            if node.get('chief') or num_nodes == 1:
+                # 2 cases for marking this node as chief:
+                # 1) The node was marked as chief
+                # 2) If there is only one node, it is chief by default
+                logging.info("%s is CHIEF" % host_address)
                 self.__chief_address = host_address
+
+            host_cpu = DeviceSpec(host_address)
             self._add_device(host_cpu)
+
+            # handle any other CPUs
+            for cpu_index in node.get('cpus', [])[1:]:
+                cpu = DeviceSpec(host_address, host_cpu, DeviceType.CPU, cpu_index)
+                self._add_device(cpu)
             # handle GPUs
-            for gpu_index in node.get('gpus', {}):
+            for gpu_index in node.get('gpus', []):
                 gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
                 self._add_device(gpu)
 
+            self.__ssh_group[host_address] = node.get('ssh_config')
+            if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
+                raise ValueError("Need to define SSH groups for all non-chief nodes.")
+
+        # Make sure there is a chief set
+        if not self.__chief_address:
+            raise ValueError("Must specify one of the nodes to be chief.")
+
         # all other configs except nodes are (optional) ssh config
-        self.__ssh_config = SSHConfig(resource_info.pop('ssh', {}))
+        self.__ssh_config_map = SSHConfigMap(resource_info.pop('ssh', {}), self.__ssh_group)
 
         # checks
         if self.__chief_address is None:

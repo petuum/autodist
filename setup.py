@@ -58,6 +58,7 @@ setup(
         'Programming Language :: Python :: 3.6 :: Only',
     ],
     install_requires=[
+        "netifaces==0.10.9",
         "numpy",
         "paramiko",
         "protobuf==3.11.0",

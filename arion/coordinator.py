@@ -1,13 +1,12 @@
 """Coordinator."""
 
 import sys
-import os
 import threading
 import atexit
 
-from autodist.const import Env, DEFAULT_SERIALIZATION_DIR
+from autodist.const import ENV, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
-from autodist.utils.network import is_local_address, remote_exec, remote_copy
+from autodist.network import is_local_address
 from autodist.utils import logging
 
 
@@ -38,26 +37,21 @@ class Coordinator:
             if not is_local_address(replica_host) and not self.cluster.is_chief(replica_host):
                 # Build the command
                 env = {
-                    Env.AUTODIST_WORKER.name: replica_host,
-                    Env.AUTODIST_STRATEGY_ID.name: self._strategy.id,
-                    Env.SYS_DATA_PATH.name: os.environ.get("SYS_DATA_PATH", ""),
-                    Env.SYS_RESOURCE_PATH.name: os.environ.get("SYS_RESOURCE_PATH", "")
+                    ENV.AUTODIST_WORKER.name: replica_host,
+                    ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
+                    ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
+                    ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
                 }
                 cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
                 cmd_main = ["python"] + sys.argv
                 cmd = cmd_env + cmd_main
 
-                remote_copy(
+                self.cluster.remote_copy(
                     local_path=self._strategy.path,
                     remote_path=DEFAULT_SERIALIZATION_DIR,
-                    hostname=replica_host,
-                    ssh_config=self.cluster.ssh_config
+                    hostname=replica_host
                 )
-                proc = remote_exec(
-                    cmd,
-                    hostname=replica_host,
-                    ssh_config=self.cluster.ssh_config
-                )
+                proc = self.cluster.remote_exec(cmd, hostname=replica_host)
                 self.threads.append(self._proc_wait_async(proc))
 
     def join(self):

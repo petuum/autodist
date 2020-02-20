@@ -2,7 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from autodist.const import Env
+from autodist.const import ENV
 
 
 def main(autodist):
@@ -13,7 +13,7 @@ def main(autodist):
     EPOCHS = 1
 
     # For Integration Value Test: (For more information, check the assertions below)
-    seed = 456 if bool(os.environ.get(Env.AUTODIST_WORKER.name)) else 123
+    seed = 456 if bool(ENV.AUTODIST_WORKER.val) else 123
     np.random.seed(seed)
 
     inputs = np.random.randn(NUM_EXAMPLES)
