@@ -6,7 +6,7 @@ from tensorflow.core.protobuf import config_pb2, rewriter_config_pb2
 from tensorflow.python.client import timeline, session
 
 import autodist.const
-from autodist.const import Env, MAX_INT32
+from autodist.const import ENV, MAX_INT32
 from autodist.utils import logging
 
 
@@ -34,7 +34,7 @@ def get_default_run_options():
     # Shared step_id may cause racing for different sessions, across which some variable is shared.
     # For more information, please refer to TensorFlow worker.proto: `collective_graph_key`
     run_options.experimental.collective_graph_key = int(
-        hashlib.md5(os.environ.get(Env.AUTODIST_WORKER.name, '').encode()).hexdigest(), 16
+        hashlib.md5(ENV.AUTODIST_WORKER.val.encode()).hexdigest(), 16
     ) % MAX_INT32
     # run_options.trace_level = config_pb2.RunOptions.FULL_TRACE
     return run_options

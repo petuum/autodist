@@ -5,11 +5,11 @@ from tensorflow import version
 from tensorflow.python.ops import control_flow_v2_toggles
 
 from .autodist import AutoDist
-from .const import Env
+from .const import ENV
 from .patch import PatchTensorFlow
 from .utils import logging
 
-logging.set_verbosity(os.environ.get(Env.AUTODIST_MIN_LOG_LEVEL.name, 'INFO'))
+logging.set_verbosity(ENV.AUTODIST_MIN_LOG_LEVEL.val)
 
 # Runtime compatibility checking
 COMPAT_VERSIONS = [1.15, 2.1]
@@ -27,6 +27,6 @@ logging.info('AutoDist is now on TensorFlow {}'.format(version.VERSION))
 control_flow_v2_toggles.disable_control_flow_v2()
 logging.warning('AutoDist has disabled TensorFlow control_flow_v2 for control_flow_v1')
 
-if os.environ.get('AUTODIST_PATCH_TF', '') == '1':
+if ENV.AUTODIST_PATCH_TF.val:
     PatchTensorFlow.patch_var_reading()
 PatchTensorFlow.patch_optimizers()
