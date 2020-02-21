@@ -3,7 +3,7 @@ import hashlib
 import os
 
 from tensorflow.core.protobuf import config_pb2, rewriter_config_pb2
-from tensorflow.python.client import timeline, session
+from tensorflow.python.client import timeline, session as tf_session
 
 import autodist.const
 from autodist.const import ENV, MAX_INT32
@@ -54,7 +54,7 @@ def _log_timeline(run_metadata, name='timeline', step=0):
         logging.info('Traced timeline written to: %s' % p)
 
 
-class WrappedSession(session.Session):
+class WrappedSession(tf_session.Session):
     """Wrapped Session."""
 
     def __init__(self, cluster, graph_item, remapper):
@@ -68,10 +68,23 @@ class WrappedSession(session.Session):
             config=get_default_session_config()
         )
         # TensorFlow default initializations
-        # TODO: Rethink. Should we do this?
         super(WrappedSession, self).run(
             self._graph_item.get_ops_in_graph(self._graph_item.info.initializers)
         )
+
+    def _make_callable_from_options(self, callable_options):
+        self._extend_graph()
+        return WrappedSession._Callable(self, callable_options)
+
+    class _Callable(tf_session.Session._Callable):
+
+        def __init__(self, session, callable_options):
+            self._callable_options, self._callable_arg_fns = session._remapper.remap_callable_options(callable_options)
+            super(WrappedSession._Callable, self).__init__(session, self._callable_options)
+
+        def __call__(self, *args, **kwargs):
+            args = [a for fn, arg in zip(self._callable_arg_fns, args) for a in fn(arg)]
+            return super(WrappedSession._Callable, self).__call__(*args, **kwargs)
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Wrapped Session.run."""

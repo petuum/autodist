@@ -8,6 +8,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
+from autodist.patch import PatchTensorFlow
 from autodist.network import Cluster, SSHCluster
 from autodist.const import ENV
 from autodist.coordinator import Coordinator
@@ -40,7 +41,12 @@ class _AutoDistInterface:
     def _scope(self):
         """Forward the context manager of a graph item."""
         with self._original_graph_item.as_default():
+            if ENV.AUTODIST_PATCH_TF.val:
+                PatchTensorFlow.patch_var_reading()
+            PatchTensorFlow.patch_keras(self)
             yield
+            PatchTensorFlow.unpatch_keras()
+            PatchTensorFlow.unpatch_var_reading()
 
     def build_strategy(self):
         """
