@@ -74,7 +74,7 @@ class SSHConfigMap(dict):
                 pkey=self._gen_rsa_pkey(ssh_info.get('key_file', None)),
                 env=dict(
                     TF_CPP_MIN_LOG_LEVEL=0,
-                    AUTODIST_PATCH_TF=os.environ.get('AUTODIST_PATCH_TF', default='True'),
+                    AUTODIST_PATCH_TF=ENV.AUTODIST_PATCH_TF.val,
                     **ssh_info.get('shared_envs', {})
                 )
             )

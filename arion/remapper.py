@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow.python.client.session import _REGISTERED_EXPANSIONS
 from tensorflow.python.framework import ops
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
-from tensorflow.python.ops.variables import RefVariable
+from tensorflow.core.protobuf import config_pb2
 
 from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
 from autodist.kernel.common.utils import replica_prefix
@@ -17,16 +17,19 @@ class Remapper:
 
     _default_remapper = None
     _default_registered_expansions = []
-    _remap_fn = {
-        ops.Tensor: lambda graph, name: graph.as_graph_element(name),
-        ops.Operation: lambda graph, name: graph.as_graph_element(name),
-        RefVariable: lambda graph, name: graph.as_graph_element(name),
-        ResourceVariable: lambda graph, name: get_read_var_tensor(graph.get_tensor_by_name(name).op)
-    }
 
     def __init__(self, graph_transformer, graph_item):
         self._graph_transformer = graph_transformer
         self._graph_item = graph_item
+
+    def _remap_element(self, ele_type, name):
+        """Remap element based on type."""
+        graph = self._graph_item.graph
+        if ele_type is ResourceVariable:
+            res = get_read_var_tensor(graph.get_tensor_by_name(name).op)
+        else:  # Default element mapper, including the RefVariable case
+            res = graph.as_graph_element(name, allow_tensor=True, allow_operation=True)
+        return res
 
     def _remap_feed(self, feed, feed_val=None):
         """
@@ -36,34 +39,41 @@ class Remapper:
           and we have to feed all of them with tensors.
 
         Args:
-            feed: feed graph element
+            feed: feed graph element or name
             feed_val: feed value
 
         Returns:
             List of (new_feed, new_feed_value) pairs
         """
+        feed_name = feed if isinstance(feed, str) else feed.name
         try:
-            transformed_feeds = [self._graph_item.graph.as_graph_element(feed.name)]
+            transformed_feeds = [self._graph_item.graph.as_graph_element(feed_name)]
         except KeyError:
             transformed_feeds = [
                 self._graph_item.graph.as_graph_element(
-                    ops.prepend_name_scope(feed.name, replica_prefix(i))
+                    ops.prepend_name_scope(feed_name, replica_prefix(i))
                 )
                 for i in range(self._graph_transformer.num_local_replicas)
             ]
 
-        if feed_val is not None:
-            num_replicated_feeds = len(transformed_feeds)
+        n = self._graph_transformer.num_local_replicas
+        ref_feed = feed if not isinstance(feed, str) else transformed_feeds[0]
+
+        def expand_feed_val(feed_val, feed=ref_feed, num_replicated_feeds=n):
+            """Given a original feed or replicated feed, expand the feed value."""
             # If we have replicated placeholders with undefined (polymorphic) shape, we split the feed_val across it;
             #  otherwise we feed all replicated placeholders the same feed_val
             if num_replicated_feeds > 1 and not feed.shape.is_fully_defined():
                 polymorphic_dim = feed.shape.as_list().index(None)  # first leftmost undefined shape index
                 feed_vals = np.array_split(np.asarray(feed_val), num_replicated_feeds, axis=polymorphic_dim)
-                transformed_feeds = list(zip(transformed_feeds, feed_vals))
             else:
-                transformed_feeds = [(f, feed_val) for f in transformed_feeds]
+                feed_vals = [feed_val for _ in range(num_replicated_feeds)]
+            return feed_vals
 
-        return transformed_feeds
+        if feed_val is not None:
+            feed_vals = expand_feed_val(feed_val)
+            transformed_feeds = list(zip(transformed_feeds, feed_vals))
+        return transformed_feeds, expand_feed_val
 
     def _remap_fetch(self, fetch):
         """
@@ -75,24 +85,24 @@ class Remapper:
             * for other fetches, only fetch it on master replica.
                 * For example, for partitioned vars, it corresponds to the concat one as_tensor on the first replica.
         """
-        graph = self._graph_item.graph
-        _remap_fn = Remapper._remap_fn
+        _remap_element = self._remap_element
         fetch_type = type(fetch)
+        fetch_name = fetch if isinstance(fetch, str) else fetch.name
         try:
-            transformed_fetch = [_remap_fn[fetch_type](graph, fetch.name)]
+            transformed_fetch = [_remap_element(fetch_type, fetch_name)]
         except KeyError:
-            master_replica_name = ops.prepend_name_scope(fetch.name, replica_prefix(0))
-            master_replica_fetch = _remap_fn[fetch_type](graph, master_replica_name)
+            master_replica_name = ops.prepend_name_scope(fetch_name, replica_prefix(0))
+            master_replica_fetch = _remap_element(fetch_type, master_replica_name)
 
             def is_train_op(op):
                 # In TF2: train_op as AssignAddVariableOp
                 # In TF1 (being deprecated): no_op with a groups of stateful ops as control dependencies
                 # TODO(unless deprecating): make the checking as strict as possible
-                return op.op_def.is_stateful or op.op_def.name == 'NoOp'
+                return isinstance(op, ops.Operation) and (op.op_def.is_stateful or op.op_def.name == 'NoOp')
 
-            if fetch_type is ops.Operation and is_train_op(master_replica_fetch):
+            if is_train_op(master_replica_fetch):
                 transformed_fetch = [
-                    _remap_fn[fetch_type](graph, ops.prepend_name_scope(fetch.name, replica_prefix(i)))
+                    _remap_element(fetch_type, ops.prepend_name_scope(fetch_name, replica_prefix(i)))
                     for i in range(self._graph_transformer.num_local_replicas)
                 ]
 
@@ -100,12 +110,12 @@ class Remapper:
                 # # For Debugging Local Replicas
                 ####################################################################
                 # transformed_fetch = [
-                #     _remap_fn[ops.Tensor](graph, ops.prepend_name_scope(
+                #     _remap_element(ops.Tensor, ops.prepend_name_scope(
                 #         'Mean:0',
                 #         replica_prefix(i)))
                 #     for i in range(self._graph_transformer.num_local_replicas)
                 # ]
-                # transformed_fetch = [_remap_fn[ops.Tensor](graph,
+                # transformed_fetch = [_remap_element(ops.Tensor,
                 #     ops.prepend_name_scope(
                 #         'sampled_softmax_loss/embedding_lookup:0',
                 #         replica_prefix(1)
@@ -116,6 +126,47 @@ class Remapper:
             else:
                 transformed_fetch = [master_replica_fetch]
         return transformed_fetch, lambda fetched_vals: fetched_vals[0]
+
+    def remap_callable_options(self, callable_options):
+        """
+        Ramap Callable Options.
+
+        Args:
+            callable_options: A `CallableOptions` protocol buffer message describing
+              the computation that will be performed by the callable.
+
+        Returns:
+            A new CallableOptions
+        """
+        # Prepare callable options.
+        new_callable_options = config_pb2.CallableOptions()
+        callable_arg_fns = []
+        # Handle external-data feed.
+        for f in callable_options.feed:
+            nf, fn = self._remap_feed(f)
+            new_callable_options.feed.extend([o.name for o in nf])
+            callable_arg_fns.append(fn)
+
+        # Handle connection.
+        if len(callable_options.tensor_connection) > 0:
+            # TODO: Remapping Tensor Connections for New Callable Options
+            # for c in callable_options.tensor_connection:
+            #   connection = new_callable_options.tensor_connection.add()
+            #   connection.from_tensor ~ remap(c.from_tensor)
+            #   connection.to_tensor ~ remap(c.to_tensor)
+            raise NotImplementedError('AutoDist will support feeding symbolic connections later.')
+
+        # Handle fetches.
+        for f in callable_options.fetch:
+            nf, _ = self._remap_fetch(f)
+            new_callable_options.fetch.extend([o.name for o in nf])
+        # Handle updates.
+        for f in callable_options.target:
+            nf, _ = self._remap_fetch(f)
+            new_callable_options.target.extend([o.name for o in nf])
+        # Handle run_options.
+        new_callable_options.run_options.CopyFrom(callable_options.run_options)
+        return new_callable_options, callable_arg_fns
 
     def _set_default(self):
         """Switch the current global default mapper to be the current one and register conversion functions."""
@@ -157,7 +208,7 @@ class Remapper:
                 feeds = feed_fn(feed, feed_val)
                 final_feeds = []
                 for fd, fv in feeds:
-                    ff = _autodist_feed_fn(fd, fv)
+                    ff, _ = _autodist_feed_fn(fd, fv)
                     final_feeds.extend(ff)
                 return final_feeds
 
@@ -165,7 +216,7 @@ class Remapper:
                 feeds = feed_fn_for_partial_run(feed)
                 final_feeds = []
                 for fd in feeds:
-                    ff = _autodist_feed_fn(fd)
+                    ff, _ = _autodist_feed_fn(fd)
                     final_feeds.extend(ff)
                 return final_feeds
 

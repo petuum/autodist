@@ -51,7 +51,7 @@ def wrap_optimizer_init(fn):
             return fn(*args, **kwargs)
         if _default_graph_item and kwargs.pop('update', True):
             _default_graph_item.extend_optimizer_info(containing_class, *args, **kwargs)
-            logging.debug('Patched optimizer: {} \nwith args: {} \nkwargs: {}'.format(class_name, args, kwargs))
+            logging.debug('Registered optimizer: {} \nwith args: {} \nkwargs: {}'.format(class_name, args, kwargs))
         return fn(*args, **kwargs)
     return wrapper
 
