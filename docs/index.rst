@@ -20,9 +20,9 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   usage/quickstart.md
-   usage/tutorial.md
-   User Interface<api/autodist.autodist.rst>
+   usage/tutorial/get-started.md
+   usage/tutorial/others.md
+   User API Documentation<api/autodist.autodist.rst>
 
 Useful Links
 ------------
@@ -42,7 +42,7 @@ Developer Reference
 .. toctree::
    :maxdepth: 1
 
-   API Documentation<api/autodist.rst>
+   Developer API Documentation<api/autodist.rst>
    Symphony Integration<usage/symphony-integration.md>
 
 Recent Changes

@@ -178,7 +178,7 @@ class Cluster(metaclass=ABCMeta):
 
     def terminate(self):
         """Terminate."""
-        logging.info('Terminating cluster...')
+        logging.debug('Terminating cluster...')
         for p in self.subprocesses:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
@@ -210,7 +210,7 @@ class Cluster(metaclass=ABCMeta):
         cmd_list = cmd.split(" ")
         procs = []
         for hostname in self._address_to_port.keys():
-            logging.info("Cleaning autodist processes on %s" % hostname)
+            logging.debug("Cleaning autodist processes on %s" % hostname)
             if self.is_chief(hostname):
                 # The above `cmd` is escaped for a string-within-a-string, so we have to nest `bash -c`
                 # There's probably a better way to do this

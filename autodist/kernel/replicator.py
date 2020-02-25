@@ -52,7 +52,7 @@ class Replicator(Kernel):
         new_graph_item = self._graph_item
         if self._num_local_replicas >= 1:
             new_graph_item = self.replicate(new_graph_item)
-            logging.info('Successfully replicated operations')
+            logging.debug('Successfully replicated operations')
         return new_graph_item
 
     def replicate(self, graph_item):

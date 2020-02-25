@@ -19,4 +19,4 @@ def log_graph(graph, name):
     os.makedirs(directory, exist_ok=True)
     p = os.path.join(directory, name)
     writer.FileWriter(p, graph=graph)
-    logging.info('Graph summary written to: %s' % p)
+    logging.debug('Graph summary written to: %s' % p)

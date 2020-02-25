@@ -19,6 +19,7 @@ from autodist.remapper import Remapper
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import WrappedSession
 from autodist.strategy import base
+from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.utils import logging
 
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
@@ -32,9 +33,9 @@ class _AutoDistInterface:
     Ancestor of _V1Graph, _V2Graph, and _V2Eager -- the different ways to run TF code.
     """
 
-    def __init__(self, resource_spec_file, strategy_builder, strategy_path=None):
+    def __init__(self, resource_spec_file, strategy_builder=None, strategy_path=None):
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
-        self._strategy_builder = strategy_builder
+        self._strategy_builder = strategy_builder or PSLoadBalancing()
         self._strategy_path = strategy_path
 
         self._original_graph_item = None
@@ -127,7 +128,8 @@ class _GraphModeInterface(_AutoDistInterface):
         def _del(sess=_distributed_session):
             """Enforce the sess to be closed before the cluster termination in the atexit stack."""
             sess.__del__()
-            logging.info('Closing session...')
+            logging.debug('Closing session...')
+
         atexit.register(_del)
 
         return _distributed_session

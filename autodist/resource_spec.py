@@ -142,7 +142,7 @@ class ResourceSpec:
                 # 2 cases for marking this node as chief:
                 # 1) The node was marked as chief
                 # 2) If there is only one node, it is chief by default
-                logging.info("%s is CHIEF" % host_address)
+                logging.info("Chief: %s" % host_address)
                 self.__chief_address = host_address
 
             host_cpu = DeviceSpec(host_address)

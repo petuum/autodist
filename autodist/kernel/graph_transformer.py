@@ -26,6 +26,7 @@ class GraphTransformer:
 
     def transform(self):
         """Call graph transformer to transform a graph item based on strategy and cluster."""
+        logging.info('Transforming the original graph to a distributed graph...')
         with context.graph_mode():
             graph_item = self.graph_item
             graph_item.prepare()
@@ -48,15 +49,15 @@ class GraphTransformer:
             # Apply synchronizers
             if self._num_local_replicas >= 1:
                 new_graph_item = self._in_graph_apply(new_graph_item)
-                logging.info('Successfully applied local in-graph replication')
+                logging.debug('Successfully applied local in-graph replication')
                 visualization_util.log_graph(new_graph_item.graph, 'after-in-graph')
 
             if self._num_workers >= 1:
                 new_graph_item = self._between_graph_apply(new_graph_item)
-                logging.info('Successfully applied between-graph replication')
+                logging.debug('Successfully applied between-graph replication')
 
             final_item = new_graph_item
-            logging.info('Successfully built transformed graph')
+            logging.info('Successfully built the distributed graph.')
             visualization_util.log_graph(graph=final_item.graph, name='transformed')
 
         return final_item

@@ -73,7 +73,7 @@ class Coordinator:
 
     def join(self):
         """Wait for all subprocesses of remote workers to be completed."""
-        logging.info('Joining workers...')
+        logging.debug('Joining workers...')
         for t in self.threads:
             t.join()
 
