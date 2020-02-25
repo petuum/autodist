@@ -1,5 +1,6 @@
 """PS Synchronizer."""
 from functools import partial
+from typing import List
 
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
@@ -8,19 +9,31 @@ from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops,
 from tensorflow.python.platform import tf_logging as logging
 
 from autodist.const import MAX_INT64, AUTODIST_PREFIX
-from autodist.kernel.common import utils, resource_variable_utils
+from autodist.kernel.common import utils, variable_utils
 from autodist.kernel.common.op_info import UPDATE_OP_VAR_POS
 from autodist.kernel.common.proxy_variable import ProxyVariable
-from autodist.kernel.common.resource_variable_utils import get_read_var_ops
 from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancestors, traverse, update_consumers, \
     update_control_consumers, replica_prefix, strip_replica_prefix, get_control_consumers, \
     remove_from_control_consumers, get_index_from_tensor_name, update_colocation_group
+from autodist.kernel.common.variable_utils import get_read_var_ops
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.proto import synchronizers_pb2
 
 
 class PSSynchronizer(Synchronizer):
-    """PS Synchronizer."""
+    """
+    PS Synchronizer.
+
+    Synchronizes gradient updates using a Parameter Server.
+
+    For in-graph synchronization, this just aggregates gradients on a worker's CPU.
+
+    For between-graph synchronization, this aggregates gradients on a pre-defined
+    (defined in the Strategy) parameter server.
+
+    To keep this gradient aggregation in sync, the chief gives each worker a token
+    for each variable for the workers to mark when their variable update is complete.
+    """
 
     def __init__(self, config: synchronizers_pb2.PSSynchronizer):
         self.target_device = config.reduction_destinations[0] if config.reduction_destinations else ""
@@ -289,7 +302,11 @@ class PSSynchronizer(Synchronizer):
         update_control_consumers(cc, source_op, finish_op)
 
     # pylint: disable=too-many-branches
-    def _get_queue_ops(self, var_update_op, source_op, is_chief, is_trainable):
+    def _get_queue_ops(self,
+                       var_update_op: ops.Operation,
+                       source_op: ops.Operation,
+                       is_chief: bool,
+                       is_trainable: bool) -> List[ops.Operation]:
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
 
         var_update_sync_queues = \
@@ -301,7 +318,6 @@ class PSSynchronizer(Synchronizer):
         queue_ops = []
         if is_chief:
             if is_trainable:
-                # var_update_deps = [self._var_op_to_accum_apply_op[var_op], var_update_op]
                 var_update_deps = [self._var_op_to_accum_apply_op[var_op], source_op]
             else:
                 var_update_deps = [var_update_op]
@@ -425,7 +441,7 @@ class PSSynchronizer(Synchronizer):
     def _get_accumulation_ops(graph_item, gradient, target, num_workers):
         def _get_accum_apply_and_agg_grad(var_op, grad, indices, dense_shape):
             if indices is None:
-                tensor = resource_variable_utils.get_read_var_tensor(var_op)
+                tensor = variable_utils.get_read_var_tensor(var_op)
                 grad_accum = data_flow_ops.ConditionalAccumulator(
                     grad.dtype,
                     shape=tensor.get_shape(),

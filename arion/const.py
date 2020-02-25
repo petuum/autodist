@@ -1,16 +1,40 @@
-"""Constants."""
+"""
+Constants.
+
+Contains constants that AutoDist uses as well as
+user-settable Environment Variables that
+influence AutoDist behavior.
+"""
 
 from enum import Enum, auto
 
 import os
 
+# Below consts can be modified if necessary.
+# Note that if one of these consts requires frequent modification,
+# it should probably be moved into `ENV`.
+
+# Default directory for storing graphs, logs, etc.
 DEFAULT_WORKING_DIR = '/tmp/autodist'
 os.makedirs(DEFAULT_WORKING_DIR, exist_ok=True)
+# Default directory for storing serialized strategies
 DEFAULT_SERIALIZATION_DIR = os.path.join(DEFAULT_WORKING_DIR, 'strategies')
 os.makedirs(DEFAULT_SERIALIZATION_DIR, exist_ok=True)
+# Port range to use for AutoDist-launched TF Servers
 DEFAULT_PORT_RANGE = iter(range(15000, 16000))
+# Default prefix for AutoDist-created/modified ops in the graph
+AUTODIST_PREFIX = u"AutoDist-"
+# Default prefix for replicated ops in the graph
+AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX
+# Name scope for ops that AutoDist deletes during graph transformation
+AUTODIST_TO_DELETE_SCOPE = u"to-delete"
 
-# For Allreduce and Collective Ops
+# Below consts should probably not be modified.
+MAX_INT64 = int(2 ** 63 - 1)
+MAX_INT32 = int(2 ** 31 - 1)
+# TensorFlow's binary-encoded prefix for colocation fields
+COLOCATION_PREFIX = b"loc:@"
+# Group Leader for AllReduce and Collective Ops
 DEFAULT_GROUP_LEADER = '/job:worker/replica:0/task:0'
 
 
@@ -22,7 +46,7 @@ class ENV(Enum):
 
     This is an Enum because in some instances we need to access the `name`
     field of a property. AFAIK, if we were to do this with normal variables
-    this would require some sort of `inspect`ion.
+    this would require using `inspect`.
 
     Since we use each environment variable in such different ways,
     we just make the enum value a lambda that will be called by
@@ -48,11 +72,3 @@ class ENV(Enum):
         # pylint: disable=invalid-envvar-value, unpacking-non-sequence
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
-
-
-MAX_INT64 = int(2 ** 63 - 1)
-MAX_INT32 = int(2 ** 31 - 1)
-COLOCATION_PREFIX = b"loc:@"
-AUTODIST_PREFIX = u"AutoDist-"
-AUTODIST_REPLICA_PREFIX = u"%sReplica-" % AUTODIST_PREFIX
-AUTODIST_TO_DELETE_SCOPE = u"to-delete"

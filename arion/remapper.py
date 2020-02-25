@@ -7,13 +7,40 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 from tensorflow.core.protobuf import config_pb2
 
-from autodist.kernel.common.resource_variable_utils import get_read_var_tensor
+from autodist.kernel.common.variable_utils import get_read_var_tensor
 from autodist.kernel.common.utils import replica_prefix
 from autodist.utils import logging
 
 
 class Remapper:
-    """Feed and Fetch Remapper."""
+    """
+    Remaps feeds and fetches for Sessions (and eager mode).
+
+    Sets itself as the default remapper when in its scope
+    and remaps graph elements to account for AutoDist's graph
+    transformation.
+
+    Feed Behavior:
+
+    * We want to remap feeds to the corresponding element in the
+      AutoDist-transformed graph. If the element has a polymorphic
+      size (e.g. it has a `None` size for the batch dimension),
+      we split the feed up across all replicas of the element.
+      Otherwise, we duplicate the feed across all replicas of
+      the element.
+
+    Fetch Behavior:
+
+    * We want to remap the potential new shards and replicas of
+      a graph element into the original fetch.
+    * Cases:
+
+        * If original fetch exists (which is not affected by graph transformation), fetch the original.
+        * Otherwise, for fetches that are train_ops, fetch them from all replicas;
+        * for other fetches, only fetch it from the master replica.
+
+            * For example, for partitioned vars, it corresponds to the concat one as_tensor on the first replica.
+    """
 
     _default_remapper = None
     _default_registered_expansions = []
@@ -129,7 +156,7 @@ class Remapper:
 
     def remap_callable_options(self, callable_options):
         """
-        Ramap Callable Options.
+        Remap Callable Options.
 
         Args:
             callable_options: A `CallableOptions` protocol buffer message describing

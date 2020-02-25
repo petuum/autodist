@@ -1,9 +1,9 @@
 """
-Network contains almost all the networking tools for AutoDist.
+Cluster contains almost all the networking code for AutoDist.
 
-The notable exception is ResourceSpec.
+The notable exception is ResourceSpec and a couple functions in `autodist.utils.network`.
 
-Network will be used by other modules to handle:
+Cluster will be used by other modules to handle:
 1) Copying files
 2) Writing files
 3) Running code
@@ -24,76 +24,21 @@ import subprocess
 import sys
 import warnings
 from abc import ABCMeta, abstractmethod
-from ipaddress import ip_address
-from typing import Dict, NamedTuple, Optional
 
-import netifaces
 import paramiko
 
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, ENV
+from autodist.resource_spec import ResourceSpec
 from autodist.utils import logging
+from autodist.utils.network import is_local_address
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
-
-
-class SSHConfig(NamedTuple):
-    """Contains any necessary SSH information (e.g. passwords, keyfiles, etc.)."""
-
-    username: str
-    port: int
-    python_venv: str
-    key_file: str
-    pkey: Optional[paramiko.RSAKey]
-    env: dict
-
-
-class SSHConfigMap(dict):
-    """Contains all necessary SSH configs, grouped by config name."""
-
-    def __init__(self, info: Dict[str, Dict], node_groups: Dict[str, str]):
-        """
-        Initialize the object with a dictionary of SSH information.
-
-        Args:
-            info (dict): any SSH information needed for remote control.
-                This dict should map from identifier to dict of SSH info
-                (username, port, keyfile, etc.).
-            node_groups (dict): mapping from hostnames to SSH group names.
-        """
-        super().__init__()
-
-        # Construct SSH Group to SSH Config mapping
-        conf_map = {}
-        for key, ssh_info in info.items():
-            # Parse out information from sub-dict
-            conf_map[key] = SSHConfig(
-                username=ssh_info.get('username', ''),
-                port=ssh_info.get('port', 22),
-                python_venv=ssh_info.get('python_venv', ''),
-                key_file=ssh_info.get('key_file', ''),
-                pkey=self._gen_rsa_pkey(ssh_info.get('key_file', None)),
-                env=dict(
-                    TF_CPP_MIN_LOG_LEVEL=0,
-                    AUTODIST_PATCH_TF=ENV.AUTODIST_PATCH_TF.val,
-                    **ssh_info.get('shared_envs', {})
-                )
-            )
-
-        # Use conf_map to construct Hostname to SSH Config mapping
-        for hostname, group in node_groups.items():
-            self[hostname] = conf_map.get(group)
-
-    @staticmethod
-    def _gen_rsa_pkey(key_file_path: str):
-        if not key_file_path:
-            return None
-        return paramiko.RSAKey.from_private_key_file(os.path.expanduser(os.path.abspath(key_file_path)))
 
 
 class Cluster(metaclass=ABCMeta):
     """Cluster manager for TensorFlow servers."""
 
-    def __init__(self, resource_spec):
+    def __init__(self, resource_spec: ResourceSpec):
         self.cluster_spec = self._get_default_cluster_spec(resource_spec)
         self._chief = resource_spec.chief
         self._full_addresses = [full_address for tasks in self.cluster_spec.values() for full_address in tasks]
@@ -108,7 +53,7 @@ class Cluster(metaclass=ABCMeta):
         logging.info('ClusterSpec: {}'.format(self.cluster_spec))
 
     @staticmethod
-    def _get_default_cluster_spec(resource_spec):
+    def _get_default_cluster_spec(resource_spec: ResourceSpec):
         """Create list of workers from the resource spec with semi-arbitrarily chosen ports."""
         return {
             'worker': [
@@ -132,7 +77,7 @@ class Cluster(metaclass=ABCMeta):
             address (str): node address e.g. ip
 
         Returns:
-            bool:
+            bool: Whether address or self is chief
         """
         address = address or self.get_local_address()
         return address == self._chief
@@ -146,7 +91,7 @@ class Cluster(metaclass=ABCMeta):
             task_index (int): task index
 
         Returns:
-            str
+            str: The address for that task
         """
         return self._task_to_address[(job_name, task_index)]
 
@@ -155,7 +100,7 @@ class Cluster(metaclass=ABCMeta):
         Get the local (ip) address.
 
         Returns:
-            str: worker ip or chief address by default.
+            str: Worker ip or chief address by default.
         """
         return ENV.AUTODIST_WORKER.val or self._chief
 
@@ -164,7 +109,7 @@ class Cluster(metaclass=ABCMeta):
         Get the (first) TensorFlow task index of the "worker" for the local.
 
         Returns:
-            int: task index
+            int: Task index
         """
         return [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
 
@@ -173,7 +118,7 @@ class Cluster(metaclass=ABCMeta):
         Get the session target of the local session.
 
         Returns:
-            str:
+            str: Local session target
         """
         port = self._address_to_port[self.get_local_address()]
         return 'grpc://localhost:' + port
@@ -419,60 +364,3 @@ class SSHCluster(Cluster):
 
         with self._get_sftp_client(hostname) as sftp:
             sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))
-
-
-def is_loopback_address(address):
-    """
-    Determine whether an address is a loopback address (e.g. 127.0.0.1).
-
-    Args:
-        address (str): Address (can be IP or IP:port)
-
-    Returns:
-        Boolean
-    """
-    ip = _get_ip_from_address(address)
-    return ip.is_loopback
-
-
-def is_local_address(address):
-    """
-    Determine whether an address is a local (including loopback) IP address.
-
-    Adapted from stackoverflow.com/questions/166506.
-
-    Args:
-        address (str): Address (can be IP or IP:port)
-
-    Returns:
-        Boolean
-    """
-    ip = _get_ip_from_address(address)
-
-    # Get all addresses
-    addresses = set()
-    for iface_name in netifaces.interfaces():
-        for i in netifaces.ifaddresses(iface_name).setdefault(netifaces.AF_INET, [{'addr': None}]):
-            if i['addr']:
-                addresses.add(ip_address(i['addr']))
-
-    return ip in addresses
-
-
-def _get_ip_from_address(address):
-    """
-    Extract an IP Address object from an address string.
-
-    Args:
-        address (str): Address (can be IP or IP:port)
-
-    Returns:
-        An IPv4Address or IPv6Address object.
-    """
-    ip, _, _ = address.rpartition(':')
-    ip = ip or address  # If there was no separation, ip will be empty so use original string
-    if ip == 'localhost':
-        # These should be equivalent
-        # `ip_address` will throw an error if given localhost
-        ip = '127.0.0.1'
-    return ip_address(ip.strip("[]"))  # IPv6 addresses might contain [] to separate address and port

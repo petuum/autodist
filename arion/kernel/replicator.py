@@ -1,4 +1,4 @@
-"""Replicator."""
+"""Graph Replicator."""
 
 from tensorflow.python import ops, import_graph_def
 from tensorflow.python.framework import device_spec, kernels
@@ -14,7 +14,16 @@ from autodist.utils import logging
 
 
 class Replicator(Kernel):
-    """Replicator."""
+    """
+    Used to perform in-graph replication on a computational graph.
+
+    That is, Replicator is used to create _n_ replicas of a `tf.Graph`,
+    with all replicas being stored in a new `tf.Graph` and delineated
+    with name scopes.
+
+    This also handles ControlFlowContexts, updating variable and gradient
+    information, etc.
+    """
 
     def __init__(self, key, graph_item, config, cluster):
         super().__init__(key)

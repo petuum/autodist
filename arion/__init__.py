@@ -1,4 +1,3 @@
-import os
 import sys
 
 from tensorflow import version
@@ -25,6 +24,6 @@ logging.info('AutoDist is now on TensorFlow {}'.format(version.VERSION))
 # Disable tensorflow control flow version 2 (which AutoDist does not support as of now).
 # Use control flow version 1 instead.
 control_flow_v2_toggles.disable_control_flow_v2()
-logging.warning('AutoDist has disabled TensorFlow control_flow_v2 for control_flow_v1')
+logging.warning('AutoDist has disabled TensorFlow control_flow_v2 in favor of control_flow_v1')
 
 PatchTensorFlow.patch_optimizers()

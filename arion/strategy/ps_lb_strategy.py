@@ -1,4 +1,4 @@
-"""PS Load Balancing Strategy."""
+"""PS Load Balancing StrategyBuilder."""
 
 from tensorflow.python.framework import tensor_shape
 
@@ -7,7 +7,14 @@ from autodist.proto import strategy_pb2
 
 
 class PSLoadBalancing(StrategyBuilder):
-    """PS Strategy with Greedy Load Balancing."""
+    """
+    PS StrategyBuilder with Greedy Load Balancing.
+
+    The Load Balancing is determined by total memory
+    usage for storing variables, i.e. we always assign
+    a variable to the current lowest-memory-usage
+    Parameter Server.
+    """
 
     def __init__(self, local_proxy_variable=False, sync=True):
         self._local_proxy_variable = local_proxy_variable
@@ -16,7 +23,7 @@ class PSLoadBalancing(StrategyBuilder):
         super().__init__()
 
     def build(self, graph_item, resource_spec):
-        """Build it."""
+        """Generate the Strategy."""
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config

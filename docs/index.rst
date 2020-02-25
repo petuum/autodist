@@ -15,13 +15,14 @@ What is AutoDist?
 --------------
 AutoDist is Petuum's new scalable ML Engine.
 
-Getting Started
+Tutorials
 ---------------
 .. toctree::
    :maxdepth: 1
 
    usage/quickstart.md
    usage/tutorial.md
+   User Interface<api/autodist.autodist.rst>
 
 Useful Links
 ------------
@@ -36,12 +37,13 @@ Useful Links
 .. _`Development Notes`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/182846085/AutoDist+Development+Note+Updating
 .. _`Performance Benchmarks`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/253100101/AutoDist+Performance+Tuning+for+9+15
 
-API
-----
+Developer Reference
+--------------------
 .. toctree::
-   :maxdepth: 8
+   :maxdepth: 1
 
    API Documentation<api/autodist.rst>
+   Symphony Integration<usage/symphony-integration.md>
 
 Recent Changes
 --------------

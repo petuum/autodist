@@ -1,4 +1,4 @@
-"""Partitioned PS Strategy with Greedy Load Balancer."""
+"""Partitioned PS StrategyBuilder with Greedy Load Balancer."""
 
 from math import ceil
 from tensorflow.python.framework import tensor_shape
@@ -11,7 +11,17 @@ from autodist.proto import strategy_pb2
 
 
 class PartitionedPS(StrategyBuilder):
-    """Partitioned PS Strategy with Greedy Load Balancer."""
+    """
+    Partitioned PS StrategyBuilder with Greedy Load Balancer.
+
+    Determine the number of partitions for each partition-able
+    variable by finding its minimum divisor along the first axis.
+
+    Then, use a greedy load balancer (determined by memory usage)
+    to assign the partitions to Parameter Servers. This means that,
+    unlike the standard PS StrategyBuilder, that a variable can be
+    spread across multiple servers using this StrategyBuilder.
+    """
 
     def __init__(self, local_proxy_variable=False, sync=True):
         self._local_proxy_variable = local_proxy_variable
@@ -19,7 +29,7 @@ class PartitionedPS(StrategyBuilder):
         self.loads = {}
 
     def build(self, graph_item, resource_spec):
-        """Build it."""
+        """Generate the Strategy."""
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config

@@ -1,3 +1,8 @@
+/**
+ * AutoDist distributed strategy messages.
+ *
+ * Represents how to distribute a TensorFlow computational graph.
+ */
 syntax = "proto3";
 
 package autodist.proto;
@@ -5,10 +10,22 @@ package autodist.proto;
 import "autodist/proto/synchronizers.proto";
 
 
+/**
+ * Represents the strategy the AutoDist backend will implement.
+ */
 message Strategy {
     string id = 1;
     string path = 2;
 
+    /**
+     * Represents the configuration of an individual node in the graph.
+     *
+     * Right now, these nodes are just variables in the graph, so the only
+     * information they contain is how to synchronize the variable's gradients.
+     *
+     * In the future, for node partitioning, these could be any node in the graph.
+     * In that case, they would also have more logic for partitioning the op.
+     */
     message Node {
         string var_name = 1;
         oneof synchronizer {
@@ -19,6 +36,12 @@ message Strategy {
 
     repeated Node node_config = 3;
 
+    /**
+     * Represents the configuration of the graph as a whole.
+     *
+     * Based on the list of replicas, the AutoDist backend does
+     * a combination of in-graph and between-graph distribution.
+     */
     message GraphConfig {
         repeated string replicas = 1;
     }

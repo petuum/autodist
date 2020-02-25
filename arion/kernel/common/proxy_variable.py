@@ -1,4 +1,10 @@
-"""Implementations for the proxy variable in PS."""
+"""
+Parameter Server Proxy Variable.
+
+This Proxy variable is a cached replica of the PS-stored
+variable on each worker, allowing for faster reads (no
+need to make a network call).
+"""
 from collections import defaultdict
 
 from tensorflow.core.framework.attr_value_pb2 import AttrValue as pb2_AttrValue
@@ -7,9 +13,9 @@ from tensorflow.python.ops import variable_scope
 from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import COLOCATION_PREFIX
-from autodist.kernel.common.resource_variable_utils import get_read_var_ops, get_read_var_tensor, gen_read_var_op
 from autodist.kernel.common.utils import get_consumers, update_consumers, replica_prefix, AUTODIST_REPLICA_PREFIX, \
     parse_optimizer_scope
+from autodist.kernel.common.variable_utils import get_read_var_ops, get_read_var_tensor, gen_read_var_op
 from autodist.utils import logging
 
 
@@ -27,6 +33,14 @@ class ProxyVariable:
     """Proxy variable implementation."""
 
     def __init__(self, resource_var, graph_item, proxy_device):
+        """
+        Initialize the ProxyVariable.
+
+        Args:
+            resource_var (Variable): the variable to proxy.
+            graph_item (GraphItem): the graph.
+            proxy_device (DeviceSpecV2): the device to build the proxy on.
+        """
         self._graph_item = graph_item
         self._initial_value = graph_item.graph.get_tensor_by_name(resource_var.initial_value.name)
         self._dtype = resource_var.dtype.base_dtype
@@ -48,25 +62,34 @@ class ProxyVariable:
         Build a proxy of the original variable on `destination_device`.
 
         Args:
-            destination_device: the destination device where the proxy is on.
+            destination_device (DeviceSpecV2): the destination device where the proxy is on.
         """
         is_gpu = destination_device.device_type.upper() == 'GPU' if destination_device.device_type else False
         prefix = replica_prefix(destination_device.device_index) if is_gpu else replica_prefix('CPU')
         with ops.device(destination_device):
-            mirror_var = variable_scope.get_variable(
+            proxy_var = variable_scope.get_variable(
                 ops.prepend_name_scope(self._this_op.name, prefix),
                 dtype=self._dtype,
                 initializer=self._initial_value,
                 trainable=False
             )
-        self._graph_item.info.update(variables=[mirror_var], replace=False)  # Should we update graph_item.info?
-        self._proxy_vars.append(mirror_var)
-        self._proxy_var_init_ops.append(mirror_var.assign(get_read_var_tensor(self._this_op)))
+        self._graph_item.info.update(variables=[proxy_var], replace=False)  # Should we update graph_item.info?
+        self._proxy_vars.append(proxy_var)
+        self._proxy_var_init_ops.append(proxy_var.assign(get_read_var_tensor(self._this_op)))
         self._mirror_all_read_var_ops()
         self._update_all_consumers()
 
     def get_all_update_ops(self, grad_apply_finished, worker_device=None):
-        """Create and return new update ops for mirror vars."""
+        """
+        Create and return new update ops for proxy vars.
+
+        Args:
+            grad_apply_finished (List[Operation]): ops with which to colocate the new ops.
+            worker_device (DeviceSpecV2): the device on which to create the ops.
+
+        Returns:
+            List[Operation]: the list of update ops for each proxy variable.
+        """
         with ops.device(worker_device):
             with ops.control_dependencies(grad_apply_finished):
                 updated_value = gen_read_var_op(self._this_op, self._dtype)  # create new read var op
@@ -77,7 +100,12 @@ class ProxyVariable:
         return update_ops
 
     def update_colocation_group(self, get_colocation_op):
-        """Update operations colocated with master variables to be colocated with mirror variables."""
+        """
+        Update operations colocated with master variables to be colocated with proxy variables.
+
+        Args:
+            get_colocation_op (Callable): fn that gets the current colocation ops
+        """
         for op in self._graph_item.graph.get_operations():
             # Do not update shared node (including nodes in the optimizer)
             # Do not update operations within the variable scope of master var
@@ -102,7 +130,7 @@ class ProxyVariable:
         Mirror read var ops.
 
         Args:
-            other: Other resource var op.
+            other (Operation): Other resource var op.
         """
         assert other in self._proxy_vars
         for old_read_var_op in self._read_var_ops:
@@ -113,17 +141,17 @@ class ProxyVariable:
             self._read_var_ops_mappings[other][old_read_var_op] = new_read_var_op
 
     def _mirror_all_read_var_ops(self):
-        """Mirror all read var ops for each mirror var."""
-        for mirror_var in self._proxy_vars:
-            self._mirror_read_var_ops(other=mirror_var)
+        """Mirror all read var ops for each proxy var."""
+        for proxy_var in self._proxy_vars:
+            self._mirror_read_var_ops(other=proxy_var)
 
     def _update_consumer(self, other, consumer_op):
         """
         Update consumer.
 
         Args:
-            other: Other resource var op.
-            consumer_op: The new consumer.
+            other (Operation): Other resource var op.
+            consumer_op (Operation): The new consumer.
         """
         old_read_var_op = self._consumer_to_read_var_op[consumer_op]
         new_read_var_op = self._read_var_ops_mappings[other][old_read_var_op]
@@ -134,7 +162,7 @@ class ProxyVariable:
         )
 
     def _update_all_consumers(self):
-        """Update all mirror variable consumers."""
+        """Update all proxy variable consumers."""
         for consumer_op in self._consumer_to_read_var_op:
             if consumer_op in self._proxy_var_init_ops:
                 continue
@@ -144,5 +172,5 @@ class ProxyVariable:
                 self._update_consumer(self._proxy_vars[0], consumer_op)
             else:
                 # TODO: Attention: ReadVarOp consumers include the "save".
-                logging.warning("Consumer %s of value of variable %s is a shared node, do not change to mirror variable"
+                logging.warning("Consumer %s of value of variable %s is a shared node, do not change to proxy variable"
                                 % (consumer_op.name, self._this_op.name))

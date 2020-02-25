@@ -15,7 +15,7 @@ def get_op_name(tensor_name):
         tensor_name: The name of a tensor.
 
     Returns:
-        str
+        str: The op name
     """
     return tensor_name.replace('^', '').split(':')[0]
 
@@ -28,7 +28,7 @@ def strip_replica_prefix(name):
         name (string): op or tensor name
 
     Returns:
-        str
+        str: The stripped name
     """
     i = name.find('/')
     if i != -1:
@@ -45,7 +45,7 @@ def parse_name_scope(name):
         name: The name of a tensor or an op.
 
     Returns:
-        str
+        str: The name scope
     """
     i = name.rfind('/')
     if i != -1:
@@ -61,7 +61,7 @@ def parse_optimizer_scope(update_op_name):
         update_op_name: the name of an update_op (usually ResourceApply).
 
     Returns:
-        name_scope: the outermost name scope of the optimizer
+        str: The outermost name scope of the optimizer
     """
     first_pos = update_op_name.find('/')
     second_pos = update_op_name.find('/', first_pos + 1)
@@ -73,12 +73,14 @@ def replica_prefix(replica_id):
     Generate replica prefix based on replica id.
 
     Examples:
-        1 -> '<AUTODIST_REPLICA_PREFIX>1'
+        >>> replica_prefix(1)
+        {AUTODIST_REPLICA_PREFIX}1
 
     Args:
         replica_id (str, int): 0,1,2,3...
 
-    Returns: str
+    Returns:
+        str: The replica prefix
     """
     return f"{AUTODIST_REPLICA_PREFIX}{replica_id}"
 
@@ -90,7 +92,8 @@ def get_consumers(op):
     Args:
         op: TensorFlow Operator
 
-    Returns: List
+    Returns:
+        List[Operation]: The list of consumers
     """
     return [consumer for output in op.outputs for consumer in output.consumers()]
 
@@ -107,7 +110,7 @@ def get_control_consumers(op):
         op: TensorFlow Operator
 
     Returns:
-        List
+        List[Operation]: The list of control-dependency consumers
     """
     return op._control_outputs
 
@@ -123,7 +126,7 @@ def traverse(start_ops, end_ops=None, neighbors_fn=None):
             Defaults to `get_consumers`.
 
     Returns:
-        Set[Op]
+        Set[Operation]: The visited nodes
     """
     end_ops = end_ops or set()
     neighbors_fn = neighbors_fn or get_consumers
@@ -159,7 +162,7 @@ def get_ancestors(start_ops, end_ops=None, include_control_inputs=False):
         include_control_inputs: Whether or not to also consider control dependencies as edges.
 
     Returns:
-        Set
+        Set[Operation]: The ancestor ops
     """
     def get_neighbors(op):
         out = [input_tensor.op for input_tensor in op.inputs]
@@ -178,9 +181,9 @@ def update_consumers(consumers, old_tensor, new_tensor):
     since this causes incorrect list iteration.
 
     Args:
-        consumers (list): must be the reference to the consumer ops in the graph to be modified.
-        old_tensor (Tensor): the tensor whose link to its consumer will be removed
-        new_tensor (Tensor): the tensor which will replace old_tensor
+        consumers (List[Operation]): The consumer ops in the graph to be modified.
+        old_tensor (Tensor): The tensor whose link to its consumer will be removed
+        new_tensor (Tensor): The tensor which will replace old_tensor
     """
     for consumer_op in consumers:
         for i, x in enumerate(consumer_op.inputs):
@@ -193,9 +196,9 @@ def update_control_consumers(control_consumer_ops, old_op, new_op):
     For each consumer's control inputs, replace old_op with new_op.
 
     Args:
-        control_consumer_ops (list): must be the reference to the control-dep consumer ops in the graph to be modified.
-        old_op (Operation): the op whose link to its control-dep consumer will be removed
-        new_op (Operation): the op which will replace old_op
+        control_consumer_ops (List[Operation]): The control-dep consumer ops in the graph to be modified.
+        old_op (Operation): The op whose link to its control-dep consumer will be removed
+        new_op (Operation): The op which will replace old_op
     """
     for control_consumer_op in control_consumer_ops:
         control_inputs = list(control_consumer_op.control_inputs)
@@ -213,9 +216,9 @@ def update_colocation_group(ops, old_op, new_op):
     For each op in ops, we replace the colocation group as old_op to colocation group as new_op.
 
     Args:
-        ops: operations to update
-        old_op: the op having the old colocation group
-        new_op: the op having the new colocation group
+        ops (Iterable[Operation]): The operations to update
+        old_op (Operation): The op having the old colocation group
+        new_op (Operation): The op having the new colocation group
     """
     old_groups = old_op.colocation_groups() or [COLOCATION_PREFIX + as_bytes(new_op.name)]
     new_groups = new_op.colocation_groups() or [COLOCATION_PREFIX + as_bytes(new_op.name)]
@@ -230,8 +233,8 @@ def remove_from_control_consumers(control_consumer_ops, op_to_remove):
     Remove the op_to_remove from the control inputs for each op in "control_consumer_ops".
 
     Args:
-        control_consumer_ops: a list of ops that have op_to_remove as their current control inputs
-        op_to_remove: the op to be removed
+        control_consumer_ops (List[Operation]): Ops that have op_to_remove as their current control inputs
+        op_to_remove (Operation): The op to be removed
     """
     for control_consumer_op in control_consumer_ops:
         control_inputs = list(control_consumer_op.control_inputs)
@@ -243,5 +246,13 @@ def remove_from_control_consumers(control_consumer_ops, op_to_remove):
 
 
 def get_index_from_tensor_name(tensor_name):
-    """Get the index of the tensor of a certain op."""
+    """
+    Get the index of the tensor of a certain op.
+
+    Args:
+        tensor_name (str): The tensor name
+
+    Returns:
+        int: The index of the tensor
+    """
     return int(tensor_name.split(':')[1])

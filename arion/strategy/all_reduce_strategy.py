@@ -1,11 +1,16 @@
-"""AllReduce strategy."""
+"""AllReduce StrategyBuilder."""
 
 from autodist.strategy.base import Strategy, StrategyBuilder
 from autodist.proto import strategy_pb2, synchronizers_pb2
 
 
 class AllReduce(StrategyBuilder):
-    """AllReduce Strategy."""
+    """
+    AllReduce StrategyBuilder.
+
+    This StrategyBuilder generates a strategy that
+    synchronizes every variable using AllReduce.
+    """
 
     def __init__(self, chunk_size=128):
         """
@@ -18,7 +23,7 @@ class AllReduce(StrategyBuilder):
         self.chunk_size = chunk_size 
 
     def build(self, graph_item, resource_spec):
-        """Build it."""
+        """Generate the strategy."""
         expr = Strategy()
 
         # get each variable, generate variable synchronizer config
@@ -32,8 +37,6 @@ class AllReduce(StrategyBuilder):
 
         return expr
 
-    # why do we need this to be staticmethod?
-    # @staticmethod
     def _gen_all_reduce_node_config(self, var_name, all_reduce_spec="AUTO", compressor="PowerSGDCompressor"):
         """
         Creates a NodeConfig specifying synchronization with AllReduce.
@@ -46,7 +49,6 @@ class AllReduce(StrategyBuilder):
 
         Returns:
             strategy_pb2.Strategy.Node: the config for the node.
-
         """
         node = strategy_pb2.Strategy.Node()
         node.var_name = var_name

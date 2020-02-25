@@ -11,14 +11,28 @@ from tensorflow.python.util.compat import as_bytes
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
 from autodist.graph_item import GraphItem, Info
 from autodist.kernel.common.op_info import MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS
-from autodist.kernel.common.resource_variable_utils import is_read_var_op
+from autodist.kernel.common.variable_utils import is_read_var_op
 from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers, parse_name_scope
 from autodist.kernel.kernel import Kernel
 from autodist.utils import logging
 
 
 class VariablePartitioner(Kernel):
-    """Partitions a GraphItem's variables according to the given strategy."""
+    """
+    Partitions a GraphItem's variables according to the given strategy.
+
+    Essentially, this does a few things:
+
+    1. Reads the Strategy and finds which variables should be partitioned (and how).
+    2. Creates new `PartitionedVariables` (essentially a list of `Variables`) and
+       replaces the original `Variable` with these new vars. Also splits the original
+       gradient to map to each variable shard.
+    3. Deletes the original variables and recreates the Optimizer (since Optimizers
+       can often have different logic for `PartitionedVariables`, and we don't want
+       to rewire the optimizer internals as well).
+    4. Returns a new graph and strategy modified to reflect the partitioning.
+
+    """
 
     def __init__(self, key, node_config: RepeatedScalarContainer, graph_item: GraphItem):
         super().__init__(key)

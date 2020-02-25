@@ -1,4 +1,4 @@
-"""Experimental Patch on TF."""
+"""Patches for TensorFlow."""
 
 from collections import deque
 from itertools import chain
@@ -14,7 +14,19 @@ from autodist.utils import logging
 
 
 class PatchTensorFlow:
-    """Experimental Patch on TF."""
+    """
+    Patches for TensorFlow.
+
+    There are multiple "monkey patches":
+    1) Patches the `value` attribute of a `ResourceVariable` to return
+    the `graph_element` or `cached_value` instead of a `ReadVariableOp`.
+    Not having to read the variable from memory again can provide
+    performance increases.
+    2) Patches optimizers to save their type and arguments so that we
+    can re-create them when partitioning variables.
+    3) Patches Keras' `Session` fetcher to return AutoDist's custom `Session`
+    so that AutoDist is compatible with Keras.
+    """
 
     @staticmethod
     def patch_var_reading():
@@ -37,7 +49,7 @@ class PatchTensorFlow:
 
     @staticmethod
     def unpatch_var_reading():
-        """Revert the patch."""
+        """Revert the ReadVariable patch."""
         setattr(ResourceVariable, 'value', PatchTensorFlow._DEFAULT_VAR_READING)
 
     @staticmethod
@@ -77,5 +89,5 @@ class PatchTensorFlow:
 
     @staticmethod
     def unpatch_keras():
-        """Revert the patch."""
+        """Revert the Keras patch."""
         keras.backend._get_session = PatchTensorFlow._DEFAULT_GET_SESSION

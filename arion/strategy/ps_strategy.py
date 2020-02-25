@@ -1,11 +1,17 @@
-"""PS Strategy."""
+"""PS StrategyBuilder."""
 
 from autodist.strategy.base import Strategy, StrategyBuilder
 from autodist.proto import strategy_pb2
 
 
 class PS(StrategyBuilder):
-    """PS Strategy."""
+    """
+    PS StrategyBuilder.
+
+    Generates a Strategy that synchronizes every variable
+    using Parameter Servers. Each variable is only assigned
+    to one Parameter Server.
+    """
 
     def __init__(self, local_proxy_variable=False, sync=True):
         self._local_proxy_variable = local_proxy_variable
