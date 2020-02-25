@@ -49,6 +49,12 @@ class Remapper:
         self._graph_transformer = graph_transformer
         self._graph_item = graph_item
 
+    def _polymorphic_dim(self, o):
+        if isinstance(o, ops.Tensor) and self._graph_transformer.num_local_replicas > 1 and \
+                bool(o.shape) and not o.shape.is_fully_defined():
+            return o.shape.as_list().index(None)  # first leftmost undefined shape index
+        return None
+
     def _remap_element(self, ele_type, name):
         """Remap element based on type."""
         graph = self._graph_item.graph
@@ -83,15 +89,15 @@ class Remapper:
                 for i in range(self._graph_transformer.num_local_replicas)
             ]
 
-        n = self._graph_transformer.num_local_replicas
-        ref_feed = feed if not isinstance(feed, str) else transformed_feeds[0]
+        num_replicated_feeds = self._graph_transformer.num_local_replicas
+        feed = feed if not isinstance(feed, str) else transformed_feeds[0]
 
-        def expand_feed_val(feed_val, feed=ref_feed, num_replicated_feeds=n):
+        def expand_feed_val(feed_val, feed=feed):
             """Given a original feed or replicated feed, expand the feed value."""
             # If we have replicated placeholders with undefined (polymorphic) shape, we split the feed_val across it;
             #  otherwise we feed all replicated placeholders the same feed_val
-            if num_replicated_feeds > 1 and not feed.shape.is_fully_defined():
-                polymorphic_dim = feed.shape.as_list().index(None)  # first leftmost undefined shape index
+            polymorphic_dim = self._polymorphic_dim(feed)
+            if polymorphic_dim:
                 feed_vals = np.array_split(np.asarray(feed_val), num_replicated_feeds, axis=polymorphic_dim)
             else:
                 feed_vals = [feed_val for _ in range(num_replicated_feeds)]
@@ -115,11 +121,13 @@ class Remapper:
         _remap_element = self._remap_element
         fetch_type = type(fetch)
         fetch_name = fetch if isinstance(fetch, str) else fetch.name
+        contract_fn = lambda fetched_vals: fetched_vals[0]  # noqa: E731
         try:
             transformed_fetch = [_remap_element(fetch_type, fetch_name)]
         except KeyError:
             master_replica_name = ops.prepend_name_scope(fetch_name, replica_prefix(0))
             master_replica_fetch = _remap_element(fetch_type, master_replica_name)
+            polymorphic_dim = self._polymorphic_dim(master_replica_fetch)
 
             def is_train_op(op):
                 # In TF2: train_op as AssignAddVariableOp
@@ -132,7 +140,6 @@ class Remapper:
                     _remap_element(fetch_type, ops.prepend_name_scope(fetch_name, replica_prefix(i)))
                     for i in range(self._graph_transformer.num_local_replicas)
                 ]
-
                 ####################################################################
                 # # For Debugging Local Replicas
                 ####################################################################
@@ -150,9 +157,15 @@ class Remapper:
                 # )]
                 ####################################################################
                 logging.debug('Fetch mapped from {} to {}'.format(fetch, transformed_fetch))
+            elif polymorphic_dim:
+                transformed_fetch = [
+                    _remap_element(fetch_type, ops.prepend_name_scope(fetch_name, replica_prefix(i)))
+                    for i in range(self._graph_transformer.num_local_replicas)
+                ]
+                contract_fn = lambda fetch_vals: np.concatenate(fetch_vals, axis=polymorphic_dim)  # noqa: E731
             else:
                 transformed_fetch = [master_replica_fetch]
-        return transformed_fetch, lambda fetched_vals: fetched_vals[0]
+        return transformed_fetch, contract_fn
 
     def remap_callable_options(self, callable_options):
         """
@@ -188,9 +201,10 @@ class Remapper:
             nf, _ = self._remap_fetch(f)
             new_callable_options.fetch.extend([o.name for o in nf])
         # Handle updates.
-        for f in callable_options.target:
-            nf, _ = self._remap_fetch(f)
-            new_callable_options.target.extend([o.name for o in nf])
+        for f in callable_options.target:  # f in type str
+            if f:
+                nf, _ = self._remap_fetch(f)
+                new_callable_options.target.extend([o.name for o in nf])
         # Handle run_options.
         new_callable_options.run_options.CopyFrom(callable_options.run_options)
         return new_callable_options, callable_arg_fns

@@ -21,6 +21,4 @@ def main(autodist):
                       loss=loss_fn,
                       metrics=['accuracy'])
         model.fit(x_train, y_train, epochs=1)
-        # TODO: support two interfaces below, which modifies the original graph after model.fit
-        # TODO: model.predict(x_test)
-        # TODO: model.evaluate(x_test,  y_test, verbose=2)
+        print(model.evaluate(x_test,  y_test, verbose=2))

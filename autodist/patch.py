@@ -85,9 +85,23 @@ class PatchTensorFlow:
             return session
         keras.backend._get_session = _get_session
 
+        class GraphExecutionFunction(keras.backend.GraphExecutionFunction):
+
+            class DummyOp:
+                name = ""
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                if not kwargs.get('updates'):
+                    self.updates_op = self.DummyOp()
+
+        keras.backend.GraphExecutionFunction = GraphExecutionFunction
+
     _DEFAULT_GET_SESSION = keras.backend._get_session
+    _DEFAULT_GRAPH_EXECUTION_FUNCTION = keras.backend.GraphExecutionFunction
 
     @staticmethod
     def unpatch_keras():
         """Revert the Keras patch."""
         keras.backend._get_session = PatchTensorFlow._DEFAULT_GET_SESSION
+        keras.backend.GraphExecutionFunction = PatchTensorFlow._DEFAULT_GRAPH_EXECUTION_FUNCTION
