@@ -6,11 +6,6 @@
 Welcome to AutoDist!
 ==================================
 
-.. image:: _static/img/autodist_full.png
-    :width: 200px
-    :align: center
-    :height: 200px
-
 What is AutoDist?
 --------------
 AutoDist is Petuum's new scalable ML Engine.
