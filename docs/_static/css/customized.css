@@ -97,9 +97,9 @@ h1 {
 }
 
 .fa-plus-square-o::before, .wy-menu-vertical li span.toctree-expand::before {
-	content: "▶";
+	content: "";
 }
 
 .fa-minus-square-o::before, .wy-menu-vertical li.on a span.toctree-expand::before, .wy-menu-vertical li.current > a span.toctree-expand::before {
-    content: "▼";
+    content: "";
 }

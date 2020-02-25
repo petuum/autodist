@@ -133,6 +133,7 @@ html_theme_options = {
     'style_nav_header_background': 'white',
     'display_version': True,
     'logo_only': True,
+    'collapse_navigation': False,
 }
 
 html_context = {

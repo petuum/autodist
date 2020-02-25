@@ -12,7 +12,21 @@ from autodist.utils import logging, visualization_util
 
 
 class GraphTransformer:
-    """Graph Transformer."""
+    """
+    Graph Transformer.
+
+    This is the bulk of the AutoDist backend logic, taking a single-node,
+    single-GPU graph and transforming it into a distributed
+    graph. This all happens based on the `Strategy` provided.
+
+    The transformation occurs over several steps:
+
+    1. Partitions the necessary variables
+    2. Replicates the graph the desired number of times
+    3. Within the graph, synchronizes gradients with in-graph logic
+    4. Adds between-graph gradient synchronization logic
+
+    """
 
     def __init__(self, compiled_strategy, cluster, graph_item):
         self._strategy = compiled_strategy
