@@ -143,6 +143,7 @@ release_docs:
   script:
     - apt-get update
     - apt-get install -y git make rsync
+    - pip install dist/autodist*.whl
     - pip install -r docs/requirements-docgen.txt
     - cd docs
     - make clean

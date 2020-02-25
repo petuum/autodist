@@ -17,8 +17,13 @@
 #
 import os
 import sys
+
 project_root = os.path.abspath('..')
-sys.path.insert(0, project_root)
+
+try:
+    import autodist
+except ImportError:
+    sys.path.insert(0, project_root)
 
 
 # -- Project information -----------------------------------------------------
@@ -117,16 +122,19 @@ html_theme = 'sphinx_rtd_theme'
 # Register the theme as an extension to generate a sitemap.xml
 extensions.append("sphinx_rtd_theme")
 # logo
-html_logo = '_static/img/autodist_full.png'
+html_logo = '_static/img/autodist.png'
 html_favicon = '_static/img/favicon.ico'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {
-#     'style_nav_header_background': 'white',
-# }
+html_theme_options = {
+    'style_nav_header_background': 'white',
+    'display_version': True,
+    'logo_only': True,
+}
+
 html_context = {
     'css_files': [
         # 'https://fonts.googleapis.com/css?family=Roboto',
