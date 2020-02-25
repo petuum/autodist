@@ -1,4 +1,4 @@
-"""Strategy Base."""
+"""Contains Strategy-related definitions."""
 
 import os
 from abc import ABC, abstractmethod
@@ -85,7 +85,7 @@ class Strategy:
 
 
 class StrategyBuilder(ABC):
-    """A base builder for various strategies."""
+    """A builder interface for strategies."""
 
     @abstractmethod
     def build(self, graph_item: GraphItem, resource_spec: ResourceSpec) -> Strategy:
@@ -93,8 +93,8 @@ class StrategyBuilder(ABC):
         Build strategy representation instance with a graph item and a resource spec.
 
         Args:
-            graph_item (GraphItem):
-            resource_spec (ResourceSpec):
+            graph_item (GraphItem): the graph for which to develop a strategy
+            resource_spec (ResourceSpec): resource information
 
         Returns:
             (Strategy) A strategy representation instance.
@@ -103,7 +103,12 @@ class StrategyBuilder(ABC):
 
 
 class StrategyCompiler:
-    """Strategy Compiler."""
+    """
+    Strategy Compiler.
+
+    Currently, this just entails resolving device attributes,
+    but this can be easily modified to do more in the future.
+    """
 
     def __init__(self):
         self._device_resolver = None

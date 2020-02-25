@@ -8,17 +8,17 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
-from autodist.patch import PatchTensorFlow
-from autodist.network import Cluster, SSHCluster
+from autodist.cluster import Cluster, SSHCluster
 from autodist.const import ENV
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.graph_transformer import GraphTransformer
+from autodist.patch import PatchTensorFlow
 from autodist.remapper import Remapper
 from autodist.resource_spec import ResourceSpec
 from autodist.runner import WrappedSession
-from autodist.strategy.base import Strategy, StrategyCompiler
+from autodist.strategy import base
 from autodist.utils import logging
 
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
@@ -26,6 +26,11 @@ IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 
 class _AutoDistInterface:
+    """
+    Generic AutoDist Interface.
+
+    Ancestor of _V1Graph, _V2Graph, and _V2Eager -- the different ways to run TF code.
+    """
 
     def __init__(self, resource_spec_file, strategy_builder, strategy_path=None):
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
@@ -50,10 +55,10 @@ class _AutoDistInterface:
 
     def build_strategy(self):
         """
-        Build distributed strategy based on a graph item.
+        Build distributed strategy based on the default graph in the scope.
 
         Returns:
-            (Strategy) Distributed strategy representation object.
+            base.Strategy: Distributed strategy representation object.
         """
         self._original_graph_item.prepare()
         return self._strategy_builder.build(self._original_graph_item, self._resource_spec)
@@ -65,13 +70,13 @@ class _AutoDistInterface:
         else:
             strategy_id = ENV.AUTODIST_STRATEGY_ID.val
             assert strategy_id
-            s = Strategy.deserialize(strategy_id)
+            s = base.Strategy.deserialize(strategy_id)
         return s
 
     def _compile_strategy(self, strategy):
         logging.debug('Raw strategy: %s' % strategy)
         device_resolver = DeviceResolver(self._cluster)
-        compiled_strategy = StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str). \
+        compiled_strategy = base.StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str). \
             compile(strategy)
         logging.debug('Compiled strategy: %s' % compiled_strategy)
         return compiled_strategy
@@ -87,6 +92,7 @@ class _AutoDistInterface:
 
 
 class _GraphModeInterface(_AutoDistInterface):
+    """Interface for working with TFx.x Graph Mode."""
 
     def _initialize_graph(self):
         """Postpone the initialization of the member original_graph_item to the scoping time."""
@@ -128,14 +134,22 @@ class _GraphModeInterface(_AutoDistInterface):
 
 
 class _V1Graph(_GraphModeInterface):
+    """Implementation for working with TF1.x Graph Mode."""
 
     def create_distributed_session(self):
-        """Create a Session object to execute the default graph in a distributed manner."""
+        """
+        Create a Session object to execute the default graph in a distributed manner.
+
+        Returns:
+            WrappedSession: A wrapped TensorFlow Session object.
+        """
         return self._create_distributed_session()
 
 
 class _V2Graph(_GraphModeInterface):
-    CacheKey = namedtuple('CacheKey', ['fn'])
+    """Implementation for working with TF2.x Graph Mode."""
+
+    _CacheKey = namedtuple('_CacheKey', ['fn'])
 
     def __init__(self, *args, **kwargs):
         self._cache = {}
@@ -201,13 +215,13 @@ class _V2Graph(_GraphModeInterface):
         return run_fn
 
     def function(self, fn):
-        """Decorator Interface."""
+        """Experimental interface similar to @tf.function."""
         _cache = self._cache
         _build_fn = self._build_fn
 
         def wrapper(*args, **kwargs):
             # we first assume one fn only build one type of graph
-            cache_id = hash(_V2Graph.CacheKey(fn))
+            cache_id = hash(_V2Graph._CacheKey(fn))
             cached = cache_id in _cache
 
             # At the first run of the training function
@@ -224,7 +238,7 @@ class _V2Graph(_GraphModeInterface):
 
 
 class _V2Eager(_AutoDistInterface):
-    """Interface for TensorFlow>=2.x Eager Mode."""
+    """Interface for working with TF2.x Eager Mode."""
     # TODO: Merge single node eager support from peng-tffunc and peng-eager
 
 
@@ -233,16 +247,16 @@ class AutoDist(_V1Graph, _V2Graph, _V2Eager):
     AutoDist is a scalable ML engine.
 
     AutoDist provides user-friendly interfaces to distribute local deep-learning model training
-        across multiple processing units with scalability and minimal code changes.
+    across multiple processing units with scalability and minimal code changes.
     """
 
     @tf_contextlib.contextmanager
     def scope(self):
         """
-        Returns a context manager capturing the code block to be distributed.
+        Create a context manager capturing the code block to be distributed.
 
-        Returns:
-          A context manager.
+        Yields:
+          AutoDist context
         """
         if not context.executing_eagerly():
             self._initialize_graph()

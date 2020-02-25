@@ -1,4 +1,4 @@
-"""Parallax strategy."""
+"""Parallax StrategyBuilder."""
 from tensorflow.python.framework import ops
 
 from autodist.strategy.base import Strategy
@@ -9,10 +9,10 @@ from autodist.kernel.common.utils import get_op_name
 
 class Parallax(PSLoadBalancing, AllReduce):
     """
-    Parallax Strategy from https://arxiv.org/pdf/1808.02621.pdf.
+    Generates the Parallax Strategy from https://arxiv.org/pdf/1808.02621.pdf.
 
-    Parallax strategy mixes parameter server and allreduce. The rationale is that
-    a ps architecture is more suitable for sparse gradient updates, while allreduce
+    The Parallax strategy mixes Parameter Server and AllReduce. The rationale is that
+    a PS architecture is more suitable for sparse gradient updates, while AllReduce
     has reportedly better performance on dense gradient updates.
     """
 
@@ -22,7 +22,7 @@ class Parallax(PSLoadBalancing, AllReduce):
 
     # pylint: disable=attribute-defined-outside-init
     def build(self, graph_item, resource_spec):
-        """Build it."""
+        """Generate the strategy."""
         expr = Strategy()
 
         # For each variable, generate variable synchronizer config
@@ -38,9 +38,12 @@ class Parallax(PSLoadBalancing, AllReduce):
             if isinstance(grad, ops.Tensor):  # this is a dense variable
                 config = self._gen_all_reduce_node_config(var.name, 'RING')
             else:  # sparse updates
+                # For Parallax Strategy, all PS vars are sparse so we don't use a proxy.
+                # Sparse variables are likely larger, so keeping copies would be costlier,
+                # and usually each device only requires a small part of the overall variable.
                 config = self._gen_ps_node_config(
                     var,
-                    False,  # For Parallax Strategy, all PS vars are sparse which does not need proxy.
+                    False,
                     self._sync
                 )
             node_config.append(config)

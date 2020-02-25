@@ -12,7 +12,12 @@ class DeviceResolver:
     """Resolving AutoDist DeviceSpec to TensorFlow DeviceSpec given a cluster."""
 
     def __init__(self, cluster):
+        """
+        Initialize the DeviceResolver.
 
+        Args:
+            cluster (Cluster): The cluster with which to resolve devices.
+        """
         self._cluster = cluster
         self._address_to_tasks = self._get_address_to_tasks(cluster)
 

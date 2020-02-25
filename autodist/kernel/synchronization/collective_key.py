@@ -1,4 +1,4 @@
-"""Utility function or classes for syncers."""
+"""Utility functions for `AllReduceSynchronizer`."""
 import threading
 import hashlib
 
@@ -27,10 +27,9 @@ def get_collective_keys():
 
 
 class CollectiveKey:
-    """A hash that generates group key and instance key for allreduce."""
+    """A hash that generates group key and instance key for AllReduce."""
 
-    def __init__(self,
-                 group_key_start=1):
+    def __init__(self, group_key_start=1):
         """Init the collective key."""
         self._group_key = group_key_start
         self._group_key_dict = {}

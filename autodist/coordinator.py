@@ -6,21 +6,38 @@ import atexit
 
 from autodist.const import ENV, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
-from autodist.network import is_local_address
+from autodist.utils.network import is_local_address
 from autodist.utils import logging
 
 
 class Coordinator:
-    """Coordinator to manager TF cluster and processes of workers."""
+    """
+    Coordinator is responsible for running user code on a cluster.
+
+    Has one main method, `launch_clients`, which runs the user's code
+    on every node of the cluster. Since all we pass to each worker are
+    their worker id and the distribution strategy, this means that each
+    worker will do its own full graph transformation based on the strategy.
+    Then the workers will sync up when they run the graphs.
+
+    `join` is called by `atexit` so that we can try to make sure the
+    remote processes are killed with the chief's process is ended.
+    """
 
     def __init__(self, strategy, cluster):
-
         self._strategy = strategy
         self.cluster = cluster
         self.threads = []
 
     def launch_clients(self):
-        """Launch."""
+        """
+        Launch the user's code on each worker.
+
+        Sets environment variables so that we run the correct AutoDist code paths on workers.
+        (i.e., the non-chief code-paths).
+
+        Store each new process created into the class so they can be monitored with `join`.
+        """
         atexit.register(self.join)
 
         replica_devices = [

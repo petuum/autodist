@@ -7,11 +7,16 @@ from autodist.kernel.common.utils import get_op_name, update_consumers, update_c
 
 
 class Synchronizer(ABC):
-    """Synchronizer."""
+    """
+    Synchronizer.
 
-    # a static context to record the load balancing status
-    # and make some adjustment when necessary
-    context = {}
+    Given a variable, can modify the TF Graph to synchronize its
+    gradients in either an in-graph or a between-graph fashion.
+
+    - In-graph means the synchronization happens in one `tf.Graph`
+    - Between-graph means the synchronization happens across
+        multiple `tf.Graphs` (e.g., each worker has its own graph)
+    """
 
     def __init__(self):
         self.num_workers = None

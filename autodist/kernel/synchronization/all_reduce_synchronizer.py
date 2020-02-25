@@ -19,13 +19,19 @@ class AllReduceSynchronizer(Synchronizer):
     """
     AllReduce Synchronizer.
 
+    This AllReduce Synchronizer currently uses TensorFlow's `collective_device_ops`
+    to insert their AllReduce ops into our graph.
+
     The class AllReduceSynchronizer class contains the following possible instantiations:
-    (1) spec='auto': single-node multiple devices, or cross-node AllReduce based on collective ops
-    (2) spec='nccl': single-node multiple devices, or cross-node AllReduce based on NCCL
-    (3) spec='ring'/'tree', Allreduce with different reduction structures: ring, tree, etc.
+
+    1. spec=`auto`: single-node multiple devices, or cross-node AllReduce based on collective ops
+    2. spec=`nccl`: single-node multiple devices, or cross-node AllReduce based on NCCL
+    3. spec=`ring`/'tree', AllReduce with different reduction structures: ring, tree, etc.
+
     However note that it does not contain the following instantiations:
-    (1) shuffle reduce (reduce to CPU or GPU as in PS) + Allreduce across nodes
-    (2) any other types of hybrid reduction of PS and Allreduce.
+
+    1. shuffle reduce (reduce to CPU or GPU as in PS) + AllReduce across nodes
+    2. any other types of hybrid reduction of PS and AllReduce.
     """
 
     _ids = count(0)
@@ -47,13 +53,13 @@ class AllReduceSynchronizer(Synchronizer):
         Note that collective ops now only supports dense tensors.
 
         Args:
-            graph_item: the graph_item to be distributed
-            var_name: the corresponded variable name
+            graph_item (GraphItem): the graph_item to be distributed
+            var_name (str): the corresponded variable name
 
         Returns:
-            GraphItem
+            GraphItem: The new graph
         """
-        # Skip alldreduce synchronizer when rank <= 1
+        # Skip allreduce synchronizer when rank <= 1
         if self.num_replicas * self.num_workers <= 1:
             return graph_item
 

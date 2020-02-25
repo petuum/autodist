@@ -1,4 +1,4 @@
-"""Compressors for All-Reduce."""
+"""Gradient Compressors for All-Reduce."""
 from abc import ABC, abstractmethod
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework.ops import Tensor
@@ -20,7 +20,12 @@ class CollectiveOpsConfig:
 
 
 class Compressor(ABC):
-    """Wraps CollectiveOps.All_Reduce with compression and decompression for network efficiency."""
+    """
+    Wraps CollectiveOps.All_Reduce with compression and decompression for network efficiency.
+
+    This means that it only wraps gradient transmission for AllReduce
+    synchronized variables, not PS ops or other ops like network reads.
+    """
 
     def __init__(self, var_op_name):
         self.var_op_name = var_op_name
@@ -179,7 +184,7 @@ class HorovodCompressor(Compressor):
         tensor_compressed = tensor
         if tensor.dtype.is_floating:
             # Only allow compression from other floating point types
-            # TODO: dtypes.float16 if using nightly (2.1.0)
+            # TODO: dtypes.float16 if using TF2.1.x (errors in 2.0)
             tensor_compressed = math_ops.cast(tensor, dtype=dtypes.float32)
         return tensor_compressed
 

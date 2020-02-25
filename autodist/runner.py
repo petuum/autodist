@@ -1,4 +1,9 @@
-"""Runner."""
+"""
+Runner.
+
+Contains functionality and classes needed for
+running an AutoDist-transformed graph with TensorFlow.
+"""
 import hashlib
 import os
 
@@ -55,9 +60,15 @@ def _log_timeline(run_metadata, name='timeline', step=0):
 
 
 class WrappedSession(tf_session.Session):
-    """Wrapped Session."""
+    """
+    Wraps :tf_main:`tf.Session <compat/v1/Session>`.
+
+    This allows us to use our transformed `Graph` and our `Remapper`
+    on our cluster.
+    """
 
     def __init__(self, cluster, graph_item, remapper):
+        """Initialize Wrapped Session."""
         self._cluster = cluster
         self._graph_item = graph_item
         self._remapper = remapper

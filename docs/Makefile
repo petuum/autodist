@@ -11,7 +11,7 @@ BUILDDIR      = _build
 APIDOC        = sphinx-apidoc
 SPHINXPROJECT = $(shell python -c "import conf; print(conf.project.lower())")
 apidoc:
-	$(APIDOC) -f -l -T -e -M -o "$(SOURCEDIR)/api" "../$(SPHINXPROJECT)"
+	$(APIDOC) -l -T -e -M -o "$(SOURCEDIR)/api" "../$(SPHINXPROJECT)"
 
 # Put it first so that "make" without argument is like "make help".
 help:

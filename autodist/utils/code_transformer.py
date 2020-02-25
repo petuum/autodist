@@ -1,4 +1,10 @@
-"""Code Transformer."""
+"""
+Code Transformer.
+
+This allows for transforming user code to avoid
+embedding datasets in the TensorFlow graph using
+placeholders.
+"""
 import types
 import gast
 

@@ -1,4 +1,4 @@
-"""Common helpers for resource variables."""
+"""Common helpers for `ResourceVariables` and `RefVariables`."""
 
 from tensorflow.python.eager import context, tape
 from tensorflow.python.ops import gen_resource_variable_ops, array_ops
@@ -8,7 +8,19 @@ from autodist.kernel.common.utils import get_consumers
 
 
 def is_read_var_op(op):
-    """Is ReadVariableOp for ResourceVariable, Identity for RefVariable."""
+    """
+    Determines if an op is a read var op.
+
+    Checks if it is a `ReadVariableOp` or an `IdentityOp`. This is because
+    `ResourceVariables` use `ReadVariableOps` and `RefVariables` use
+    `IdentityOps`.
+
+    Args:
+        op (Operation): the operation to inspect
+
+    Returns:
+        bool: Whether or not the op is a read var op
+    """
     return op.type == "ReadVariableOp" or op.type == 'Identity'
 
 
@@ -17,12 +29,12 @@ def get_read_var_ops(var_op, exclude_snapshot=False):
     Given a resource handle op, get all its read variable ops.
 
     Args:
-        var_op: VarHandleOp for ResourceVariable, VariableV2 or Variable for RefVariable
-        exclude_snapshot (False): whether to skip the default ReadVariableOp bundled (i.e. "/Read/ReadVariableOp").
+        var_op (Operation): VarHandleOp for ResourceVariable, VariableV2 or Variable for RefVariable
+        exclude_snapshot (bool): whether to skip the default ReadVariableOp bundled (i.e. "/Read/ReadVariableOp").
             no extra snapshot to exclude for RefVariable, even if `exclude_snapshot=True`.
 
     Returns:
-        list: list of read var ops of it.
+        List[Operation]: List of read var ops of it.
     """
     read_var_ops = {
         consumer for consumer in get_consumers(var_op)
@@ -34,7 +46,15 @@ def get_read_var_ops(var_op, exclude_snapshot=False):
 
 
 def get_read_var_tensor(var_op):
-    """Given a var op, get the tensor of its default readable value."""
+    """
+    Given a var op, get the tensor of its default readable value.
+
+    Args:
+        var_op (Operation): the variable op
+
+    Returns:
+        Tensor: The tensor of its default readable value
+    """
     if var_op.type == 'VarHandleOp':
         for read_var_op in get_read_var_ops(var_op):
             if read_var_op.name.endswith("/Read/ReadVariableOp"):
@@ -47,9 +67,14 @@ def get_read_var_tensor(var_op):
 
 def gen_read_var_op(var_op, dtype):
     """
-    Given a var op, generate the op of value reading.
+    Given a var op, generate the op for reading its value.
 
-    ResourceVariable.read_variable_op() or RefVariable.read_value()
+    Args:
+        var_op (Operation): The var op
+        dtype (dtype): The dtype of the data to read
+
+    Returns:
+        Operation: The value-reading operation
     """
     var_op_tensor = var_op.outputs[0]
     if var_op.type == 'VarHandleOp':

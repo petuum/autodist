@@ -1,18 +1,23 @@
-"""GraphItem as metagraph wrapper."""
+"""GraphItem and its supporting functionality."""
 
 import contextlib
-import functools
 import copy
+import functools
+from typing import Union, Callable
 
+from tensorflow.core.framework.graph_pb2 import GraphDef
 from tensorflow.core.framework.variable_pb2 import VariableDef
 from tensorflow.python.framework import ops
-from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 from tensorflow.python.framework.importer import import_graph_def
+from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
+from tensorflow.python.ops.variables import Variable
 
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
 from autodist.kernel.common.utils import parse_name_scope, get_op_name
 from autodist.utils import logging
+
+VariableType = Union[VariableDef, dict, Variable]
 
 
 def cached_property(fn, *args, **kwargs):
@@ -37,7 +42,7 @@ def cached_property(fn, *args, **kwargs):
 _default_graph_item = None
 
 
-def wrap_optimizer_init(fn):
+def wrap_optimizer_init(fn: Callable):
     """Wraps the __init__ function of OptimizerV2 objects and stores the info in the default GraphItem."""
     def wrapper(*args, **kwargs):
         # args[0] should be `self`, which is an object of type == optimizer class
@@ -56,7 +61,7 @@ def wrap_optimizer_init(fn):
     return wrapper
 
 
-def wrap_optimizer_apply_gradient(fn):
+def wrap_optimizer_apply_gradient(fn: Callable):
     """Wraps the apply_gradients function of OptimizerV2 objects and stores the info in the default GraphItem."""
     # Signature for apply_gradients
     # apply_gradients(self, grads_and_vars, name=None)
@@ -74,7 +79,12 @@ def wrap_optimizer_apply_gradient(fn):
 
 
 class Info:
-    """Temp GraphItem Info before RunnerV2."""
+    """
+    Stores useful variable tracking information.
+
+    In essence, replaces collections, and this way
+    we don't have to deal with `MetaGraphs`.
+    """
 
     def __init__(self):
         # v1 mode                   # v2 mode
@@ -96,8 +106,8 @@ class Info:
         """Untrainable Variables."""
         return [v for v in self.variables if not v.trainable]
 
-    def _add_variable(self, var):
-        """Add a variable to info tracker."""
+    def _add_variable(self, var: VariableType):
+        """Add a variable to our info tracker."""
         if isinstance(var, VariableDef):
             proto = var
         elif isinstance(var, dict):
@@ -108,15 +118,23 @@ class Info:
             proto = var.to_proto()
         self.variables.append(proto)
 
-    def pop_variable(self, var_name):
-        """Pop out a variable by its name from info tracker."""
+    def pop_variable(self, var_name: str):
+        """Pop out a variable by its name from the info tracker."""
         for i, v in enumerate(self.variables):
             if v.variable_name == var_name:
                 self.variables.pop(i)
                 break
 
     def update(self, variables=None, table_initializers=None, replace=True, **kwargs):
-        """Set info."""
+        """
+        Update info.
+
+        Args:
+            variables (Iterable[VariableType]): Iterable of variables to insert.
+            table_initializers (Iterable(Union[ops.Operation, str]): Initializers for lookup tables.
+            replace (bool): Whether or not to overwrite existing contents
+            **kwargs: Unused.
+        """
         if kwargs:
             logging.warning('Unused kwargs in info update: {}'.format(kwargs))
         if variables:
@@ -137,13 +155,15 @@ class Info:
 
 class GraphItem:
     """
-    GraphItem as TensorFlow Graph wrapper.
+    GraphItem is a TensorFlow Graph wrapper.
 
-    It represents the states in-between consecutive AutoDist kernel graph transformations.
-    Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.
+    It represents the states in-between consecutive AutoDist.kernel graph transformations.
+    tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.
+
+    A GraphItem can be constructed with either a `tf.Graph` or a `GraphDef`.
     """
 
-    def __init__(self, graph=None, graph_def=None):
+    def __init__(self, graph: ops.Graph = None, graph_def: GraphDef = None):
         if graph:
             self._graph = graph
         elif graph_def:
@@ -208,7 +228,7 @@ class GraphItem:
         for g, t in zip(grads, targets):
             self._grad_target_pairs[g] = t
 
-    def pop_gradient_info(self, var_name):
+    def pop_gradient_info(self, var_name: str):
         """Pop out a grad target pair by variable name."""
         for k, v in self._grad_target_pairs.copy().items():
             if v == var_name:
@@ -260,7 +280,7 @@ class GraphItem:
                 res[var_op.name] = expected_var_ops[var_op] + (op, )
         return res
 
-    def _is_auxiliary(self, update_op):
+    def _is_auxiliary(self, update_op: ops.Operation):
         """Check whether a specific update_op is an auxiliary op that should not be considered."""
         # Skip the AssignSub in AdamWeightDecay
         if 'AdamWeightDecay/AdamWeightDecay/' in update_op.name and update_op.type == 'AssignSubVariableOp' and \
@@ -331,8 +351,7 @@ class GraphItem:
         Get the binding op for a given colocation group.
 
         Args:
-            graph_item: The current graph
-            colocation_group: The colocation group
+            colocation_group (bytes): The colocation group
 
         Returns:
             Op
@@ -346,7 +365,7 @@ class GraphItem:
         Given an iterator of ops or op names, return the corresponding ops in self graph.
 
         Args:
-            op_iter (Iterable): Ops or ops names
+            op_iter (Iterable[Union[ops.Operation, str]]): Ops or ops names
 
         Returns:
             Iterable

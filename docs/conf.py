@@ -54,15 +54,23 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',  # Google Docstring Format
+    'recommonmark',
     'sphinx_git',  # For embedding changelog
 ]
 
 # Disable documentation inheritance so as to avoid inheriting
 # docstrings in a different format, e.g. when the parent class
 # is a PyTorch class.
-autodoc_inherit_docstrings = False
-autodoc_member_order = 'bysource'
+autodoc_inherit_docstrings = True
 add_module_names = False
+
+
+autodoc_default_options = {
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'inherited-members': True,
+    'show-inheritance': True
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -70,10 +78,10 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-from recommonmark.parser import CommonMarkParser
-source_parsers = {
-    '.md': CommonMarkParser,
-}
+# from recommonmark.parser import CommonMarkParser
+# source_parsers = {
+#     '.md': CommonMarkParser,
+# }
 source_suffix = ['.rst', '.md']
 # source_suffix = '.rst'
 
@@ -200,10 +208,26 @@ texinfo_documents = [
 
 # -- Extension configuration -------------------------------------------------
 
+def docstring(app, what, name, obj, options, lines):
+    if name.startswith('autodist.runner'):
+        options['inherited-members'] = False
+
+def setup(app):
+    app.connect('autodoc-process-docstring', docstring)
+
+
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
+
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+extlinks = {
+    'tf_main': ('https://www.tensorflow.org/api_docs/python/tf/%s', None)
+}
+
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 
 # -- Options for todo extension ----------------------------------------------
 

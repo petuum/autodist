@@ -1,11 +1,15 @@
 """Resource Specification."""
-
+import os
 from enum import Enum
 
 import re
+from typing import NamedTuple, Optional, Dict
+
+import paramiko
 import yaml
 
-from autodist.network import SSHConfigMap, is_loopback_address
+from autodist.const import ENV
+from autodist.utils.network import is_loopback_address
 from autodist.utils import logging
 
 
@@ -28,7 +32,14 @@ class DeviceType(Enum):
 
 # TODO(Hao): make it a real GRAPH
 class ResourceSpec:
-    """Resource Spec."""
+    """
+    Resource Spec.
+
+    Contains node and SSH information found by parsing a `resource_spec.yml`.
+
+    # TODO: Make it a real Graph (a clique), with edge weights being network bandwidth.
+        This would allow for even more intelligent strategy generation.
+    """
 
     def __init__(self, resource_file=None):
         """
@@ -242,3 +253,57 @@ class DeviceSpec:
 
     def __str__(self):
         return self.name_string()
+
+
+class SSHConfig(NamedTuple):
+    """Contains any necessary SSH information (e.g. passwords, keyfiles, etc.)."""
+
+    username: str
+    port: int
+    python_venv: str
+    key_file: str
+    pkey: Optional[paramiko.RSAKey]
+    env: dict
+
+
+class SSHConfigMap(dict):
+    """Contains all necessary SSH configs, grouped by config name."""
+
+    def __init__(self, info: Dict[str, Dict], node_groups: Dict[str, str]):
+        """
+        Initialize the object with a dictionary of SSH information.
+
+        Args:
+            info (dict): any SSH information needed for remote control.
+                This dict should map from identifier to dict of SSH info
+                (username, port, keyfile, etc.).
+            node_groups (dict): mapping from hostnames to SSH group names.
+        """
+        super().__init__()
+
+        # Construct SSH Group to SSH Config mapping
+        conf_map = {}
+        for key, ssh_info in info.items():
+            # Parse out information from sub-dict
+            conf_map[key] = SSHConfig(
+                username=ssh_info.get('username', ''),
+                port=ssh_info.get('port', 22),
+                python_venv=ssh_info.get('python_venv', ''),
+                key_file=ssh_info.get('key_file', ''),
+                pkey=self._gen_rsa_pkey(ssh_info.get('key_file', None)),
+                env=dict(
+                    TF_CPP_MIN_LOG_LEVEL=0,
+                    AUTODIST_PATCH_TF=ENV.AUTODIST_PATCH_TF.val,
+                    **ssh_info.get('shared_envs', {})
+                )
+            )
+
+        # Use conf_map to construct Hostname to SSH Config mapping
+        for hostname, group in node_groups.items():
+            self[hostname] = conf_map.get(group)
+
+    @staticmethod
+    def _gen_rsa_pkey(key_file_path: str):
+        if not key_file_path:
+            return None
+        return paramiko.RSAKey.from_private_key_file(os.path.expanduser(os.path.abspath(key_file_path)))
