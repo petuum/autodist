@@ -3,16 +3,22 @@ import time
 import tensorflow as tf
 import numpy as np
 from absl import app
+from tensorflow.core.protobuf import config_pb2
 
 from autodist import AutoDist
 from autodist.strategy.ps_strategy import PS
-resource_spec_file = os.path.join(os.path.dirname(__file__), '../resource_spec.yml')
-autodist = AutoDist(resource_spec_file, PS())
+from autodist.strategy.ps_lb_strategy import PSLoadBalancing
+from autodist.strategy.partitioned_ps_strategy import PartitionedPS
+from autodist.strategy.all_reduce_strategy import AllReduce
+from autodist.strategy.parallax_strategy import Parallax
+
+resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
+autodist = AutoDist(resource_spec_file, PartitionedPS())
 
 vocab_size = 10000
 embedding_size = 16
 hidden_dim = 16
-max_steps = 1000
+max_steps = 101
 batch_size = 128
 log_frequency = 100
 
@@ -39,7 +45,13 @@ class SimpleModel():
                               name='b2',
                               trainable=True,
                               dtype=tf.float32)
-        self.optimizer = tf.optimizers.SGD(lr=0.0005)
+        major_version, _, _ = tf.version.VERSION.split('.')
+        if major_version == '1':
+            # self.optimizer = tf.train.AdagradOptimizer(learning_rate=0.2)
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=0.2)
+        else:
+            # self.optimizer = tf.optimizers.Adagrad(learning_rate=0.2, initial_accumulator_value=1.0)
+            self.optimizer = tf.optimizers.Adam(learning_rate=0.2)
 
     def forward(self, x, y):
         # embedding layer
@@ -55,15 +67,16 @@ class SimpleModel():
         loss = tf.reduce_mean(loss)
         return loss
 
-    @autodist.function
-    def train_fn(self, x, y):
+    def train_fn(self, xy):
+        x, y = xy
+        #with tf.GradientTape() as tape:
         loss = self.forward(x, y)
         trainables = [self.emb, self.w1, self.b1, self.w2, self.b2]
         gradients = tf.gradients(loss, trainables)
         #gradients = tape.gradient(loss, trainables)
         # strategy requires users to provide the train_op handle
         train_op = self.optimizer.apply_gradients(zip(gradients, trainables))
-        return loss, train_op
+        return loss, train_op, gradients
 
 
 def main(_):
@@ -77,16 +90,18 @@ def main(_):
                                                               padding='post',
                                                               maxlen=256)
     train_labels = train_labels.astype(np.float32)
-    left = 0
-    with autodist.scope():  # AutoDist code
+    with tf.Graph().as_default(), autodist.scope():  # AutoDist code
+        my_iterator = tf.compat.v1.data.Dataset.from_tensor_slices((train_data, train_labels)) \
+            .shuffle(25000).batch(batch_size).repeat().make_one_shot_iterator().get_next()
+        # my_iterator = MyIterator().get_next()
         model = SimpleModel()
         prev_time = time.time()
-        print(train_data.shape, test_data.shape)
+        # fetch train_op and loss
+        loss_fn, train_op, gradients = model.train_fn(my_iterator)
+        sess = autodist.create_distributed_session()
         for local_step in range(max_steps):
-            x = train_data[left:left + batch_size]
-            y = train_labels[left:left + batch_size]
-            # fetch train_op and loss
-            loss, _ = model.train_fn(x=x, y=y)
+            loss, _ = sess.run(fetches=[loss_fn, train_op],
+                               options=config_pb2.RunOptions(trace_level=config_pb2.RunOptions.NO_TRACE))
             if local_step % log_frequency == 0:
                 cur_time = time.time()
                 elapsed_time = cur_time - prev_time
@@ -95,8 +110,8 @@ def main(_):
                 print("Iteration %d, time = %.2fs, wps = %.0f, train loss = %.4f" % (
                     local_step, cur_time - prev_time, wps, loss))
                 prev_time = cur_time
-            left = left + batch_size
-            if (left + batch_size) > train_data.shape[0]:
-                break
+        print(sess.run(model.emb))
+        print(sess.run(gradients[0]))
+    print('ending...')
 
 app.run(main)

@@ -19,7 +19,7 @@ if not COMPAT_VERSIONS[0] <= float_major_minor_version <= COMPAT_VERSIONS[1]:
         float_major_minor_version
     ))
     sys.exit(1)
-logging.info('AutoDist is now on TensorFlow {}'.format(version.VERSION))
+logging.debug('AutoDist is now running on TensorFlow {}'.format(version.VERSION))
 
 # Disable tensorflow control flow version 2 (which AutoDist does not support as of now).
 # Use control flow version 1 instead.

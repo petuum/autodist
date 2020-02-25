@@ -4,7 +4,6 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.python.training.training_util import get_or_create_global_step
 
 from autodist import AutoDist
 from autodist.strategy.ps_strategy import PS
