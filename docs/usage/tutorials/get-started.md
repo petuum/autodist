@@ -1,11 +1,15 @@
 
-# Tutorial: Get Started
+# Get Started
 
 Thanks for choosing to use AutoDist!
 
 Before reading the following tutorial, it is highly recommended to get familiar with the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) first, and especially understand the difference between eager and graph mode. If you can run the Quickstart properly, you can use the same environment to follow this tutorial.
 
-> AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`.
+AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`. Install the downloaded wheel file by
+
+```bash
+pip install autodist*.whl
+``` 
 
 The following model is based on the Quickstart. Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs, we could follow these next 2 steps:
 
@@ -23,7 +27,10 @@ For other resource cases (e.g., multiple nodes), please refer to the more advanc
 
 ### Step 2: Add AutoDist APIs
 
-Given TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, we can easily modify it to train in a distributed fashion. All we have to do is make the following 3 changes (marked by inline comments):
+Given TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, 
+we can easily modify it to train in a distributed fashion. 
+Based on the  <code>[AutoDist](../../api/autodist.autodist)</code> interfaces, 
+all we have to do is make the following 3 changes (marked by inline comments):
 
 ```python
 import numpy as np

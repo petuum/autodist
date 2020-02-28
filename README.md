@@ -8,7 +8,10 @@
 [Releases](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tags)
 
 **AutoDist** is Petuum's new scalable ML engine. 
-AutoDist provides user-friendly interfaces to distribute local deep-learning model training across multiple processing units (for example, distributed GPU clusters) with scalability and minimal code changes. 
+AutoDist provides a user-friendly interface to distribute
+TensorFlow model training across multiple processing units
+(for example, distributed GPU clusters) with high scalability
+and minimal code change.
 
 
 AutoDist currently supports [TensorFlow 2.0](https://www.tensorflow.org/beta/).

@@ -6,41 +6,47 @@
 Welcome to AutoDist!
 ==================================
 
-What is AutoDist?
---------------
-AutoDist is Petuum's new scalable ML Engine.
 
-Introduction
----------------
+AutoDist is a scalable ML engine.
+AutoDist provides a user-friendly interface to distribute
+TensorFlow model training across multiple processing units
+(for example, distributed GPU clusters) with high scalability
+and minimal code change.
+
+
 .. toctree::
+   :titlesonly:
+   :caption: Tutorials
+
+   usage/tutorials/get-started.md
+   usage/tutorials/multi-node.md
+   usage/tutorials/strategy-builders.md
+   usage/tutorials/ux.md
+   usage/tutorials/save-restore.md
+
+
+.. toctree::
+   :titlesonly:
+   :caption: Dev Reference
    :maxdepth: 1
 
-   usage/tutorial/get-started.md
-   usage/tutorial/others.md
-   User API Documentation<api/autodist.autodist.rst>
+   Developer API Documentation<api/autodist.rst>
+   usage/symphony-integration.md
    design/architecture.rst
 
 Useful Links
 ------------
 
-- `Our Source Code`_
-- `Our Main Confluence Page`_
-- `Development Notes`_
+- `Source Code`_
+- `Development Notes on Confluence`_
 - `Performance Benchmarks`_
 
-.. _`Our Source Code`: https://gitlab.int.petuum.com/internal/scalable-ml/autodist
-.. _`Our Main Confluence Page`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/166363204/AutoDist%3A+Goal+and+a+Proposal+of+Architecture?atlOrigin=eyJpIjoiOWU1Y2Q4YzNmMDg2NDkyZTk0Njg1ZTYwNmM3YWI1MDciLCJwIjoiYyJ9
-.. _`Development Notes`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/182846085/AutoDist+Development+Note+Updating
-.. _`Performance Benchmarks`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/253100101/AutoDist+Performance+Tuning+for+9+15
+.. _`Source Code`: https://gitlab.int.petuum.com/internal/scalable-ml/autodist
+.. _`Development Notes on Confluence`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/166363204/AutoDist%3A+Goal+and+a+Proposal+of+Architecture?atlOrigin=eyJpIjoiOWU1Y2Q4YzNmMDg2NDkyZTk0Njg1ZTYwNmM3YWI1MDciLCJwIjoiYyJ9
+.. _`Performance Benchmarks`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/253100101/AutoDist+Performance
 
-Developer Reference
---------------------
-.. toctree::
-   :maxdepth: 1
-
-   Developer API Documentation<api/autodist.rst>
-   Symphony Integration<usage/symphony-integration.md>
 
 Recent Changes
 --------------
 .. git_changelog::
+   :revisions: 3
