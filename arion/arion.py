@@ -3,7 +3,7 @@ import atexit
 from collections import namedtuple
 
 import numpy as np
-from tensorflow.python.eager import context
+from tensorflow.python.eager import context as tf_context
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
@@ -20,7 +20,7 @@ from autodist.resource_spec import ResourceSpec
 from autodist.runner import WrappedSession
 from autodist.strategy import base
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
-from autodist.utils import logging
+from autodist.utils import logging, context
 
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
@@ -39,7 +39,10 @@ class _AutoDistInterface:
         self._strategy_path = strategy_path
 
         self._original_graph_item = None
-        # TODO: separate the control
+        self._transformed_graph_item = None
+        self._remapper = None
+        self._built = None
+
         self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
         self._coordinator: Coordinator
 
@@ -49,8 +52,10 @@ class _AutoDistInterface:
         with self._original_graph_item.as_default():
             if ENV.AUTODIST_PATCH_TF.val:
                 PatchTensorFlow.patch_var_reading()
-            PatchTensorFlow.patch_keras(self)
+            PatchTensorFlow.patch_keras()
+            context.set_default_autodist(self)
             yield
+            context.set_default_autodist(None)
             PatchTensorFlow.unpatch_keras()
             PatchTensorFlow.unpatch_var_reading()
 
@@ -77,9 +82,10 @@ class _AutoDistInterface:
     def _compile_strategy(self, strategy):
         logging.debug('Raw strategy: %s' % strategy)
         device_resolver = DeviceResolver(self._cluster)
-        compiled_strategy = base.StrategyCompiler().set_device_resolver(device_resolver.resolve_to_device_str). \
-            compile(strategy)
-        logging.debug('Compiled strategy: %s' % compiled_strategy)
+        compiled_strategy = base.StrategyCompiler(self._original_graph_item) \
+            .set_device_resolver(device_resolver.resolve_to_device_str) \
+            .compile(strategy)
+        logging.info('Compiled strategy: %s' % compiled_strategy)
         return compiled_strategy
 
     def _setup(self, strategy):
@@ -97,7 +103,7 @@ class _GraphModeInterface(_AutoDistInterface):
 
     def _initialize_graph(self):
         """Postpone the initialization of the member original_graph_item to the scoping time."""
-        assert not context.executing_eagerly()
+        assert not tf_context.executing_eagerly()
         self._original_graph_item = GraphItem(graph=ops.get_default_graph())
 
     def _build(self):
@@ -108,21 +114,34 @@ class _GraphModeInterface(_AutoDistInterface):
             cluster=self._cluster,
             graph_item=self._original_graph_item
         )
-        transformed_graph_item = graph_transformer.transform()
-        remapper = Remapper(graph_transformer, transformed_graph_item)
-
-        # End: Graph Construction, Begin: Running
+        self._transformed_graph_item = graph_transformer.transform()
+        self._remapper = Remapper(graph_transformer, self._transformed_graph_item)
+        self._built = self._original_graph_item.graph.as_graph_def()
         self._setup(strategy)
-        return transformed_graph_item, remapper
+
+    def is_built(self):
+        """
+        Whether the distributed graph is built for the most recent original graph.
+
+        Returns:
+            bool
+        """
+        if self._built:
+            if self._original_graph_item.graph.as_graph_def() != self._built:
+                logging.warning('Graph is modified after distributed session is created.')
+                # raise RuntimeWarning('Graph is modified after distributed session is created.')
+            return True
+        return False
 
     def _create_distributed_session(self):
         """Create a Session object to execute the default graph in a distributed manner."""
-        transformed_graph_item, remapper = self._build()
+        if not self.is_built():
+            self._build()
 
         _distributed_session = WrappedSession(
             cluster=self._cluster,
-            graph_item=transformed_graph_item,
-            remapper=remapper,
+            graph_item=self._transformed_graph_item,
+            remapper=self._remapper,
         )
 
         def _del(sess=_distributed_session):
@@ -260,7 +279,7 @@ class AutoDist(_V1Graph, _V2Graph, _V2Eager):
         Yields:
           AutoDist context
         """
-        if not context.executing_eagerly():
+        if not tf_context.executing_eagerly():
             self._initialize_graph()
         else:
             raise NotImplementedError('AutoDist will support distributed execution under eager mode later.')

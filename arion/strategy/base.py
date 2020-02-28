@@ -6,6 +6,7 @@ from datetime import datetime
 
 from autodist.const import DEFAULT_SERIALIZATION_DIR
 from autodist.graph_item import GraphItem
+from autodist.kernel.common.utils import get_op_name
 from autodist.proto import strategy_pb2
 from autodist.resource_spec import ResourceSpec
 
@@ -110,7 +111,8 @@ class StrategyCompiler:
     but this can be easily modified to do more in the future.
     """
 
-    def __init__(self):
+    def __init__(self, graph_item):
+        self._graph_item = graph_item
         self._device_resolver = None
 
     def set_device_resolver(self, resolver):
@@ -129,8 +131,16 @@ class StrategyCompiler:
         s.graph_config.replicas[:] = self._device_resolver(d)
         return s
 
+    def _prune_nodes(self, strategy):
+        # Prune the nodes without stateful updates
+        s = strategy.copy()
+        s.node_config = [n for n in strategy.node_config
+                         if get_op_name(n.var_name) in self._graph_item.var_op_name_to_grad_info]
+        return s
+
     def compile(self, strategy):
         """Compile the strategy."""
+        strategy = self._prune_nodes(strategy)
         if self._device_resolver:
             strategy = self._resolve_devices(strategy)
         return strategy
