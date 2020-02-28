@@ -4,13 +4,18 @@ from collections import deque
 from itertools import chain
 
 from tensorflow.python import keras
+from tensorflow.python.keras.engine import training
 from tensorflow.python.framework import ops
 from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 from tensorflow.python.training.optimizer import Optimizer as OptimizerV1
+from tensorflow.python.client import session as session_module
+from tensorflow.core.protobuf import config_pb2
+from tensorflow.python.ops import math_ops
 
 from autodist.graph_item import wrap_optimizer_init, wrap_optimizer_apply_gradient
-from autodist.utils import logging
+from autodist.utils import logging, context
+from autodist.runner import get_default_session_config
 
 
 class PatchTensorFlow:
@@ -65,43 +70,109 @@ class PatchTensorFlow:
 
     # TODO: unpatch optimizers
 
-    @staticmethod
-    def patch_keras(autodist):
-        """Patch Keras way of getting session."""
-        def _get_session(op_input_list=()):
-            """Returns the session object for the current thread."""
-            _SESSION = keras.backend._SESSION
-            default_session = ops.get_default_session()
-            if default_session is not None:
-                session = default_session
-            else:
-                if ops.inside_function():
-                    raise RuntimeError('Cannot get session inside Tensorflow graph function.')
-                # If we don't have a session, or that session does not match the current
-                # graph, create and cache a new session.
-                if getattr(_SESSION, 'session', None) is None:
-                    _SESSION.session = autodist.create_distributed_session()
-                session = _SESSION.session
-            return session
-        keras.backend._get_session = _get_session
-
-        class GraphExecutionFunction(keras.backend.GraphExecutionFunction):
-
-            class DummyOp:
-                name = ""
-
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                if not kwargs.get('updates'):
-                    self.updates_op = self.DummyOp()
-
-        keras.backend.GraphExecutionFunction = GraphExecutionFunction
-
+    _DEFAULT_MODEL_COMPILE = training.Model.compile
     _DEFAULT_GET_SESSION = keras.backend._get_session
     _DEFAULT_GRAPH_EXECUTION_FUNCTION = keras.backend.GraphExecutionFunction
 
     @staticmethod
+    def patch_keras():
+        """Patch Keras way of getting session."""
+        setattr(keras.backend, 'READY_FOR_AUTODIST', False)
+
+        def _compile(self, *args, **kwargs):
+            PatchTensorFlow._DEFAULT_MODEL_COMPILE(self, *args, **kwargs)
+            setattr(keras.backend, 'READY_FOR_AUTODIST', True)
+
+        training.Model.compile = _compile
+
+        keras.backend._get_session = _KerasPatch.get_session
+
+        keras.backend.GraphExecutionFunction = _KerasPatch.GraphExecutionFunction
+
+    @staticmethod
     def unpatch_keras():
         """Revert the Keras patch."""
+        training.Model.compile = PatchTensorFlow._DEFAULT_MODEL_COMPILE
         keras.backend._get_session = PatchTensorFlow._DEFAULT_GET_SESSION
         keras.backend.GraphExecutionFunction = PatchTensorFlow._DEFAULT_GRAPH_EXECUTION_FUNCTION
+
+
+class _KerasPatch:
+    @staticmethod
+    def get_session(op_input_list=(), autodist=None):
+        """Returns the session object for the current thread."""
+        _SESSION = keras.backend._SESSION
+        default_session = ops.get_default_session()
+        if default_session is not None:
+            session = default_session
+        else:
+            if ops.inside_function():
+                raise RuntimeError('Cannot get session inside Tensorflow graph function.')
+            # If we don't have a session, or that session does not match the current
+            # graph, create and cache a new session.
+            if getattr(_SESSION, 'session', None) is None:
+                if getattr(keras.backend, 'READY_FOR_AUTODIST', False):
+                    _SESSION.session = context.get_default_autodist().create_distributed_session()
+                else:
+                    _SESSION.session = session_module.Session(config=get_default_session_config())
+            session = _SESSION.session
+        return session
+
+    class GraphExecutionFunction(keras.backend.GraphExecutionFunction):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if not kwargs.get('updates'):
+                self.updates_op = None
+
+        # pylint: disable=attribute-defined-outside-init
+        def _make_callable(self, feed_arrays, feed_symbols, symbol_vals, session):
+            """
+            Generates a callable that runs the graph.
+
+            Arguments:
+              feed_arrays: List of input tensors to be fed Numpy arrays at runtime.
+              feed_symbols: List of input tensors to be fed symbolic tensors at runtime.
+              symbol_vals: List of symbolic tensors to be fed to `feed_symbols`.
+              session: Session to use to generate the callable.
+
+            Returns:
+              Function that runs the graph according to the above options.
+            """
+            # Prepare callable options.
+            callable_opts = config_pb2.CallableOptions()
+            # Handle external-data feed.
+            for x in feed_arrays:
+                callable_opts.feed.append(x.name)
+            if self.feed_dict:
+                for key in sorted(self.feed_dict.keys()):
+                    callable_opts.feed.append(key.name)
+            # Handle symbolic feed.
+            for x, y in zip(feed_symbols, symbol_vals):
+                connection = callable_opts.tensor_connection.add()
+                if x.dtype != y.dtype:
+                    y = math_ops.cast(y, dtype=x.dtype)
+                from_tensor = ops._as_graph_element(y)
+                if from_tensor is None:
+                    from_tensor = y
+                connection.from_tensor = from_tensor.name  # Data tensor
+                connection.to_tensor = x.name  # Placeholder
+            # Handle fetches.
+            for x in self.outputs + self.fetches:
+                callable_opts.fetch.append(x.name)
+            # Handle updates.
+            if self.updates_op:
+                callable_opts.target.append(self.updates_op.name)
+            # Handle run_options.
+            if self.run_options:
+                callable_opts.run_options.CopyFrom(self.run_options)
+            # Create callable.
+            callable_fn = session._make_callable_from_options(callable_opts)
+            # Cache parameters corresponding to the generated callable, so that
+            # we can detect future mismatches and refresh the callable.
+            self._callable_fn = callable_fn
+            self._feed_arrays = feed_arrays
+            self._feed_symbols = feed_symbols
+            self._symbol_vals = symbol_vals
+            self._fetches = list(self.fetches)
+            self._session = session

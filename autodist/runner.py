@@ -12,13 +12,14 @@ from tensorflow.python.client import timeline, session as tf_session
 
 import autodist.const
 from autodist.const import ENV, MAX_INT32
-from autodist.utils import logging
+from autodist.utils import logging, context
 
 
 def get_default_session_config():
     """Create a default session config."""
     session_config = config_pb2.ConfigProto()
     session_config.allow_soft_placement = True
+    session_config.gpu_options.allow_growth = True
     # session_config.log_device_placement = True
 
     # enable scoped_allocator for collective_ops
@@ -94,11 +95,13 @@ class WrappedSession(tf_session.Session):
             super(WrappedSession._Callable, self).__init__(session, self._callable_options)
 
         def __call__(self, *args, **kwargs):
+            context.get_default_autodist().is_built()
             args = [a for fn, arg in zip(self._callable_arg_fns, args) for a in fn(arg)]
             return super(WrappedSession._Callable, self).__call__(*args, **kwargs)
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Wrapped Session.run."""
+        context.get_default_autodist().is_built()
         _options = get_default_run_options()
         if options:
             _options.MergeFrom(options)  # options merges (while overwrites) into RUN_OPTIONS
