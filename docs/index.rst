@@ -10,7 +10,7 @@ What is AutoDist?
 --------------
 AutoDist is Petuum's new scalable ML Engine.
 
-Tutorials
+Introduction
 ---------------
 .. toctree::
    :maxdepth: 1
@@ -18,6 +18,7 @@ Tutorials
    usage/tutorial/get-started.md
    usage/tutorial/others.md
    User API Documentation<api/autodist.autodist.rst>
+   design/architecture.rst
 
 Useful Links
 ------------

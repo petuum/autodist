@@ -32,6 +32,11 @@ class VariablePartitioner(Kernel):
        to rewire the optimizer internals as well).
     4. Returns a new graph and strategy modified to reflect the partitioning.
 
+    Note that this currently does not work with variables that are part of a control
+    flow (including batchnorm). In those cases, we currently do not have a way to
+    replicate the control flow's `FuncGraph` for our new variables. Thus, we expect
+    that any StrategyBuilder does not generate a strategy that tries to partition a
+    control flow variable, otherwise this will likely error.
     """
 
     def __init__(self, key, node_config: RepeatedScalarContainer, graph_item: GraphItem):
