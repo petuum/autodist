@@ -1,8 +1,8 @@
-# AutoDist in Symphony
+# Symphony Integration
 
-## Symphony
+## What is Symphony?
 
-Symphony is a machine learning platform which includes resource management, job control, etc. AutoDist will be the distributed training backend of this platform.
+Symphony is a machine learning platform built by Petuum Inc. which includes resource management, job control, etc. AutoDist will be the distributed training backend of this platform.
 
 ## AutoDist in Symphony
 

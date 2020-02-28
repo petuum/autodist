@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019 Petuum, Inc. All rights reserved.
+# Copyright (c) 2020 Petuum, Inc. All rights reserved.
 #
 # -*- coding: utf-8 -*-
 #
@@ -30,7 +30,7 @@ except ImportError:
 
 project = 'AutoDist'
 project_lower = project.lower()
-copyright = '2019, Petuum'
+copyright = '2020, Petuum'
 author = 'Petuum'
 
 
@@ -55,7 +55,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.linkcode',
     'sphinx.ext.doctest',
     'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',  # Google Docstring Format
@@ -225,9 +225,19 @@ def setup(app):
     app.connect('autodoc-process-docstring', docstring)
 
 
-# -- Options for intersphinx extension ---------------------------------------
+# -- Options for code link ---------------------------------------------------
 
-# Example configuration for intersphinx: refer to the Python standard library.
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    if info['module'].endswith('_pb2'):
+        return None
+    path = info['module'].replace('.', '/')
+    return "https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tree/master/" + path + '.py'
+
+# -- Options for intersphinx and extlinks extension --------------------------
 
 intersphinx_mapping = {'https://docs.python.org/': None}
 
