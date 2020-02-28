@@ -2,6 +2,7 @@
 # Multi-Node Resources
 
 * To distribute across GPUs on multiple nodes:
+
 ```yaml
 nodes:
   - address: 172.31.30.187
@@ -19,6 +20,7 @@ ssh:
 ```
 
 Note that:
+
 1) When using remote nodes, you must specify exactly one of them to be the `chief` node. The `chief` node should be the node you launch the program from (it will also participate in the training, so make sure it is a node in your cluster).
 2) You also need to create `ssh_config`s that can be used by the `chief` node to ssh into all other nodes. They must be named; this allows for having different ssh configs if, for example, different nodes have different private keys.
 
