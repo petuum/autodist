@@ -103,3 +103,8 @@ htmlcov*
 
 # Compiled Protobuf
 autodist/proto/*_pb2.py
+
+# TF checkpoints
+*.index
+*.meta
+*.data*

@@ -218,7 +218,7 @@ texinfo_documents = [
 # -- Extension configuration -------------------------------------------------
 
 def docstring(app, what, name, obj, options, lines):
-    if name.startswith('autodist.runner'):
+    if name.startswith('autodist.runner') or name.startswith('autodist.checkpoint'):
         options['inherited-members'] = False
 
 def setup(app):

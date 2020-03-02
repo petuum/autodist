@@ -78,7 +78,7 @@ class VariablePartitioner(Kernel):
                             if v.variable_name not in deleted_tensor_names]
         new_var_list = list(new_globals | new_vars) + untrainable_vars
 
-        self.info.update(variables=new_var_list, replace=True)
+        self.info.update_variables(new_var_list, replace=True)
         output_graph_item.info = self.info.copy()
         output_graph_item.copy_gradient_info_from(new_graph_item)
 
@@ -280,7 +280,7 @@ class VariablePartitioner(Kernel):
 
                 self._update_node_config(var, var_list)
 
-                self.info.update(variables=var_list, replace=False)
+                self.info.update_variables(var_list, replace=False)
                 new_vars.extend(var_list)
                 new_grads.extend(split_grad)
                 new_graph_item.extend_gradient_info(split_grad, var_list)

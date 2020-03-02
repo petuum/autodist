@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 from autodist.const import ENV
+from autodist.checkpoint.saver import Saver
 
 
 def main(autodist):
@@ -63,18 +64,26 @@ def main(autodist):
 
         assert EPOCHS == 1
         fetches = train_step(x)
+        saver = Saver([W, b])
         session = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
             l_val, _, _ = session.run(fetches=fetches, feed_dict={x: inputs_iterator.get_next(), y: outputs})
             print('loss:', l_val)
             # Seperate the fetches of var to guarantee the state
-            b_val = session.run(b)
+            W_val, b_val = session.run([W, b])
 
+        # Try to save the two variables
+        checkpoint_dir = '/tmp/ckpt/'
+        checkpoint_suffix = 'c0'
+        checkpoint_name = checkpoint_dir + checkpoint_suffix
+        saver.save(session, checkpoint_name, global_step=epoch)
+        print('Checkpoint saved at {%s}' % checkpoint_name)
+
+        num_workers = len(autodist._cluster.cluster_spec['worker'])
         if getattr(autodist._strategy_builder, '_sync', True):
             # Integration Value Test:
             # It requires np.random.seed to be 123 on chief, 456 on worker.
             # Variable b's gradients[1] == -4.17503 on chief, == -4.05530 on worker
-            num_workers = len(autodist._cluster.cluster_spec['worker'])
             # When SGD learning rate == 0.01 and b is initialied by zero,
             # the updated variable b value can be verified as below
             if num_workers == 1:
@@ -83,3 +92,20 @@ def main(autodist):
                 # Between-graph dense conditional accumulator average verification
                 assert np.allclose(b_val, 0.01 * (4.17503 + 4.05530) / 2)
                 # TODO: between graph sparse verification
+
+        # check the checkpoint existence
+        checkpoint = checkpoint_name + '-' + str(epoch)
+        assert(os.path.exists(checkpoint + '.meta')) # meta file
+        assert(os.path.exists(checkpoint + '.index'))  # meta file
+        assert(os.path.exists(checkpoint + '.data-00000-of-00001'))  # meta file
+        print('Checkpoint {} exists.'.format(checkpoint))
+
+        # Now check restoration and the correctness of the checkpoint
+        tf_saver = tf.compat.v1.train.Saver([W, b])
+        tf_sess = tf.compat.v1.Session()
+        tf_saver.restore(tf_sess, tf.train.latest_checkpoint(checkpoint_dir))
+        restore_W_val, restore_b_val = tf_sess.run([W, b])
+        print('original value {} vs. restored value {}'.format(W_val, restore_W_val))
+        print('original value {} vs. restored value {}'.format(b_val, restore_b_val))
+        assert(np.allclose(b_val, restore_b_val))
+        assert(np.allclose(W_val, restore_W_val))
