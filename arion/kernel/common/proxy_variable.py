@@ -73,7 +73,7 @@ class ProxyVariable:
                 initializer=self._initial_value,
                 trainable=False
             )
-        self._graph_item.info.update(variables=[proxy_var], replace=False)  # Should we update graph_item.info?
+        self._graph_item.info.update_variables([proxy_var], replace=False)  # Should we update graph_item.info?
         self._proxy_vars.append(proxy_var)
         self._proxy_var_init_ops.append(proxy_var.assign(get_read_var_tensor(self._this_op)))
         self._mirror_all_read_var_ops()

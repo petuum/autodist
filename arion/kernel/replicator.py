@@ -10,6 +10,7 @@ from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
 from autodist.graph_item import GraphItem
 from autodist.kernel.common.utils import replica_prefix
 from autodist.kernel.kernel import Kernel
+from autodist.checkpoint.saver import Saver
 from autodist.utils import logging
 
 
@@ -87,6 +88,15 @@ class Replicator(Kernel):
                         _ = WhileContext(context_def=ctx.to_proto(), grad_state=ctx._grad_state,
                                          import_scope=replica_prefix(i))
 
+            # update saver
+            master_replica = 0
+            if graph_item.info.savers:
+                item.info.update_savers(
+                    [Saver.from_proto(proto, import_scope=replica_prefix(master_replica)).to_proto()
+                        for proto in graph_item.info.savers],
+                    replace=False
+                )
+
             # update gradient info
             for i in range(self._num_local_replicas):
                 for g_name, t_name in graph_item.grad_target_name_pairs.items():
@@ -102,14 +112,14 @@ class Replicator(Kernel):
                         grads=[new_g_name],
                         targets=[new_t_name]
                     )
-                item.info.update(
-                    variables=[_from_proto_fn(proto, import_scope=replica_prefix(i)).to_proto()
-                               for proto in graph_item.info.variables],
+                item.info.update_variables(
+                    [_from_proto_fn(proto, import_scope=replica_prefix(i)).to_proto()
+                        for proto in graph_item.info.variables],
                     replace=False
                 )
-                item.info.update(
-                    table_initializers=[ops.prepend_name_scope(tb_init, replica_prefix(i))
-                                        for tb_init in graph_item.info.table_initializers],
+                item.info.update_table_initializers(
+                    [ops.prepend_name_scope(tb_init, replica_prefix(i))
+                        for tb_init in graph_item.info.table_initializers],
                     replace=False
                 )
         return item

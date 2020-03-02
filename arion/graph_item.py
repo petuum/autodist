@@ -7,6 +7,7 @@ from typing import Union, Callable
 
 from tensorflow.core.framework.graph_pb2 import GraphDef
 from tensorflow.core.framework.variable_pb2 import VariableDef
+from tensorflow.core.protobuf.saver_pb2 import SaverDef
 from tensorflow.python.framework import ops
 from tensorflow.python.framework.importer import import_graph_def
 from tensorflow.python.ops.resource_variable_ops import _from_proto_fn
@@ -39,7 +40,17 @@ def cached_property(fn, *args, **kwargs):
 
 
 # Not a stack structure, thus not supporting nested graph item contexts.
-_default_graph_item = None
+_default_graph_item: None = None
+
+
+def get_default_graph_item():
+    """
+    Get the current default graph_item under the graph_item scope.
+
+    Returns:
+        GraphItem
+    """
+    return _default_graph_item
 
 
 def wrap_optimizer_init(fn: Callable):
@@ -90,6 +101,7 @@ class Info:
         # v1 mode                   # v2 mode
         self.variables = []  # variable_captures
         self.table_initializers = []  # deprecating
+        self.savers = []  # for saver
 
     @property
     def initializers(self):
@@ -118,35 +130,58 @@ class Info:
             proto = var.to_proto()
         self.variables.append(proto)
 
-    def pop_variable(self, var_name: str):
-        """Pop out a variable by its name from the info tracker."""
+    def _add_savers(self, saver):
+        if isinstance(saver, SaverDef):
+            proto = saver
+        else:
+            proto = saver.to_proto()
+        self.savers.append(proto)
+
+    def pop_variable(self, var_name):
+        """Pop out a variable by its name from info tracker."""
         for i, v in enumerate(self.variables):
             if v.variable_name == var_name:
                 self.variables.pop(i)
                 break
 
-    def update(self, variables=None, table_initializers=None, replace=True, **kwargs):
+    def update_variables(self, variables, replace=True):
         """
-        Update info.
+        Update variables in GraphItem Info.
 
         Args:
             variables (Iterable[VariableType]): Iterable of variables to insert.
-            table_initializers (Iterable(Union[ops.Operation, str]): Initializers for lookup tables.
-            replace (bool): Whether or not to overwrite existing contents
-            **kwargs: Unused.
+            replace (bool): Whether or not to overwrite existing contents.
         """
-        if kwargs:
-            logging.warning('Unused kwargs in info update: {}'.format(kwargs))
-        if variables:
-            if replace:
-                self.variables = []
-            for v in variables:
-                self._add_variable(v)
-        if table_initializers:
-            if replace:
-                self.table_initializers = []
-            for op in table_initializers:
-                self.table_initializers.append(op.name if isinstance(op, ops.Operation) else op)
+        if replace:
+            self.variables = []
+        for v in variables:
+            self._add_variable(v)
+
+    def update_table_initializers(self, table_initializers, replace=True):
+        """
+        Update table initializers in GraphItem Info.
+
+        Args:
+            table_initializers (Iterable(Union[ops.Operation, str]): Initializers for lookup tables.
+            replace (bool): Whether or not to overwrite existing contents.
+        """
+        if replace:
+            self.table_initializers = []
+        for op in table_initializers:
+            self.table_initializers.append(op.name if isinstance(op, ops.Operation) else op)
+
+    def update_savers(self, savers, replace=True):
+        """
+        Update savers in GraphItem Info.
+
+        Args:
+            savers (Iterable[SaverType]): Iterable of saverdefs to insert.
+            replace: Whether or not to overwrite existing contents.
+        """
+        if replace:
+            self.savers = []
+        for s in savers:
+            self._add_savers(s)
 
     def copy(self):
         """Copy info."""
@@ -271,7 +306,7 @@ class GraphItem:
             var_scope = var_op.name
             update_op_scope = parse_name_scope(op.name)
             is_initialization = update_op_scope == var_scope
-            is_saving = update_op_scope.startswith('save')  # is this safe if AutoDist appends "save" in the future?
+            is_saving = update_op_scope.endswith('save')
 
             # TODO(future): support one variable -> multiple update ops (see AdamWeightDecay optimizer)
             if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
@@ -374,8 +409,5 @@ class GraphItem:
 
     def prepare(self):
         """Prepare for building strategy and/or transforming graph."""
-        self.info.update(
-            variables=self.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES),
-            table_initializers=self.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS),
-            replace=True
-        )
+        self.info.update_variables(self.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES), replace=True)
+        self.info.update_table_initializers(self.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS), replace=True)
