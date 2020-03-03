@@ -9,7 +9,7 @@ import paramiko
 import yaml
 
 from autodist.const import ENV
-from autodist.utils.network import is_loopback_address
+from autodist.utils.network import is_loopback_address, is_local_address
 from autodist.utils import logging
 
 
@@ -133,44 +133,43 @@ class ResourceSpec:
         num_nodes = len(resource_info.get('nodes', {}))
 
         for node in resource_info.pop('nodes', {}):
-            host_address = node['address']
-
-            if is_loopback_address(host_address) and num_nodes > 1:
-                raise ValueError("Can't (currently) use a loopback address when there are multiple nodes.")
-
-            if node.get('chief') or num_nodes == 1:
-                # 2 cases for marking this node as chief:
-                # 1) The node was marked as chief
-                # 2) If there is only one node, it is chief by default
-                logging.info("Chief: %s" % host_address)
-                self.__chief_address = host_address
-
-            host_cpu = DeviceSpec(host_address)
-            self._add_device(host_cpu)
-
-            # handle any other CPUs
-            for cpu_index in node.get('cpus', [])[1:]:
-                cpu = DeviceSpec(host_address, host_cpu, DeviceType.CPU, cpu_index)
-                self._add_device(cpu)
-            # handle GPUs
-            for gpu_index in node.get('gpus', []):
-                gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
-                self._add_device(gpu)
-
-            self.__ssh_group[host_address] = node.get('ssh_config')
-            if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
-                raise ValueError("Need to define SSH groups for all non-chief nodes.")
+            self._parse_node(node, num_nodes)
 
         # Make sure there is a chief set
         if not self.__chief_address:
             raise ValueError("Must specify one of the nodes to be chief.")
 
         # all other configs except nodes are (optional) ssh config
-        self.__ssh_config_map = SSHConfigMap(resource_info.pop('ssh', {}), self.__ssh_group)
+        if is_local_address(self.__chief_address):
+            self.__ssh_config_map = SSHConfigMap(resource_info.pop('ssh', {}), self.__ssh_group)
 
         # checks
         if self.__chief_address is None:
             raise ValueError('Must provide "chief: true" in one of the nodes in resource spec.')
+
+    def _parse_node(self, node, num_nodes):
+        host_address = node['address']
+        if is_loopback_address(host_address) and num_nodes > 1:
+            raise ValueError("Can't (currently) use a loopback address when there are multiple nodes.")
+        if node.get('chief') or num_nodes == 1:
+            # 2 cases for marking this node as chief:
+            # 1) The node was marked as chief
+            # 2) If there is only one node, it is chief by default
+            logging.info("Chief: %s" % host_address)
+            self.__chief_address = host_address
+        host_cpu = DeviceSpec(host_address)
+        self._add_device(host_cpu)
+        # handle any other CPUs
+        for cpu_index in node.get('cpus', [])[1:]:
+            cpu = DeviceSpec(host_address, host_cpu, DeviceType.CPU, cpu_index)
+            self._add_device(cpu)
+        # handle GPUs
+        for gpu_index in node.get('gpus', []):
+            gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
+            self._add_device(gpu)
+        self.__ssh_group[host_address] = node.get('ssh_config')
+        if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
+            raise ValueError("Need to define SSH groups for all non-chief nodes.")
 
 
 class DeviceSpec:

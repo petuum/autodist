@@ -6,7 +6,6 @@ import atexit
 
 from autodist.const import ENV, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
-from autodist.utils.network import is_local_address
 from autodist.utils import logging
 
 
@@ -51,7 +50,7 @@ class Coordinator:
 
         for replica_host in replica_hosts:
             # Run the process
-            if not is_local_address(replica_host) and not self.cluster.is_chief(replica_host):
+            if not self.cluster.is_chief(replica_host):
                 # Build the command
                 env = {
                     ENV.AUTODIST_WORKER.name: replica_host,
