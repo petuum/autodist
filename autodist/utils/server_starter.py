@@ -3,11 +3,24 @@
 import argparse
 import json
 import os
+import subprocess
 
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.training.server_lib import ClusterSpec, Server
 
 from autodist.const import DEFAULT_WORKING_DIR, DEFAULT_GROUP_LEADER
+
+
+def _clean_stale_server():
+    cmd = "ps aux | awk '\\''! /awk/ && ! /{}/ /{}/ {{print \\$2}}'\\'' | xargs kill -9".format(
+        os.getpid(),
+        os.path.splitext(os.path.basename(__file__))
+    )
+    # The above `cmd` is escaped for a string-within-a-string, so we have to nest `bash -c`
+    # There's probably a better way to do this
+    local_cmd = 'bash -c \'bash -c "{}"\''.format(cmd)
+    proc = subprocess.Popen(local_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    proc.wait()
 
 
 def start_server(cluster_spec, job_name: str, task_index: int):
@@ -19,7 +32,9 @@ def start_server(cluster_spec, job_name: str, task_index: int):
         job_name: TensorFlow job name
         task_index: TensorFlow task index
     """
-    # TODO(Peng): this should be less hard coded ad based on strategy
+    _clean_stale_server()
+
+    # TODO: The following config should be less hard coded ad based on strategy
     experimental = config_pb2.ConfigProto.Experimental(
         collective_nccl=True,
         collective_group_leader=DEFAULT_GROUP_LEADER)

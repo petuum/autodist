@@ -30,7 +30,6 @@ import paramiko
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, ENV
 from autodist.resource_spec import ResourceSpec
 from autodist.utils import logging
-from autodist.utils.network import is_local_address
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
 
@@ -99,6 +98,10 @@ class Cluster(metaclass=ABCMeta):
         """
         Get the local (ip) address.
 
+        If labelled as AUTODIST_WORKER by the environment variable,
+        the value of it is the address of the local node;
+        otherwise the local node is chief.
+
         Returns:
             str: Worker ip or chief address by default.
         """
@@ -145,15 +148,12 @@ class Cluster(metaclass=ABCMeta):
         module_name = server_starter.__name__
         module_file = server_starter.__file__
 
-        if self.is_chief():
-            self._clean_autodist_processes(module_name)
-
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
                 args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index]
 
-                if is_local_address(address) or self.is_chief(address):
+                if self.is_chief(address):
                     json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
 
                     cmd = envs + [sys.executable, '-m', module_name] + args
@@ -198,31 +198,6 @@ class Cluster(metaclass=ABCMeta):
             data=json.dumps(self.cluster_spec),
             hostname=hostname,
         )
-
-    def _clean_autodist_processes(self, process_keyword):
-        """
-        Kills any autodist processes on all non-chief nodes.
-
-        Args:
-            process_keyword (str): A keyword of the autodist process (usually the server starter file).
-        """
-        cmd = "ps aux | awk '\\''! /awk/ && /{}/ {{print \\$2}}'\\'' | xargs kill -9".format(process_keyword)
-        cmd_list = cmd.split(" ")
-        procs = []
-        for hostname in self._address_to_port.keys():
-            logging.debug("Cleaning autodist processes on %s" % hostname)
-            if self.is_chief(hostname):
-                # The above `cmd` is escaped for a string-within-a-string, so we have to nest `bash -c`
-                # There's probably a better way to do this
-                local_cmd = 'bash -c \'bash -c "{}"\''.format(cmd)
-                proc = subprocess.Popen(local_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            else:
-                proc = self.remote_exec(cmd_list, hostname)
-            procs.append(proc)
-
-        # We don't want this to interact with server-starting later
-        for proc in procs:
-            proc.wait()
 
     @abstractmethod
     def remote_exec(self, args, hostname):
@@ -331,8 +306,7 @@ class SSHCluster(Cluster):
 
         if not ENV.AUTODIST_DEBUG_REMOTE.val:
             # pylint: disable=subprocess-popen-preexec-fn
-            proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
             return proc
         return None
 
