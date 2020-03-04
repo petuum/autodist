@@ -23,9 +23,12 @@ class PartitionedPS(StrategyBuilder):
     spread across multiple servers using this StrategyBuilder.
     """
 
-    def __init__(self, local_proxy_variable=False, sync=True):
+    def __init__(self, local_proxy_variable=False, sync=True, staleness=0):
         self._local_proxy_variable = local_proxy_variable
         self._sync = sync
+        self._staleness = staleness
+        if self._staleness > 0:
+            assert self._sync, 'If staleness is positive, sync has to be set true.'
         self.loads = {}
 
     def build(self, graph_item, resource_spec):
@@ -75,6 +78,7 @@ class PartitionedPS(StrategyBuilder):
         node.PSSynchronizer.reduction_destinations.extend(min_ps)
         node.PSSynchronizer.local_replication = self._local_proxy_variable
         node.PSSynchronizer.sync = self._sync
+        node.PSSynchronizer.staleness = self._staleness
         return node
 
     @staticmethod

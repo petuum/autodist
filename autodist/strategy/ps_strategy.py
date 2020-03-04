@@ -13,9 +13,12 @@ class PS(StrategyBuilder):
     to one Parameter Server.
     """
 
-    def __init__(self, local_proxy_variable=False, sync=True):
+    def __init__(self, local_proxy_variable=False, sync=True, staleness=0):
         self._local_proxy_variable = local_proxy_variable
         self._sync = sync
+        self._staleness = staleness
+        if self._staleness > 0:
+            assert self._sync, 'If staleness is positive, sync has to be set true.'
 
     def build(self, graph_item, resource_spec):
         """Build PS strategy."""
@@ -29,13 +32,13 @@ class PS(StrategyBuilder):
 
         # Mark each variable to be synchronized with a Parameter Server
         node_config = [self._gen_ps_node_config(var.name, reduction_device_names, self._local_proxy_variable,
-                                                self._sync)
+                                                self._sync, self._staleness)
                        for var in variables]
         expr.node_config.extend(node_config)
         return expr
 
     @staticmethod
-    def _gen_ps_node_config(var_name, reduction_destinations, local_proxy_variable, sync):
+    def _gen_ps_node_config(var_name, reduction_destinations, local_proxy_variable, sync, staleness):
         """
         Creates a NodeConfig specifying synchronization with Parameter Servers.
 
@@ -51,4 +54,5 @@ class PS(StrategyBuilder):
         node.PSSynchronizer.reduction_destinations.extend(reduction_destinations)
         node.PSSynchronizer.local_replication = local_proxy_variable
         node.PSSynchronizer.sync = sync
+        node.PSSynchronizer.staleness = staleness
         return node

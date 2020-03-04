@@ -4,9 +4,9 @@ from typing import List
 
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec, dtypes, constant_op
-from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
-    control_flow_ops
 from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.ops import math_ops, data_flow_ops, gen_control_flow_ops, \
+    control_flow_ops, gen_math_ops, gen_array_ops
 
 from autodist.const import MAX_INT64, AUTODIST_PREFIX
 from autodist.kernel.common import utils, variable_utils
@@ -39,6 +39,7 @@ class PSSynchronizer(Synchronizer):
         self.target_device = config.reduction_destinations[0] if config.reduction_destinations else ""
         self._local_replication = config.local_replication
         self._sync = config.sync
+        self._staleness = config.staleness
 
         self._var_op_to_agg_grad = {}
         self._var_op_to_accum_apply_op = {}
@@ -246,7 +247,8 @@ class PSSynchronizer(Synchronizer):
             if proxy:
                 proxy.update_colocation_group(item.get_colocation_op)
             self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = \
-                self._get_accumulation_ops(item, gradient, target, self.num_workers)
+                self._get_accumulation_ops(item, gradient, target,
+                                           1 if self._staleness > 0 else self.num_workers)
             self.add_sync_op(item, update_op, proxy)
         return item
 
@@ -277,14 +279,17 @@ class PSSynchronizer(Synchronizer):
         cc = get_control_consumers(source_op)
 
         with ops.device(var_op.device), ops.name_scope(""):
-            queue_ops = self._get_queue_ops(var_update_op, source_op, self.is_chief, is_trainable)
+            if self._staleness == 0:
+                queue_ops = self._get_queue_ops(var_update_op, source_op, self.is_chief, is_trainable)
+            elif self._staleness > 0:
+                queue_ops = self._get_queue_ops_stale(var_update_op, source_op, self.is_chief, is_trainable)
+            else:
+                raise ValueError("staleness should be greater than or equal to 0.")
 
             # Only dense trainable variables are replicated locally
             if variable_replicator:
                 mirror_variable_update_ops = variable_replicator.get_all_update_ops(
-                    queue_ops,
-                    worker_device=this_worker_cpu
-                )
+                    queue_ops, worker_device=this_worker_cpu)
                 with ops.device(this_worker_cpu):
                     finish_op = control_flow_ops.group(*mirror_variable_update_ops)
             else:
@@ -307,6 +312,20 @@ class PSSynchronizer(Synchronizer):
                        source_op: ops.Operation,
                        is_chief: bool,
                        is_trainable: bool) -> List[ops.Operation]:
+        """
+        Get queue operations for synchronous parameter update.
+
+        Maintain a list of queues of size 1. The chief machine pushes a token to each queue at the beginning
+        of each update. The other workers then dequeue a token from their corresponding queue if their gradient
+        is sent to the accumulator. The enqueue and dequeue operations are grouped and have to be completed
+        before the model moves on to the next step, thus resulting in synchronous parameter update.
+
+        Args:
+            var_update_op: The op
+
+        Returns:
+            A list of queue operations.
+        """
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
 
         var_update_sync_queues = \
@@ -321,8 +340,7 @@ class PSSynchronizer(Synchronizer):
                 var_update_deps = [self._var_op_to_accum_apply_op[var_op], source_op]
             else:
                 var_update_deps = [var_update_op]
-            # Chief enqueues tokens to all other workers
-            # after executing variable update
+            # Chief enqueues tokens to all other workers after executing variable update
             token = constant_op.constant(False)
             with ops.control_dependencies(var_update_deps):
                 for i, q in enumerate(var_update_sync_queues):
@@ -338,6 +356,80 @@ class PSSynchronizer(Synchronizer):
             else:
                 dequeue = var_update_sync_queues[self.worker_id].dequeue()
             queue_ops.append(dequeue)
+
+        return queue_ops
+
+    # pylint: disable=too-many-branches
+    def _get_queue_ops_stale(self,
+                             var_update_op: ops.Operation,
+                             source_op: ops.Operation,
+                             is_chief: bool,
+                             is_trainable: bool) -> List[ops.Operation]:
+        """
+        Get queue operations for staleness synchronous parameter update.
+
+        Maintain a list of queues of size equal to <staleness>. At the beginning of each call of this function
+        (either by the chief worker or other workers), it checks whether each queue is not full. If yes, it pushes
+        a token to each queue. If not, it does nothing (a no_op).
+        Then, for the current worker that calls this function, it dequeues a token from its corresponding queue
+        (indexed by its worker id).
+        The potential enqueue operations and definite dequeue operation are grouped together, and have to be
+        finished before the model moves on to the next step.
+        As at each invocation of this function, a row of empty space in the list of queues will be filled. Thus
+        <staleness> number of consecutive dequeue operations can be done by a worker without blocking, achieving
+        stale synchronous parameter update with maximum <staleness> steps difference.
+
+        Args:
+            var_update_op: The op
+
+        Returns:
+            A list of queue operations.
+        """
+        var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
+
+        var_update_sync_queues = \
+            [data_flow_ops.FIFOQueue(self._staleness, [dtypes.bool], shapes=None,
+                                     name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i),
+                                     shared_name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i))
+             for i in range(self.num_workers)]
+
+        # Enqueue one token to every queue if all queues are not full.
+        def _enqueue_row_op():
+            enqueue_ops = []
+            for q in var_update_sync_queues:
+                enqueue_ops.append(q.enqueue(False))
+            enqueue_a_row_ops = control_flow_ops.group(*enqueue_ops)
+            return enqueue_a_row_ops
+
+        def _no_op():
+            return gen_control_flow_ops.no_op()
+
+        switch_cond = gen_array_ops.identity(True)
+        for q in var_update_sync_queues:
+            switch_cond = gen_math_ops.logical_and(switch_cond,
+                                                   gen_math_ops.less(q.size(),
+                                                                     gen_array_ops.identity(self._staleness)))
+
+        enqueue_a_row_ops = control_flow_ops.cond(switch_cond, _enqueue_row_op, _no_op)
+
+        queue_ops = [enqueue_a_row_ops]
+
+        if is_chief:
+            if is_trainable:
+                var_update_deps = [self._var_op_to_accum_apply_op[var_op], source_op]
+            else:
+                var_update_deps = [var_update_op]
+            with ops.control_dependencies(var_update_deps):
+                dequeue = var_update_sync_queues[self.worker_id].dequeue()
+        else:
+            # wait for execution of var_update_op
+            if is_trainable:
+                with ops.control_dependencies([self._var_op_to_accum_apply_op[var_op]]):
+                    dequeue = var_update_sync_queues[self.worker_id].dequeue()
+            else:
+                dequeue = var_update_sync_queues[self.worker_id].dequeue()
+        queue_ops.append(dequeue)
+
         return queue_ops
 
     def _get_aggregated_dense_grad(self, graph_item, grad_name, reduce_to_device):
@@ -386,13 +478,12 @@ class PSSynchronizer(Synchronizer):
                 shape=var_op.outputs[0].shape,
                 shared_name=grad_accum_op_name,
                 name=grad_accum_op_name)
-            accum_apply_ops = [grad_accum.apply_indexed_slices_grad(
-                indexed_slices_grads[i],
-                MAX_INT64,
-                name=ops.prepend_name_scope(
-                    values_op_name,
-                    u"%s-Accum-Apply" % replica_prefix(i)))
-                for i in range(self.num_replicas)]
+            accum_apply_ops = [grad_accum.apply_indexed_slices_grad(indexed_slices_grads[i],
+                                                                    MAX_INT64,
+                                                                    name=ops.prepend_name_scope(
+                                                                        values_op_name,
+                                                                        u"%s-Accum-Apply" % replica_prefix(i)))
+                               for i in range(self.num_replicas)]
             take_grad_op_name = ops.prepend_name_scope(values_op_name, u"%sTake-Grad" % AUTODIST_PREFIX)
             with ops.control_dependencies(accum_apply_ops):
                 take_grad = grad_accum.take_indexed_slices_grad(self.num_replicas, name=take_grad_op_name)
@@ -438,7 +529,7 @@ class PSSynchronizer(Synchronizer):
         return ProxyVariable(master_var, graph_item, proxy_var_device)
 
     @staticmethod
-    def _get_accumulation_ops(graph_item, gradient, target, num_workers):
+    def _get_accumulation_ops(graph_item, gradient, target, num_accum_required):
         def _get_accum_apply_and_agg_grad(var_op, grad, indices, dense_shape):
             if indices is None:
                 tensor = variable_utils.get_read_var_tensor(var_op)
@@ -451,7 +542,7 @@ class PSSynchronizer(Synchronizer):
                 accum_apply_op = grad_accum.apply_grad(
                     grad, local_step=MAX_INT64,
                     name=grad.op.name + '_accum_apply_grad')
-                agg_grad = grad_accum.take_grad(num_workers,
+                agg_grad = grad_accum.take_grad(num_accum_required,
                                                 name=var_op.name + '_take_grad')
                 update_consumers(grad_consumers, grad, agg_grad)
                 update_control_consumers(get_control_consumers(grad.op),
@@ -470,7 +561,7 @@ class PSSynchronizer(Synchronizer):
                     grad_indexed_slices, local_step=MAX_INT64,
                     name=grad.op.name + '_accum_apply_grad')
                 agg_grad = grad_accum.take_indexed_slices_grad(
-                    num_workers, name=var_op.name + '_take_grad')
+                    num_accum_required, name=var_op.name + '_take_grad')
                 agg_indices = agg_grad.indices
                 if indices.dtype != agg_grad.indices.dtype:
                     agg_indices = math_ops.cast(agg_grad.indices, indices.dtype)

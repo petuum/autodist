@@ -74,6 +74,8 @@ def main(autodist):
 
         # Try to save the two variables
         checkpoint_dir = '/tmp/ckpt/'
+        if not os.path.exists(checkpoint_dir):
+            os.mkdir(checkpoint_dir)
         checkpoint_suffix = 'c0'
         checkpoint_name = checkpoint_dir + checkpoint_suffix
         saver.save(session, checkpoint_name, global_step=epoch)

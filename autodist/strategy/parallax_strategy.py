@@ -16,8 +16,8 @@ class Parallax(PSLoadBalancing, AllReduce):
     has reportedly better performance on dense gradient updates.
     """
 
-    def __init__(self, chunk_size=128, local_proxy_variable=False, sync=True):
-        PSLoadBalancing.__init__(self, local_proxy_variable, sync)
+    def __init__(self, chunk_size=128, local_proxy_variable=False, sync=True, staleness=0):
+        PSLoadBalancing.__init__(self, local_proxy_variable, sync, staleness)
         AllReduce.__init__(self, chunk_size)
 
     # pylint: disable=attribute-defined-outside-init
@@ -43,8 +43,9 @@ class Parallax(PSLoadBalancing, AllReduce):
                 # and usually each device only requires a small part of the overall variable.
                 config = self._gen_ps_node_config(
                     var,
-                    False,
-                    self._sync
+                    False,  # For Parallax Strategy, all PS vars are sparse which does not need proxy.
+                    self._sync,
+                    self._staleness
                 )
             node_config.append(config)
         expr.node_config.extend(node_config)

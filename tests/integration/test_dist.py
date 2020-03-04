@@ -10,7 +10,8 @@ cases = [
     "c1",  # Keras basics
     "c2",  # Sparse basics
     "c3",  # Numpy basics
-    "c4"   # Control flow while_loop
+    "c4",  # Control flow while_loop
+    "c9",  # Staleness
 ]
 
 resource_specs = [
@@ -27,6 +28,9 @@ def test_dist():
             continue
         # skip while_loop case for partitionPS (buggy)
         if s == 'PartitionedPS' and c == 'c4':
+            continue
+        # only run c9 for staleness
+        if (c == "c9" and 'stale' not in s) or (c != "c9" and 'stale' in s):
             continue
         cmd = ("python /home/autodist/autodist/tests/integration/single_run.py "
                "--case={} --strategy={} --resource={}").format(c, s, r)
