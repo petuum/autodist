@@ -100,10 +100,13 @@ class GraphTransformer:
         local_worker_device = '/job:worker/task:{}'.format(local_worker_id)
 
         for synchronizer in self._synchronizers.values():
-            synchronizer.assign_cluster_information(self._num_workers, self._num_local_replicas,
-                                                    local_worker_device, local_worker_id,
-                                                    sorted({d.to_string() for d in replica_devices}),
-                                                    is_chief=self._cluster.is_chief())
+            synchronizer.assign_cluster_information(
+                num_workers=self._num_workers,
+                num_replicas=self._num_local_replicas,
+                worker_device=local_worker_device,
+                worker_id=local_worker_id,
+                canonical_replica_devices=sorted({d.to_string() for d in replica_devices}),
+                is_chief=self._cluster.is_chief())
 
     @property
     def num_local_replicas(self):

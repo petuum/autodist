@@ -10,10 +10,12 @@ from autodist.strategy.ps_strategy import PS
 
 STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'PS': PS(sync=True),
+    'PS_stale_3': PS(sync=True, staleness=3),
     'PartitionedPS': PartitionedPS(),
+    'PartitionedPS_stale_3': PartitionedPS(staleness=3),
     'AllReduce': AllReduce(),
     'Parallax': Parallax(),
-    'PSLoadBalancingProxy': PSLoadBalancing(local_proxy_variable=True),
+    'PSLoadBalancingProxy_stale_3': PSLoadBalancing(local_proxy_variable=True, staleness=3),
     'ParallaxProxy': Parallax(local_proxy_variable=True)
 }
 

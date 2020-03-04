@@ -16,9 +16,12 @@ class PSLoadBalancing(StrategyBuilder):
     Parameter Server.
     """
 
-    def __init__(self, local_proxy_variable=False, sync=True):
+    def __init__(self, local_proxy_variable=False, sync=True, staleness=0):
         self._local_proxy_variable = local_proxy_variable
         self._sync = sync
+        self._staleness = staleness
+        if self._staleness > 0:
+            assert self._sync, 'If staleness is positive, sync has to be set true.'
         self.loads = {}
         super().__init__()
 
@@ -34,12 +37,13 @@ class PSLoadBalancing(StrategyBuilder):
         self.loads = {ps: 0.0 for ps in reduction_device_names}
 
         # Mark each variable to be synchronized with a Parameter Server
-        node_config = [self._gen_ps_node_config(var, self._local_proxy_variable, self._sync) for var in variables]
+        node_config = [self._gen_ps_node_config(var, self._local_proxy_variable, self._sync, self._staleness)
+                       for var in variables]
         expr.node_config.extend(node_config)
 
         return expr
 
-    def _gen_ps_node_config(self, var, local_proxy_variable, sync):
+    def _gen_ps_node_config(self, var, local_proxy_variable, sync, staleness):
         """
         Creates a NodeConfig specifying synchronization with Parameter Servers.
 
@@ -57,6 +61,7 @@ class PSLoadBalancing(StrategyBuilder):
         node.PSSynchronizer.reduction_destinations.extend([min_ps])
         node.PSSynchronizer.local_replication = local_proxy_variable
         node.PSSynchronizer.sync = sync
+        node.PSSynchronizer.staleness = staleness
         return node
 
 
