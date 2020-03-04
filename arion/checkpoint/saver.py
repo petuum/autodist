@@ -67,7 +67,10 @@ class Saver(tf_saver.Saver):
 
         # Note: tensorflow does not add user-declared saver to collections, so have to track it in info.
         item = get_default_graph_item()
-        item.info.update_savers([self.to_proto()], replace=False)
+        # item.info.update_savers([self.to_proto()], replace=False)
+        new_saver_def = saver_pb2.SaverDef()
+        new_saver_def.CopyFrom(self.to_proto())
+        item.info.update_savers([new_saver_def], replace=False)
 
     def save(self,
              sess,
