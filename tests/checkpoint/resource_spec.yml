@@ -1,0 +1,21 @@
+nodes:
+  # single-node experiment
+  - address: localhost
+    gpus: [0,1]
+    chief: true
+
+   # multi-nodes experiment
+#  - address: 10.1.103.161
+#    gpus: [0,1,2,3]
+#    chief: true
+#    ssh_config: conf
+#  - address: 10.1.102.38
+#    gpus: [0,1,2,3]
+#    ssh_config: conf
+#ssh:
+#  conf:
+#    username: 'ubuntu'
+#    key_file: '/home/ubuntu/.ssh/autodist.pem'
+#    python_venv: 'source /home/ubuntu/venvs/autodist/bin/activate'
+#    shared_envs:
+#      LD_LIBRARY_PATH: '/home/ubuntu/data'

@@ -19,7 +19,3 @@ RUN pip3 install kazoo==2.6.1
 
 # TODO: decide the stable autodist version later
 RUN pip3 install --index-url http://pypi.int.petuum.com:8080/simple --trusted-host pypi.int.petuum.com autodist==0.3.1.dev6
-
-# TODO: remove this once the ssh automation is done on PSI side
-RUN ssh-keygen -t rsa -q -f "$HOME/.ssh/id_rsa" -N ""
-RUN cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys
