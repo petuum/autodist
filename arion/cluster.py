@@ -299,7 +299,7 @@ class SSHCluster(Cluster):
             cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
         full_cmd = ' '.join(cmd_list + args)
 
-        remote_cmd = 'ssh -i {} -o StrictHostKeyChecking=no -tt -p {} {}@{} \'bash -c "{}"\'' \
+        remote_cmd = 'ssh -i {} -o StrictHostKeyChecking=no -p {} {}@{} \'bash -c "{}"\'' \
             .format(ssh_config.key_file, ssh_config.port, ssh_config.username, hostname, full_cmd)
 
         logging.debug('$ %s' % remote_cmd)
