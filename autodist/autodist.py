@@ -41,7 +41,8 @@ class _AutoDistInterface:
         self._original_graph_item = None
         self._transformed_graph_item = None
         self._remapper = None
-        self._built = None
+        self._built = None  # Ref to the built GraphDef
+        self._built_checked = False  # Check the built only at the first run
 
         self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
         self._coordinator: Coordinator
@@ -108,6 +109,7 @@ class _GraphModeInterface(_AutoDistInterface):
 
     def _build(self):
         strategy = self._build_or_load_strategy()
+        self._setup(strategy)  # Put it before transforming to allow multiple works to transform concurrently
         compiled_strategy = self._compile_strategy(strategy)
         graph_transformer = GraphTransformer(
             compiled_strategy=compiled_strategy,
@@ -117,7 +119,6 @@ class _GraphModeInterface(_AutoDistInterface):
         self._transformed_graph_item = graph_transformer.transform()
         self._remapper = Remapper(graph_transformer, self._transformed_graph_item)
         self._built = self._original_graph_item.graph.as_graph_def()
-        self._setup(strategy)
 
     def is_built(self):
         """
@@ -126,10 +127,11 @@ class _GraphModeInterface(_AutoDistInterface):
         Returns:
             bool
         """
-        if self._built:
+        if self._built and not self._built_checked:
             if self._original_graph_item.graph.as_graph_def() != self._built:
                 logging.warning('Graph is modified after distributed session is created.')
                 # raise RuntimeWarning('Graph is modified after distributed session is created.')
+            self._built_checked = True
             return True
         return False
 
