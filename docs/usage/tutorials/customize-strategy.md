@@ -34,10 +34,10 @@ node_config {
 graph_config {
   replicas: 
     [
-        "/job:worker/task:1/device:GPU:0",
-        "/job:worker/task:1/device:GPU:1",
-        "/job:worker/task:0/device:GPU:0",
-        "/job:worker/task:0/device:GPU:1"
+        "10.21.1.24:GPU:0",
+        "10.21.1.24:GPU:1",
+        "10.21.1.25:GPU:0",
+        "10.21.1.25:GPU:1"
     ]
 }
 ```
@@ -58,17 +58,30 @@ which takes a <code>[GraphItem](../../api/autodist.graph_item)</code> a
 def build(self, graph_item: GraphItem, resource_spec: ResourceSpec) -> Strategy:
 ```
 
+* Create a strategy representation wrapper object.
 ```python
-# from autodist.strategy.base import Strategy
+from autodist.strategy.base import Strategy
 strategy = Strategy()
+```
+* Set configurations for the whole graph. For example you can utilize the `resource_spec` properties to list 
+all GPU devices for your data parallelism.
+```python
 strategy.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
-
+```
+* Before configuring nodes, for example, you can utilize the `graph_item` methods to list 
+all variables that you want to configure; while utilize the `resource_spec` properties to
+prepare for where to put the variable states.
+```python
 variables = graph_item.get_trainable_variables()
 reduction_devices = [k for k, _ in resource_spec.cpu_devices][0:1]
-
+```
+* Set configurations for variable nodes. Besides the below example,
+there are various choices of configurations listed here 
+<code>[strategy_pb2.Strategy.Node](../proto_docgen.html#autodist.proto.Strategy.Node)</code> section.  
+```python
+from autodist.proto import strategy_pb2
 node_config = []
 for var in variables:
-    # from autodist.proto import strategy_pb2
     node = strategy_pb2.Strategy.Node()
     node.var_name = var.name
     node.PSSynchronizer.reduction_destinations.extend(reduction_devices)
@@ -79,3 +92,8 @@ for var in variables:
 
 strategy.node_config.extend(node_config)
 ```
+
+Congratulations! You have successfully created your first strategy builder. AutoDist is flexible for developers
+to create different types of strategies based on the configuration spaces, and also possible for auto-learning a strategy.
+For more developments on strategies, you could refer to other [built-in strategy builders](../../api/autodist.strategy)
+or our development reference to invent your own [kernels](../../api/autodist.kernel).
