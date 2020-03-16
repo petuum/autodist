@@ -30,6 +30,7 @@ lint:
     - master
     - /^release-.+$/
     - tags
+    - /^.*doc.*$/
   tags:
     - docker
   script:
@@ -40,6 +41,8 @@ build_wheel:
   stage: build
   tags:
     - docker
+  except:
+    - /^.*doc.*$/
   image: python:3.6-slim
   before_script:
     - apt-get update
@@ -63,6 +66,7 @@ build_wheel:
   except:
     # - master # For dev coverage report
     - /^release-.+$/
+    - /^.*doc.*$/
     - tags
     - /^.*skip.*$/
   before_script:
@@ -136,6 +140,7 @@ release_docs:
     - master
     - /^release-.+$/
     - tags
+    - /^.*doc.*$/
   stage: release
   image: '${TOOLCHAIN_IMAGE}'
   tags:
@@ -143,10 +148,17 @@ release_docs:
     - nfs
   script:
     - apt-get update
-    - apt-get install -y git make rsync
-    - pip install dist/autodist*.whl
+    - apt-get install -y git wget unzip golang-go make rsync
+    - pip install wheel
+    - wget https://github.com/protocolbuffers/protobuf/releases/download/v3.11.0/protoc-3.11.0-linux-x86_64.zip
+    - unzip protoc-3.11.0-linux-x86_64.zip
+    - export PROTOC=$(pwd)/bin/protoc
+    - go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
+    - export PROTOC_PLUGINS=/root/go/bin/protoc-gen-doc
     - pip install -r docs/requirements-docgen.txt
+    - HOME=$(pwd) python setup.py build
     - cd docs
+    - ln -s ../README.md symlink_README.md
     - make clean
     - make apidoc
     - make html
@@ -156,7 +168,7 @@ release_docs:
     name: "docs"
     paths:
       - docs/_build/html
-    expire_in: 3 days
+    expire_in: 1 days
 
 release_autodist_wheel:
   only:

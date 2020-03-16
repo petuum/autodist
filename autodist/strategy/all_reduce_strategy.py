@@ -9,7 +9,7 @@ class AllReduce(StrategyBuilder):
     AllReduce StrategyBuilder.
 
     This StrategyBuilder generates a strategy that
-    synchronizes every variable using AllReduce.
+    synchronizes every dense variable using AllReduce while every sparse var using .
     """
 
     def __init__(self, chunk_size=128):

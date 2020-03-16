@@ -1,4 +1,4 @@
-# AutoDist in Docker
+# Train with Docker 
 
 To facilitate the installation process on GPU machines, the AutoDist team has published the reference Dockerfile so you can get started with AutoDist in minutes.
 
@@ -25,7 +25,7 @@ Install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) to run the buil
 docker run --gpus all -it -v <WORK_DIR>:/mnt autodist:latest
 ```
 
-Inside the docker environment, you will be able to run the examples using the machine's GPUs. Remember to follow the [get-started](get-started.md) tutorial to
+Inside the docker environment, you will be able to run the examples using the machine's GPUs. Remember to follow the "[Getting Started](getting-started.md)" tutorial to
 properly set up your `<WORK_DIR>/resource_spec.yml`
 
 ```bash
@@ -74,7 +74,7 @@ sudo rsync -av --rsync-path "sudo rsync" <SHARE_DIR>/.ssh/ user@remote:<SHARE_DI
 
 ## Running on multiple machines
 
-Once you have set up the passwordless SSH, you need to configure the `<WORK_DIR>/resource_spec.yml` using the [get-started](get-started.md) and [multi-node](multi-node.md) with all worker machine's port set to the number `<PORT_NUM>`.
+Once you have set up the passwordless SSH, you need to configure the `<WORK_DIR>/resource_spec.yml` using the "[Getting Started](getting-started.md)" and "[Train on Multiple Nodes](multi-node.md)" with all worker machine's port set to the number `<PORT_NUM>`.
 
 This is an example of `resource_spec.yml` file for multiple machine setup with `12345` as the `<PORT_NUM>`
 

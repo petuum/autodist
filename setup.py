@@ -20,8 +20,14 @@ def generate_proto(source):
     output = source.replace(".proto", "_pb2.py")
     print("Generating %s..." % output)
 
-    protoc_command = [protoc, "-I.", "--python_out=.", source]
+    protoc_command = [protoc]
+    if 'PROTOC_PLUGINS' in os.environ and os.path.exists(os.environ['PROTOC_PLUGINS']):
+        protoc_command += ['--plugin='+os.environ['PROTOC_PLUGINS'],
+                           '--doc_out=docs/usage',
+                           '--doc_opt=docs/templates/proto.tmpl,proto_docgen.md']
+    protoc_command += ["-I.", "--python_out=.", source]
     protoc_command = ' '.join(protoc_command)
+    print(protoc_command)
     if subprocess.call(protoc_command, shell=True) != 0:
         exit(-1)
 
@@ -43,7 +49,8 @@ class clean(_clean):
             for filename in filenames:
                 filepath = os.path.join(dirpath, filename)
                 if filepath.endswith("_pb2.py") or filepath.endswith(".pyc") or \
-                        filepath.endswith(".so") or filepath.endswith(".o"):
+                        filepath.endswith(".so") or filepath.endswith(".o") or \
+                        filepath.endswith("proto_docgen.md"):
                     os.remove(filepath)
         # _clean is an old-style class, so super() doesn't work.
         _clean.run(self)

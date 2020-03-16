@@ -21,21 +21,21 @@ message PSSynchronizer {
 message AllReduceSynchronizer {
     /** Which communication method to use */
     enum Spec {
-        AUTO = 0;
-        NCCL = 1;
-        RING = 2;
+        AUTO = 0;  // Runtime's automatic choices
+        NCCL = 1;  // Use ncclAllReduce for all-reduce, and ring algorithms for all-gather
+        RING = 2;  // TensorFlow's ring algorithms for all-reduce and all-gather
     }
 
-    Spec spec = 1;
+    Spec spec = 1;  // Specification for collective communication
 
     /** Which gradient compression method to use */
     enum Compressor {
-        NoneCompressor = 0;
-        HorovodCompressor = 1;
-        HorovodCompressorEF = 2;
-        PowerSGDCompressor = 3;
+        NoneCompressor = 0;  // No compression
+        HorovodCompressor = 1;  //  Horovod's Compression
+        HorovodCompressorEF = 2;  // Horovod's Compression but with Error Feedback.
+        PowerSGDCompressor = 3;  // PowerSGD compression algorithm (arxiv.org/abs/1905.13727)
     }
 
-    Compressor compressor = 2;
+    Compressor compressor = 2;  // One of the compressors to choose
     int32 chunk_size = 3;  // Size threshold for batching all-reduce communications
 }
