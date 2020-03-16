@@ -23,6 +23,7 @@ and minimal code change.
    usage/tutorials/strategy-builders.md
    usage/tutorials/ux.md
    usage/tutorials/save-restore.md
+   usage/tutorials/docker.md
 
 
 .. toctree::
