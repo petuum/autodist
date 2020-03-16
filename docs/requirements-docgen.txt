@@ -2,3 +2,4 @@ sphinx
 recommonmark
 sphinx-git
 sphinx-rtd-theme
+dhubbard-sphinx-markdown-tables

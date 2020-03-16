@@ -43,8 +43,8 @@ class GraphTransformer:
         logging.info('Transforming the original graph to a distributed graph...')
         with context.graph_mode():
             graph_item = self.graph_item
-            graph_item.prepare()
             # Ensure the transformation happens under graph mode, no matter the outer mode is under eager or graph.
+            graph_item.prepare()
 
             visualization_util.log_graph(graph=graph_item.graph, name='original')
 

@@ -1,33 +1,42 @@
-# AutoDist: Automated Distributed Deep Learning
+# AutoDist:  Easy and Composable Distributed Deep Learning
 
 [![pipeline status](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/pipeline.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
 [![coverage report](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/coverage.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
 
 [Documentation](http://10.20.41.55:8080) |
 [Examples](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tree/master/examples) |
-[Releases](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tags)
+[Releases](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/releases)
 
-**AutoDist** is Petuum's new scalable ML engine. 
-AutoDist provides a user-friendly interface to distribute
-TensorFlow model training across multiple processing units
-(for example, distributed GPU clusters) with high scalability
-and minimal code change.
+**AutoDist** is a distributed deep-learning training engine. 
+AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models 
+across many GPUs with scalability and minimal code change.
 
+AutoDist has been tested with TensorFlow versions 1.15 through 2.1. 
 
-AutoDist currently supports [TensorFlow 2.0](https://www.tensorflow.org/beta/).
+## Introduction
+Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
+AutoDist achieves this goal by:
+- **Compilation**: AutoDist expresses the parallelization of DL models as a standardized compilation process, optimizing multiple dimensions of ML 
+parallelization ranging from synchronization, model partitioning, placement to consistency. 
+- **Composable architecture**: AutoDist designs a flexible backend that encapsulates various different ML parallelization techniques, and 
+allows for composing distribution strategies that interpolates different distributed ML system architectures.     
+- **Model and resource awareness**: Based on the compilation process, AutoDist analyzes the model and generates more optimal distribution strategies that 
+adapt to both the ML properties and the cluster specification.
+
+Besides all these advanced features, AutoDist is cautiously designed to isolate the sophistication of distributed systems 
+from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
+for all-level users.
 
 
 ## Installation
 
-#### Install from released binaries 
+#### Install From the Released Wheel 
 
-Download the latest autodist wheel file from [Petuum PyPI](http://pypi.int.petuum.com:8080/#/package/autodist).
 ```bash
-pip install <path/to/wheel.whl>
+pip install --extra-index-url http://pypi.int.petuum.com:8080/simple --trusted-host pypi.int.petuum.com autodist
 ```
 
-
-#### Install from latest source and develop locally
+#### Install From Latest Source
 
 Before running AutoDist, we require a small compilation of our Protocol Buffers. 
 To do so, you must first have [protoc installed](https://google.github.io/proto-lens/installing-protoc.html).
@@ -45,16 +54,26 @@ To clean up any compiled files, run:
 python setup.py clean --all
 ```
 
+## Using AutoDist
 
-## Issue Report
+It should be incredibly easy to modify existing TensorFlow code to use AutoDist.
 
-AutoDist is still in the early stages of developement. We'd really appreciate any feedback! 
-If you find any issues, please report them on JIRA under the `Symphony` project with `component=AutoDist`.   
+```python
+import tensorflow as tf
+from autodist import AutoDist  # Import AutoDist
 
+autodist = AutoDist(resource_spec_file="resource_spec.yml")  # Config AutoDist
 
-## Reference & Acknowledgement
+with tf.Graph().as_default(), autodist.scope():  # Build under AutoDist
+    # ... BUILD YOUR_MODEL ...
+    sess = autodist.create_distributed_session()  # Run with AutoDist
+    sess.run(YOUR_MODEL.fetches)
+```
+
+## References & Acknowledgements
 
 We learned and borrowed insights from a few open source projects:
 
 - [tf.distribute.strategy](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute)
+- [Horovod](https://github.com/horovod/horovod)
 - [Parallax](https://github.com/snuspl/parallax)

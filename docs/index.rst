@@ -7,33 +7,38 @@ Welcome to AutoDist!
 ==================================
 
 
-AutoDist is a scalable ML engine.
-AutoDist provides a user-friendly interface to distribute
-TensorFlow model training across multiple processing units
-(for example, distributed GPU clusters) with high scalability
-and minimal code change.
+AutoDist is a distributed deep-learning training engine.
+AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models
+across many GPUs with scalability and minimal code change.
 
+.. toctree::
+   :titlesonly:
+
+   Overview<symlink_README.md>
 
 .. toctree::
    :titlesonly:
    :caption: Tutorials
 
-   usage/tutorials/get-started.md
+   usage/tutorials/getting-started.md
    usage/tutorials/multi-node.md
-   usage/tutorials/strategy-builders.md
-   usage/tutorials/ux.md
    usage/tutorials/save-restore.md
    usage/tutorials/docker.md
+   usage/tutorials/choose-strategy.md
+   usage/tutorials/customize-strategy.md
+   usage/faq.md
 
 
 .. toctree::
    :titlesonly:
-   :caption: Dev Reference
+   :caption: Developer Reference
    :maxdepth: 1
 
-   Developer API Documentation<api/autodist.rst>
-   usage/symphony-integration.md
+   design/rationale.md
    design/architecture.rst
+   usage/proto_docgen.md
+   Developer API References<api/autodist.rst>
+   usage/orchestra-integration.md
 
 Useful Links
 ------------
@@ -45,9 +50,3 @@ Useful Links
 .. _`Source Code`: https://gitlab.int.petuum.com/internal/scalable-ml/autodist
 .. _`Development Notes on Confluence`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/166363204/AutoDist%3A+Goal+and+a+Proposal+of+Architecture?atlOrigin=eyJpIjoiOWU1Y2Q4YzNmMDg2NDkyZTk0Njg1ZTYwNmM3YWI1MDciLCJwIjoiYyJ9
 .. _`Performance Benchmarks`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/253100101/AutoDist+Performance
-
-
-Recent Changes
---------------
-.. git_changelog::
-   :revisions: 3

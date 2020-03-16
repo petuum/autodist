@@ -1,9 +1,10 @@
 
-# Get Started
+# Getting Started
 
 Thanks for choosing to use AutoDist!
 
-Before reading the following tutorial, it is highly recommended to get familiar with the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) first, and especially understand the difference between eager and graph mode. If you can run the Quickstart properly, you can use the same environment to follow this tutorial.
+Before reading the following tutorial, it is highly recommended to get familiar with the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) first, 
+and especially understand the difference between eager and graph mode. If you can run the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced) properly, you can use the same environment to follow this tutorial.
 
 AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`. Install the downloaded wheel file by
 
@@ -11,11 +12,31 @@ AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`. Instal
 pip install autodist*.whl
 ``` 
 
-The following model is based on the Quickstart. Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs, we could follow these next 2 steps:
+The following model is based on the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced). Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs with AutoDist, we could follow these next 3 steps:
 
-### Step 1: Prepare Resource Specification File
+### Step 1: Ensure Model Built under Graph Mode
 
-AutoDist needs to know what devices are available in order to distribute the computational graph on them. Let's create a file called `resource_spec.yml`:
+AutoDist currently is only expected to work with TensorFlow graph mode, instead of eager.
+It is natural for TensorFlow 1.x; while with TensorFlow 2.x, 
+one needs to put their code under `tf.Graph().as_default()` to ensure the [graph mode](https://www.tensorflow.org/api_docs/python/tf/Graph).
+For example,
+
+```python
+g = tf.Graph()
+with g.as_default():
+  # Define operations and tensors in `g`.
+  c = tf.constant(30.0)
+  assert c.graph is g
+```
+
+Before using AutoDist, the model built without AutoDist should be able to train with graph mode successfully.
+Then one can move to the following steps in the same environment. 
+
+### Step 2: Prepare Resource Specification File
+
+AutoDist needs to know what devices are available in order to distribute the computational graph on them. 
+Currently the supported devices can be `cpus` or `gpus`.
+Let's create a file called `resource_spec.yml`:
 
 ```yaml
 nodes:
@@ -23,13 +44,13 @@ nodes:
     gpus: [0,1]  # List the GPU (CUDA_DEVICE) ids
 ```
 
-For other resource cases (e.g., multiple nodes), please refer to the more advanced tutorials.
+For other resource cases (e.g., multiple nodes), please refer to the [next tutorial](multi-node.md).
 
-### Step 2: Add AutoDist APIs
+### Step 3: Add AutoDist APIs
 
 Given TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, 
 we can easily modify it to train in a distributed fashion. 
-Based on the  <code>[AutoDist](../../api/autodist.autodist)</code> interfaces, 
+Based on the <code>[AutoDist](../../api/autodist.autodist)</code> interfaces, 
 all we have to do is make the following 3 changes (marked by inline comments):
 
 ```python
@@ -100,7 +121,7 @@ with tf.Graph().as_default(), autodist.scope():
     #####################################################################
     # Change 3: Create distributed session.
     #   Instead of using the original TensorFlow session for graph execution,
-    #   Let's use AutoDist's distributed session, in which a computational
+    #   let's use AutoDist's distributed session, in which a computational
     #   graph for distributed training is constructed.
     #
     # [original line]

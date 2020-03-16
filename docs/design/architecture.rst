@@ -1,7 +1,7 @@
-AutoDist Architecture
-==================
+Architecture
+=============
 
-We recommend that you read AutoDist's Rationale before reading this doc.
+We recommend that you read AutoDist's :doc:`rationale` before reading this doc.
 This document broadly describes the architecture of AutoDist and also goes into
 some details about the implementation of various features.
 
@@ -24,13 +24,17 @@ General Workflow
   :scale: 40
   :alt: Architecture Diagram
 
-The general workflow of AutoDist is described in the image. Users provide a TensorFlow Graph and a ResourceSpec.
-From this, a :code:`StrategyBuilder` analyzes both the Graph and the ResourceSpec and generates a :code:`Strategy`,
+The general workflow of AutoDist is described in the image.
+Users provide a `TensorFlow Graph <https://www.tensorflow.org/api_docs/python/tf/Graph>`_ (:code:`tf.Graph`)
+and a :doc:`resource specification<../../usage/tutorials/multi-node>` (:code:`ResourceSpec`).
+From this, a :code:`StrategyBuilder` analyzes both the :code:`tf.Graph` and the :code:`ResourceSpec` and generates a :code:`Strategy`,
 a Protobuf representation of how to distribute the graph.
 
 This :code:`Strategy` is then passed to the :code:`GraphTransformer`, the "backend" of AutoDist that is responsible
 for distributing the user's graph according to the given strategy. This :code:`GraphTransformer` will alter the
-original :code:`tf.Graph` on a per-variable basis, adding the necessary ops as defined in the :code:`Strategy`.
+original :code:`tf.Graph` on a per-variable basis, adding the necessary TensorFlow
+`operations <https://www.tensorflow.org/api_docs/python/tf/Operation>`_ (ops)
+as defined in the :code:`Strategy`.
 
 After the transformed graph has been built, it is sent back to TensorFlow for execution.
 
@@ -51,14 +55,21 @@ StrategyBuilders
 
 Each :code:`StrategyBuilder` describes a method for synchronizing each trainable
 variable in the graph. There are a few different :code:`StrategyBuilders`, with each doing different things
-(and feel free to add more!). For example, there is a ParameterServer StrategyBuilder which will have
+(and feel free to add more!). For example, there is a ParameterServer StrategyBuilder (TODO: LINK) which will have
 the :code:`GraphTransformer` synchronize each variable using a Parameter Server architecture. Alternatively, there
-is an AllReduce StrategyBuilder which will mark every variable be synchronized with AllReduce.
+is an AllReduce StrategyBuilder (TODO: LINK) which will mark every variable be synchronized with AllReduce.
 
 Essentially, Strategy Builders are just choosing a sample from the strategy space defined by the :code:`Strategy`
 protobuf. Theoretically, every possible strategy representable in a :code:`Strategy` object should be able to be
 distributed, with just a few limitations: we currently cannot partition variables that are part of a control flow,
 and all-reduce does not work if there is only one machine with one GPU.
+
+Currently, we support the following StrategyBuilders (TODO ADD LINKS AND DESCRIPTIONS):
+
+- AllReduce (w/ Gradient Compression)
+- Parameter Server
+- Parameter Server with Load Balancing
+- Partitioned Parameter Server with Load Balancing (w/ Staleness)
 
 GraphTransformer
 ----------------
@@ -74,6 +85,8 @@ partitions. The :code:`Replicator` does in-graph replication of the graph, dupli
 number of devices in that worker (e.g., a worker with 2 GPUs will have two identical subgraphs,
 :code:`AutoDist-Replica-1/...` and :code:`AutoDist-Replica-2/...`). Lastly, the synchronizers handle adding the ops for
 both in-graph and between-graph synchronization, again, according to the strategy.
+
+(TODO ADD INFO ABOUT GRADIENT COMPRESSION FOR ALLREDUCE AND STALENESS FOR PS WHEN TALKING ABOUT SYNCHRONIZERS)
 
 Networking
 ----------

@@ -90,6 +90,7 @@ tags
 **/logs*
 docs/_build/
 docs/api/
+docs/symlink*
 
 ### OS ###
 **/.DS_Store

@@ -34,10 +34,11 @@ copyright = '2020, Petuum'
 author = 'Petuum'
 
 
-# The short X.Y version
-version = open(os.path.join(project_root, 'VERSION')).read().strip()
 # The full version, including alpha/beta/rc tags
 release = os.popen("cd " + project_root + " && bash GENVER").read().strip()
+# The short X.Y version
+# version = open(os.path.join(project_root, 'VERSION')).read().strip()
+version = release
 
 
 # -- General configuration ---------------------------------------------------
@@ -60,6 +61,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',  # Google Docstring Format
     'recommonmark',
+    'sphinx_markdown_tables',
     'sphinx_git',  # For embedding changelog
 ]
 
@@ -72,7 +74,6 @@ add_module_names = False
 
 autodoc_default_options = {
     'member-order': 'bysource',
-    'special-members': '__init__',
     'inherited-members': True,
     'show-inheritance': True
 }
