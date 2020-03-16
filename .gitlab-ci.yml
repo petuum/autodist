@@ -64,6 +64,7 @@ build_wheel:
     # - master # For dev coverage report
     - /^release-.+$/
     - tags
+    - /^.*skip.*$/
   before_script:
     # dist as artifacts from build_wheel
     - ls dist  # print whl version
