@@ -54,22 +54,16 @@ StrategyBuilders
 ----------------
 
 Each :code:`StrategyBuilder` describes a method for synchronizing each trainable
-variable in the graph. There are a few different :code:`StrategyBuilders`, with each doing different things
-(and feel free to add more!). For example, there is a ParameterServer StrategyBuilder (TODO: LINK) which will have
-the :code:`GraphTransformer` synchronize each variable using a Parameter Server architecture. Alternatively, there
-is an AllReduce StrategyBuilder (TODO: LINK) which will mark every variable be synchronized with AllReduce.
+variable in the graph. There are a few different :code:`StrategyBuilders` listed
+:doc:`here<../../api/autodist.strategy>`, with each doing different things.
+For more details, you could refer to ":doc:`Choose Strategy Builders<../../usage/tutorials/choose-strategy>`" or
+":doc:`Customize Strategy Builders"<../../usage/tutorials/customize-strategy>`"
 
 Essentially, Strategy Builders are just choosing a sample from the strategy space defined by the :code:`Strategy`
 protobuf. Theoretically, every possible strategy representable in a :code:`Strategy` object should be able to be
 distributed, with just a few limitations: we currently cannot partition variables that are part of a control flow,
 and all-reduce does not work if there is only one machine with one GPU.
 
-Currently, we support the following StrategyBuilders (TODO ADD LINKS AND DESCRIPTIONS):
-
-- AllReduce (w/ Gradient Compression)
-- Parameter Server
-- Parameter Server with Load Balancing
-- Partitioned Parameter Server with Load Balancing (w/ Staleness)
 
 GraphTransformer
 ----------------
@@ -85,8 +79,6 @@ partitions. The :code:`Replicator` does in-graph replication of the graph, dupli
 number of devices in that worker (e.g., a worker with 2 GPUs will have two identical subgraphs,
 :code:`AutoDist-Replica-1/...` and :code:`AutoDist-Replica-2/...`). Lastly, the synchronizers handle adding the ops for
 both in-graph and between-graph synchronization, again, according to the strategy.
-
-(TODO ADD INFO ABOUT GRADIENT COMPRESSION FOR ALLREDUCE AND STALENESS FOR PS WHEN TALKING ABOUT SYNCHRONIZERS)
 
 Networking
 ----------
