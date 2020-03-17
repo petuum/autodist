@@ -1,4 +1,4 @@
-# FAQ (WIP)
+# FAQ
 
 1. **Does AutoDist support heterogeneous clusters?**
     > Yes, it's as straight-forward as the setup on homogeneous cluster. 
@@ -16,12 +16,16 @@
     > eager mode to fit in the AutoDist stack, so we de-prioritized it 
     > but maybe support it in the future.
 
-4. **Compare AutoDist with distributed TensorFlow or Horovod?**
+4. **Will there be Kubernetes integration?**
+    > AutoDist is integrated with Kubernetes internally in a Petuum closed-source product Orchestra.
 
-5. **Will there be Kubernetes integration?**
+5. **Does AutoDist support model parallelism?**
+    > Not yet, but with the ability of composing a strategy, AutoDist is able to 
+    > support defining the configuration of how to partition an operation on non-batch dimension 
+    > as part of the distributed [strategy](proto_docgen.md), 
+    > together with proper graph-transformation [kernels](../api/autodist.kernel.graph_transformer).  
 
 6. **Will AutoDist support PyTorch?**
-
-7. **Does AutoDist support model parallelism?**
-
-8. **Does AutoDist speed up single-node execution?** 
+    > Since the architecture of AutoDist is based on graph transforming, while PyTorch does not offer
+    > static computational graph directly except TorchScript which is still in an early stage, 
+    > AutoDist thus does not have plan to integrate the stack with PyTorch in the near future.
