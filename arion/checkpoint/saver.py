@@ -2,7 +2,7 @@
 from tensorflow.core.protobuf import saver_pb2
 from tensorflow.python.training import saver as tf_saver
 
-from autodist.utils import context
+import autodist.autodist
 from autodist.graph_item import get_default_graph_item
 
 
@@ -42,8 +42,8 @@ class Saver(tf_saver.Saver):
         for a detailed explanation of the signature.
         """
         # TODO(Hao): support constructing saver after AutoDist graph transformation
-        autodist = context.get_default_autodist()
-        if autodist.is_built():
+        _autodist = autodist.autodist.get_default_autodist()
+        if _autodist.is_built():
             raise ValueError('Saver must be used before create_distributed_session().')
 
         # A saver will append relevant save/restore ops to all variables in var_list, i.e. one saver

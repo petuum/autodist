@@ -6,11 +6,7 @@ from absl import app
 from tensorflow.core.protobuf import config_pb2
 
 from autodist import AutoDist
-from autodist.strategy.ps_strategy import PS
-from autodist.strategy.ps_lb_strategy import PSLoadBalancing
-from autodist.strategy.partitioned_ps_strategy import PartitionedPS
-from autodist.strategy.all_reduce_strategy import AllReduce
-from autodist.strategy.parallax_strategy import Parallax
+from autodist.strategy import PS, PSLoadBalancing, PartitionedPS, AllReduce, Parallax
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
 autodist = AutoDist(resource_spec_file, PartitionedPS())

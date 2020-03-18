@@ -157,6 +157,7 @@ release_docs:
     - export PROTOC_PLUGINS=/root/go/bin/protoc-gen-doc
     - pip install -r docs/requirements-docgen.txt
     - HOME=$(pwd) python setup.py build
+    - pip install -e .
     - cd docs
     - ln -s ../README.md symlink_README.md
     - make clean
