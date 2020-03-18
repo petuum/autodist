@@ -1,5 +1,6 @@
 """User Interface."""
 import atexit
+import os
 from collections import namedtuple
 
 import numpy as np
@@ -20,10 +21,26 @@ from autodist.resource_spec import ResourceSpec
 from autodist.runner import WrappedSession
 from autodist.strategy import base
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
-from autodist.utils import logging, context
+from autodist.utils import logging
 
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
+
+_DEFAULT_AUTODIST = {}
+
+
+def set_default_autodist(o):
+    """Set the AutoDist object the scope of which you are in."""
+    global _DEFAULT_AUTODIST
+    if os.getpid() in _DEFAULT_AUTODIST:
+        raise NotImplementedError('Currently only one AutoDist instance is allowed in one process.')
+    _DEFAULT_AUTODIST[os.getpid()] = o
+
+
+def get_default_autodist():
+    """Get the AutoDist object the scope of which you are in."""
+    global _DEFAULT_AUTODIST
+    return _DEFAULT_AUTODIST.get(os.getpid(), None)
 
 
 class _AutoDistInterface:
@@ -34,6 +51,7 @@ class _AutoDistInterface:
     """
 
     def __init__(self, resource_spec_file, strategy_builder=None):
+        set_default_autodist(self)
         self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
         self._strategy_builder = strategy_builder or PSLoadBalancing()
 
@@ -53,9 +71,7 @@ class _AutoDistInterface:
             if ENV.AUTODIST_PATCH_TF.val:
                 PatchTensorFlow.patch_var_reading()
             PatchTensorFlow.patch_keras()
-            context.set_default_autodist(self)
             yield
-            context.set_default_autodist(None)
             PatchTensorFlow.unpatch_keras()
             PatchTensorFlow.unpatch_var_reading()
 

@@ -8,8 +8,7 @@ from absl import flags
 
 import language_model
 from autodist import AutoDist
-from autodist.strategy.parallax_strategy import Parallax
-from autodist.strategy.ps_strategy import PS
+from autodist.strategy import PS, PSLoadBalancing, PartitionedPS, AllReduce, Parallax
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("logdir", "/tmp/lm1b", "Logging directory.")

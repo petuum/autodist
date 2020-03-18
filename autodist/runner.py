@@ -10,9 +10,10 @@ import os
 from tensorflow.core.protobuf import config_pb2, rewriter_config_pb2
 from tensorflow.python.client import timeline, session as tf_session
 
+import autodist.autodist
 import autodist.const
 from autodist.const import ENV, MAX_INT32
-from autodist.utils import logging, context
+from autodist.utils import logging
 
 
 def get_default_session_config():
@@ -95,13 +96,13 @@ class WrappedSession(tf_session.Session):
             super(WrappedSession._Callable, self).__init__(session, self._callable_options)
 
         def __call__(self, *args, **kwargs):
-            context.get_default_autodist().is_built()
+            autodist.autodist.get_default_autodist().is_built()
             args = [a for fn, arg in zip(self._callable_arg_fns, args) for a in fn(arg)]
             return super(WrappedSession._Callable, self).__call__(*args, **kwargs)
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         """Wrapped Session.run."""
-        context.get_default_autodist().is_built()
+        autodist.autodist.get_default_autodist().is_built()
         _options = get_default_run_options()
         if options:
             _options.MergeFrom(options)  # options merges (while overwrites) into RUN_OPTIONS

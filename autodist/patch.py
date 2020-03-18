@@ -3,19 +3,20 @@
 from collections import deque
 from itertools import chain
 
+from tensorflow.core.protobuf import config_pb2
 from tensorflow.python import keras
-from tensorflow.python.keras.engine import training
+from tensorflow.python.client import session as session_module
 from tensorflow.python.framework import ops
+from tensorflow.python.keras.engine import training
 from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
+from tensorflow.python.ops import math_ops
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 from tensorflow.python.training.optimizer import Optimizer as OptimizerV1
-from tensorflow.python.client import session as session_module
-from tensorflow.core.protobuf import config_pb2
-from tensorflow.python.ops import math_ops
 
+import autodist.autodist
 from autodist.graph_item import wrap_optimizer_init, wrap_optimizer_apply_gradient
-from autodist.utils import logging, context
 from autodist.runner import get_default_session_config
+from autodist.utils import logging
 
 
 class PatchTensorFlow:
@@ -36,6 +37,7 @@ class PatchTensorFlow:
     @staticmethod
     def patch_var_reading():
         """It only works with tf.gradients but not tape.gradients."""
+
         def value(self):
             """A cached operation which reads the value of this variable."""
             if self._cached_value is not None:
@@ -98,7 +100,7 @@ class PatchTensorFlow:
 
 class _KerasPatch:
     @staticmethod
-    def get_session(op_input_list=(), autodist=None):
+    def get_session(op_input_list=()):
         """Returns the session object for the current thread."""
         _SESSION = keras.backend._SESSION
         default_session = ops.get_default_session()
@@ -111,7 +113,7 @@ class _KerasPatch:
             # graph, create and cache a new session.
             if getattr(_SESSION, 'session', None) is None:
                 if getattr(keras.backend, 'READY_FOR_AUTODIST', False):
-                    _SESSION.session = context.get_default_autodist().create_distributed_session()
+                    _SESSION.session = autodist.autodist.get_default_autodist().create_distributed_session()
                 else:
                     _SESSION.session = session_module.Session(config=get_default_session_config())
             session = _SESSION.session
