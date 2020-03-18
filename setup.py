@@ -1,15 +1,13 @@
 import os
 import subprocess
-from setuptools import setup, Extension, find_packages
-from setuptools.command.build_ext import build_ext
+from setuptools import setup, find_packages
 
 from distutils.command.build_py import build_py as _build_py
 from distutils.command.clean import clean as _clean
 
 
 def generate_proto(source):
-    """Invokes the Protocol Compiler to generate a _pb2.py from the given
-    .proto file."""
+    """Invokes the Protocol Compiler to generate a _pb2.py from the given .proto file."""
 
     # Find the Protocol Compiler.
     if 'PROTOC' in os.environ and os.path.exists(os.environ['PROTOC']):
@@ -59,10 +57,13 @@ class clean(_clean):
 setup(
     name="autodist",
     version=os.environ.get('VERSION'),
-    description="AutoDist",
-    long_description="AutoDist is a scalable machine-learning engine to accelerate distributed training.",
+    description="AutoDist is a distributed deep-learning training engine.",
+    long_description="""AutoDist provides a user-friendly interface to distribute 
+                        the training of a wide variety of deep learning models
+                        across many GPUs with scalability and minimal code change.""",
     classifiers=[
-        'Programming Language :: Python :: 3.6 :: Only',
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     install_requires=[
         "netifaces==0.10.9",
@@ -86,5 +87,5 @@ setup(
         'clean': clean,
     },
     packages=find_packages(),
-    zip_safe=False,
+    python_requires='>=3.6',
 )

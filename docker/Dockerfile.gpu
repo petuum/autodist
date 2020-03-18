@@ -1,3 +1,6 @@
+# This is a Docker Image recommended for AutoDist users.
+# For more usage instructions, please refer to docs/usage/tutorials/docker.md
+
 FROM tensorflow/tensorflow:2.0.1-gpu-py3
 
 # Set default shell to /bin/bash

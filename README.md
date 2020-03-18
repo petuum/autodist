@@ -30,7 +30,7 @@ for all-level users.
 
 ## Installation
 
-#### Install From the Released Wheel 
+#### Install From Release Wheel 
 
 ```bash
 pip install --extra-index-url http://pypi.int.petuum.com:8080/simple --trusted-host pypi.int.petuum.com autodist
