@@ -14,7 +14,7 @@ Once we cloned the repository successfully we can build the Docker image with th
 
 ```bash
 cd autodist
-docker build -t autodist:latest -f docker/dockerfiles/Dockerfile.gpu .
+docker build -t autodist:latest -f docker/Dockerfile.gpu .
 ```
 
 ## Running on a single machine

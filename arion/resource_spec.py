@@ -1,16 +1,15 @@
 """Resource Specification."""
 import os
-from enum import Enum
-
 import re
+from enum import Enum
 from typing import NamedTuple, Optional, Dict
 
-import paramiko
 import yaml
+import paramiko
 
 from autodist.const import ENV
-from autodist.utils.network import is_loopback_address, is_local_address
 from autodist.utils import logging
+from autodist.utils.network import is_loopback_address, is_local_address
 
 
 class Connectivity(Enum):

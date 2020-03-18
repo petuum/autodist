@@ -8,7 +8,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # We have to do two `dirname`s because this script is two directories deep
 ROOT_DIR="$(dirname $(dirname "$SCRIPT_DIR"))"
 DOCKER_REGISTRY="registry.petuum.com/internal/scalable-ml/autodist/toolchain"
-HASH=$(find $ROOT_DIR -name requirements\*.txt | xargs cat | sort | uniq | md5sum | cut -d" " -f1)
+HASH=$(find $ROOT_DIR/docker/toolchain -name update_auto_tf2.Dockerfile | xargs cat | sort | uniq | md5sum | cut -d" " -f1)
 MD5TAG="md5-$HASH"
 
 # Enable experimental Docker
