@@ -82,10 +82,10 @@ class _AutoDistInterface:
         Returns:
             base.Strategy: Distributed strategy representation object.
         """
-        self._original_graph_item.prepare()
         return self._strategy_builder.build(self._original_graph_item, self._resource_spec)
 
     def _build_or_load_strategy(self):
+        self._original_graph_item.prepare()
         if IS_AUTODIST_CHIEF:
             s = self.build_strategy()
             s.serialize()
