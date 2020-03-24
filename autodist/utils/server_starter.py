@@ -9,18 +9,26 @@ from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.training.server_lib import ClusterSpec, Server
 
 from autodist.const import DEFAULT_WORKING_DIR, DEFAULT_GROUP_LEADER
+from autodist.utils import logging
 
 
-def _clean_stale_server():
-    cmd = "ps aux | awk '\\''! /awk/ && ! /{}/ /{}/ {{print \\$2}}'\\'' | xargs kill -9".format(
+def _clean_stale_servers():
+    # pylint: disable=anomalous-backslash-in-string
+    cmd = """ps aux | awk "/{}/ && !/ssh/ && ! /{}/ && ! /{}/" | awk "{{print \$2}}" | xargs kill -9"""  # noqa: W605
+    # Processes of | the local stale servers && excluding the current starter's pid && ppid | keep pids | kill them
+    cmd = cmd.format(
+        os.path.splitext(os.path.basename(__file__))[0],
         os.getpid(),
-        os.path.splitext(os.path.basename(__file__))
+        os.getppid()
     )
-    # The above `cmd` is escaped for a string-within-a-string, so we have to nest `bash -c`
-    # There's probably a better way to do this
-    local_cmd = 'bash -c \'bash -c "{}"\''.format(cmd)
-    proc = subprocess.Popen(local_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    proc.wait()
+    local_cmd = "bash -c '{}'".format(cmd)
+    logging.debug('>>> {}'.format(local_cmd))
+    try:
+        output = subprocess.check_output(local_cmd, shell=True, stderr=subprocess.STDOUT)
+        logging.debug('>>> {}'.format(output.decode('utf-8')))
+    except subprocess.CalledProcessError as e:
+        if e.returncode != 123:  # No stale process to kill
+            raise
 
 
 def start_server(cluster_spec, job_name: str, task_index: int):
@@ -32,7 +40,7 @@ def start_server(cluster_spec, job_name: str, task_index: int):
         job_name: TensorFlow job name
         task_index: TensorFlow task index
     """
-    _clean_stale_server()
+    _clean_stale_servers()
 
     # TODO: The following config should be less hard coded ad based on strategy
     experimental = config_pb2.ConfigProto.Experimental(

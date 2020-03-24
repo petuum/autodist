@@ -3,6 +3,7 @@
 import sys
 import threading
 import atexit
+import os
 
 from autodist.const import ENV, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
@@ -55,6 +56,8 @@ class Coordinator:
                 env = {
                     ENV.AUTODIST_WORKER.name: replica_host,
                     ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
+                    ENV.AUTODIST_MIN_LOG_LEVEL.name: ENV.AUTODIST_MIN_LOG_LEVEL.val,
+                    ENV.AUTODIST_IS_TESTING.name: ENV.AUTODIST_IS_TESTING.val,
                     ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
                     ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
                 }
@@ -77,12 +80,13 @@ class Coordinator:
             t.join()
 
     @staticmethod
-    def _proc_wait_async(proc, on_exit=lambda: None):
+    def _proc_wait_async(proc, on_exit=lambda: os._exit(1)):
         """Creates a thread to wait on the given proc finishing."""
         def run_subprocess_in_thread(proc, on_exit):
-            # proc = subprocess.Popen(*popen_args)
-            proc.wait()
-            on_exit()
+            proc.communicate()
+            if proc.poll():
+                print('RuntimeError: A remote AutoDist worker raised an exception. See Above.')
+                on_exit()
 
         thread = threading.Thread(target=run_subprocess_in_thread, args=(proc, on_exit))
         thread.start()

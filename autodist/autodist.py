@@ -112,6 +112,7 @@ class _AutoDistInterface:
             self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
             self._cluster.start()
             self._coordinator.launch_clients()
+        logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
 
 
 class _GraphModeInterface(_AutoDistInterface):
@@ -163,7 +164,7 @@ class _GraphModeInterface(_AutoDistInterface):
 
         def _del(sess=_distributed_session):
             """Enforce the sess to be closed before the cluster termination in the atexit stack."""
-            sess.__del__()
+            sess.close()
             logging.debug('Closing session...')
 
         atexit.register(_del)
