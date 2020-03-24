@@ -299,16 +299,17 @@ class SSHCluster(Cluster):
             cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
         full_cmd = ' '.join(cmd_list + args)
 
-        remote_cmd = 'ssh -i {} -o StrictHostKeyChecking=no -tt -p {} {}@{} \'bash -c "{}"\'' \
+        remote_cmd = 'ssh -i {} -o StrictHostKeyChecking=no -tt -p {} {}@{} \'bash -c "{}"\' </dev/null' \
             .format(ssh_config.key_file, ssh_config.port, ssh_config.username, hostname, full_cmd)
 
         logging.debug('$ %s' % remote_cmd)
 
-        if not ENV.AUTODIST_DEBUG_REMOTE.val:
-            # pylint: disable=subprocess-popen-preexec-fn
-            proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
-            return proc
-        return None
+        if ENV.AUTODIST_DEBUG_REMOTE.val:
+            return None
+
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
+        return proc
 
     def remote_file_write(self, remote_path, data, hostname):
         """
