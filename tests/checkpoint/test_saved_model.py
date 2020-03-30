@@ -157,7 +157,7 @@ def fine_tune():
     print("=====> Validation Over")
 
 
-def save_and_restore():
+def test_saved_model():
     def run():
         """This wrapper will handle the AutoDist destructor and garbage collections."""
         try:
@@ -169,9 +169,7 @@ def save_and_restore():
         finally:
             atexit._run_exitfuncs()
 
-
-def test_saved_model():
-    p = Process(target=save_and_restore)
+    p = Process(target=run)
     p.start()
     p.join()
     if p.exitcode != 0:
