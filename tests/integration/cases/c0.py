@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from autodist.const import ENV
 from autodist.checkpoint.saver import Saver
+from autodist.strategy import AllReduce, Parallax
 
 
 def main(autodist):
@@ -92,7 +93,26 @@ def main(autodist):
                 assert np.allclose(b_val, 0.01 * 4.17503)
             elif num_workers == 2:
                 # Between-graph dense conditional accumulator average verification
-                assert np.allclose(b_val, 0.01 * (4.17503 + 4.05530) / 2)
+
+                def get_gpu_distribution(resource_spec):
+                    """A list contains the distribution of devices."""
+                    gpu_dist = dict()
+                    for gpu_str, _ in resource_spec.gpu_devices:
+                        ip = gpu_str.split(':')[0]
+                        if ip in gpu_dist:
+                            gpu_dist[ip] += 1
+                        else:
+                            gpu_dist[ip] = 1
+                    return list(gpu_dist.values())
+
+                dist = get_gpu_distribution(autodist._resource_spec)
+                # if uneven gpu distribution, allreduce grad is a weighted sum.
+                if dist[0] != dist[1] and \
+                        (isinstance(autodist._strategy_builder, AllReduce) or
+                         isinstance(autodist._strategy_builder, Parallax)):
+                    assert np.allclose(b_val, 0.01 * (4.17503 * dist[0] + 4.05530 * dist[1]) / (dist[0] + dist[1]))
+                else:
+                    assert np.allclose(b_val, 0.01 * (4.17503 + 4.05530) / 2)
                 # TODO: between graph sparse verification
 
         # check the checkpoint existence

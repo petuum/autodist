@@ -91,7 +91,7 @@ class AllReduceSynchronizer(Synchronizer):
             grad_consumers = get_consumers(grad.op)  # this line must happen before the reduction
 
             conf = CollectiveOpsConfig()
-            conf.group_size = self.num_replicas * self.num_workers
+            conf.group_size = len(self.all_canonical_replica_devices)
             conf.group_key = get_collective_keys().get_group_key(self.all_canonical_replica_devices)
             conf.instance_key = get_collective_keys().get_instance_key(var_op_name)
             conf.merge_op = 'Add'
