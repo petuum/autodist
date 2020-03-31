@@ -16,7 +16,8 @@ cases = [
 
 resource_specs = [
     os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
-    os.path.join(os.path.dirname(__file__), 'resource_specs/r3.yml')
+    os.path.join(os.path.dirname(__file__), 'resource_specs/r3.yml'),
+    os.path.join(os.path.dirname(__file__), 'resource_specs/r4.yml')
 ]
 
 
