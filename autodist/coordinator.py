@@ -58,6 +58,7 @@ class Coordinator:
                     ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
                     ENV.AUTODIST_MIN_LOG_LEVEL.name: ENV.AUTODIST_MIN_LOG_LEVEL.val,
                     ENV.AUTODIST_IS_TESTING.name: ENV.AUTODIST_IS_TESTING.val,
+                    ENV.AUTODIST_PATCH_TF.name: ENV.AUTODIST_PATCH_TF.val,
                     ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
                     ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
                 }

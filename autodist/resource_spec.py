@@ -7,7 +7,6 @@ from typing import NamedTuple, Optional, Dict
 import yaml
 import paramiko
 
-from autodist.const import ENV
 from autodist.utils import logging
 from autodist.utils.network import is_loopback_address, is_local_address
 
@@ -291,7 +290,6 @@ class SSHConfigMap(dict):
                 pkey=self._gen_rsa_pkey(ssh_info.get('key_file', None)),
                 env=dict(
                     TF_CPP_MIN_LOG_LEVEL=0,
-                    AUTODIST_PATCH_TF=ENV.AUTODIST_PATCH_TF.val,
                     **ssh_info.get('shared_envs', {})
                 )
             )

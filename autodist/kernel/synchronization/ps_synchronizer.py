@@ -225,6 +225,8 @@ class PSSynchronizer(Synchronizer):
         source_op = group_deps[0] if group_deps else update_op
         return source_op
 
+    _BETWEEN_GRAPH_APPLY_SCOPE = 'autodist-between'.lower()
+
     def between_graph_apply(self, graph_item, var_name):
         """
         Apply between-graph synchronization to the target ops in the graph.
@@ -246,10 +248,12 @@ class PSSynchronizer(Synchronizer):
             proxy = self._create_proxy(item, gradient, target) if self._local_replication else None
             if proxy:
                 proxy.update_colocation_group(item.get_colocation_op)
-            self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = \
-                self._get_accumulation_ops(item, gradient, target,
-                                           1 if self._staleness > 0 else self.num_workers)
-            self.add_sync_op(item, update_op, proxy)
+            with item.graph.name_scope(self._BETWEEN_GRAPH_APPLY_SCOPE):
+                self._var_op_to_agg_grad, self._var_op_to_accum_apply_op = \
+                    self._get_accumulation_ops(item, gradient, target,
+                                               1 if self._staleness > 0 else self.num_workers)
+                self.add_sync_op(item, update_op, proxy)
+            item.graph._names_in_use.pop(self._BETWEEN_GRAPH_APPLY_SCOPE)
         return item
 
     def add_sync_op(self, graph_item, var_update_op, variable_replicator=None):
@@ -278,7 +282,7 @@ class PSSynchronizer(Synchronizer):
         source_op = self._get_optimizer_source_op(var_update_op)
         cc = get_control_consumers(source_op)
 
-        with ops.device(var_op.device), ops.name_scope(""):
+        with ops.device(var_op.device):
             if self._staleness == 0:
                 queue_ops = self._get_queue_ops(var_update_op, source_op, self.is_chief, is_trainable)
             elif self._staleness > 0:
@@ -330,8 +334,8 @@ class PSSynchronizer(Synchronizer):
 
         var_update_sync_queues = \
             [data_flow_ops.FIFOQueue(1, [dtypes.bool], shapes=[[]],
-                                     name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i),
-                                     shared_name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i))
+                                     name='%s_update_sync_queue_%d' % (var_op.name, i),
+                                     shared_name='%s_update_sync_queue_%d' % (var_op.name, i))
              for i in range(self.num_workers)]
 
         queue_ops = []
@@ -389,8 +393,8 @@ class PSSynchronizer(Synchronizer):
 
         var_update_sync_queues = \
             [data_flow_ops.FIFOQueue(self._staleness, [dtypes.bool], shapes=None,
-                                     name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i),
-                                     shared_name='auto_parallel_%s_update_sync_queue_%d' % (var_op.name, i))
+                                     name='%s_update_sync_queue_%d' % (var_op.name, i),
+                                     shared_name='%s_update_sync_queue_%d' % (var_op.name, i))
              for i in range(self.num_workers)]
 
         # Enqueue one token to every queue if all queues are not full.
