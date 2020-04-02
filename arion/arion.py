@@ -59,7 +59,6 @@ class _AutoDistInterface:
         self._transformed_graph_item = None
         self._remapper = None
         self._built = None  # Ref to the built GraphDef
-        self._built_checked = False  # Check the built only at the first run
 
         self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
         self._coordinator: Coordinator
@@ -143,11 +142,11 @@ class _GraphModeInterface(_AutoDistInterface):
         Returns:
             bool: True if the distributed graph is built by AutoDist
         """
-        if self._built and not self._built_checked:
-            if self._original_graph_item.graph.as_graph_def() != self._built:
-                logging.warning('Graph is modified after distributed session is created.')
-                # raise RuntimeWarning('Graph is modified after distributed session is created.')
-            self._built_checked = True
+        if self._built:
+            if ENV.AUTODIST_IS_TESTING.val and self._original_graph_item.graph.as_graph_def() != self._built:
+                msg = 'Graph is modified after distributed session is created.'
+                logging.warning(msg)
+                raise RuntimeWarning(msg)
             return True
         return False
 

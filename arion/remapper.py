@@ -290,5 +290,7 @@ class Remapper:
         if self._is_default():
             raise SyntaxError('Nested remapper context is invalid.')
         self._set_default()
-        yield self
-        Remapper._clear_default()
+        try:
+            yield self
+        finally:
+            Remapper._clear_default()
