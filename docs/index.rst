@@ -15,6 +15,7 @@ across many GPUs with scalability and minimal code change.
    :titlesonly:
 
    Overview<symlink_README.md>
+   Performance<usage/performance.md>
 
 .. toctree::
    :titlesonly:
@@ -45,8 +46,6 @@ Useful Links
 
 - `Source Code`_
 - `Development Notes on Confluence`_
-- `Performance Benchmarks`_
 
 .. _`Source Code`: https://gitlab.int.petuum.com/internal/scalable-ml/autodist
 .. _`Development Notes on Confluence`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/166363204/AutoDist%3A+Goal+and+a+Proposal+of+Architecture?atlOrigin=eyJpIjoiOWU1Y2Q4YzNmMDg2NDkyZTk0Njg1ZTYwNmM3YWI1MDciLCJwIjoiYyJ9
-.. _`Performance Benchmarks`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/253100101/AutoDist+Performance
