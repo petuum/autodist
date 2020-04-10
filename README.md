@@ -27,6 +27,12 @@ Besides all these advanced features, AutoDist is cautiously designed to isolate 
 from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
 for all-level users.
 
+<p float="left">
+<img src="/Figure1.png " width="400" />
+<img src="/Figure2.png " width="400" /> 
+</p>
+
+
 
 ## Installation
 
