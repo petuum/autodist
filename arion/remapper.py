@@ -144,6 +144,9 @@ class Remapper:
                 # # For Debugging Local Replicas
                 ####################################################################
                 # transformed_fetch = [
+                #     self._graph_item.graph.as_graph_element('AutoDist-Replica-0/emb/part_0_take_grad')
+                # ]
+                # transformed_fetch = [
                 #     _remap_element(ops.Tensor, ops.prepend_name_scope(
                 #         'Mean:0',
                 #         replica_prefix(i)))

@@ -45,9 +45,11 @@ class GraphTransformer:
             graph_item = self.graph_item
             # Ensure the transformation happens under graph mode, no matter the outer mode is under eager or graph.
 
-            visualization_util.log_graph(graph=graph_item.graph, name='original')
+            visualization_util.log_graph(graph=graph_item.graph, name='0-original')
 
             graph_item, self._strategy.node_config = VariablePartitioner.apply(self._strategy.node_config, graph_item)
+
+            visualization_util.log_graph(graph=graph_item.graph, name='1-after-partition')
 
             # Create Synchronizers for each node in the strategy
             self._initialize_synchronizers()
@@ -63,7 +65,7 @@ class GraphTransformer:
             if self._num_local_replicas >= 1:
                 new_graph_item = self._in_graph_apply(new_graph_item)
                 logging.debug('Successfully applied local in-graph replication')
-                visualization_util.log_graph(new_graph_item.graph, 'after-in-graph')
+                visualization_util.log_graph(new_graph_item.graph, '2-after-in-graph')
 
             if self._num_workers >= 1:
                 new_graph_item = self._between_graph_apply(new_graph_item)
@@ -71,7 +73,7 @@ class GraphTransformer:
 
             final_item = new_graph_item
             logging.info('Successfully built the distributed graph.')
-            visualization_util.log_graph(graph=final_item.graph, name='transformed')
+            visualization_util.log_graph(graph=final_item.graph, name='3-transformed')
 
         return final_item
 
