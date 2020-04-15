@@ -7,7 +7,7 @@ from tensorflow.python.ops.resource_variable_ops import _maybe_set_handle_data
 from autodist.kernel.common.utils import get_consumers
 
 
-def is_read_var_op(op):
+def is_read_var_op(op, version=None):
     """
     Determines if an op is a read var op.
 
@@ -17,11 +17,18 @@ def is_read_var_op(op):
 
     Args:
         op (Operation): the operation to inspect
+        version (int): TF major version integer
 
     Returns:
         bool: Whether or not the op is a read var op
     """
-    return op.type == "ReadVariableOp" or op.type == 'Identity'
+    if version == 1:
+        return op.type == 'Identity'
+    elif version == 2:
+        return op.type == 'ReadVariableOp'
+    elif version is None:
+        return op.type == "ReadVariableOp" or op.type == 'Identity'
+    raise ValueError('verion=1 or version=2 or version is None')
 
 
 def get_read_var_ops(var_op, exclude_snapshot=False):
