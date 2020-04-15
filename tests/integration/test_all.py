@@ -46,9 +46,6 @@ def test_all():
             if type(s) is AllReduce and c not in [c0, c1]:
                 continue
 
-            if type(s) is PartitionedPS and c == c6:
-                continue
-
             def run():
                 """This wrapper will handle the AutoDist destructor and garbage collections."""
                 try:

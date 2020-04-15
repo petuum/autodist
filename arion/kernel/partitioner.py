@@ -236,7 +236,6 @@ class VariablePartitioner(Kernel):
                 initial_value = new_graph_item.graph.get_tensor_by_name(var.initial_value.name)
                 partitioned_var = vs.get_variable(var_op.name, shape=None, initializer=initial_value,
                                                   partitioner=partitioner, validate_shape=False, use_resource=True)
-                partitioned_var_tensor = partitioned_var.as_tensor()
                 var_list = partitioned_var._variable_list
 
                 # Distribute the partitioned variable
@@ -257,26 +256,7 @@ class VariablePartitioner(Kernel):
                     split_grad = array_ops.split(new_grad, len(var_list),
                                                  name=f"gradients/splits/split_{var_op_name}")
 
-                for op in get_consumers(var_op):
-                    op = new_graph_item.graph.get_operation_by_name(
-                        ops.prepend_name_scope(op.name, AUTODIST_TO_DELETE_SCOPE)
-                    )
-                    if op.type == "ResourceGather":
-                        # Only Resource Variable needs to be taken care of
-                        #   because ResourceGather consumes resource tensor rather than the tensor of read_var_op
-                        # TODO: Is there any case where the op.type == "ResourceGather"
-                        #  but we can't use embedding_lookup_v2 to reconstruct the op consuming a partitioned resource
-                        # The second input to a ResourceGather op is always the indices per the opdef
-                        emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs[1])
-                        update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
-                    if is_read_var_op(op):
-                        # Without our modification, Reference Vars in TF have a read op associated with them.
-                        # TF can sometimes look for this and expect it to exist (e.g. in graph.as_graph_element)
-                        # so we add one back to avoid errors.
-                        # read_out is already the output tensor of the generated identity op
-                        read_out = array_ops.identity(partitioned_var_tensor,
-                                                      name=ops.prepend_name_scope("read", var_op_name))
-                        update_consumers(get_consumers(op), op.outputs[0], read_out)
+                self._handle_read(new_graph_item, var_op, partitioned_var)
 
                 self._update_node_config(var, var_list)
 
@@ -308,6 +288,34 @@ class VariablePartitioner(Kernel):
                                                   **self.graph_item.optimizer_kwargs)
             _ = optimizer.apply_gradients(zip(all_grads, all_vars))
         return new_vars
+
+    @staticmethod
+    def _handle_read(new_graph_item, var_op, partitioned_var):
+        partitioned_var_tensor = partitioned_var.as_tensor()
+        for op in get_consumers(var_op):
+            op = new_graph_item.graph.get_operation_by_name(
+                ops.prepend_name_scope(op.name, AUTODIST_TO_DELETE_SCOPE)
+            )
+            if op.type == "ResourceGather":
+                # Only Resource Variable needs to be taken care of
+                #   because ResourceGather consumes resource tensor rather than the tensor of read_var_op
+                # Question: Is there any case where the op.type == "ResourceGather"
+                #  but we can't use embedding_lookup_v2 to reconstruct the op consuming a partitioned resource
+                # The second input to a ResourceGather op is always the indices per the opdef
+                emb_lookup = embedding_ops.embedding_lookup_v2(partitioned_var, ids=op.inputs[1])
+                update_consumers(get_consumers(op), op.outputs[0], emb_lookup)
+            if is_read_var_op(op, version=1):
+                # Without our modification, Reference Vars in TF have a read op associated with them.
+                # TF can sometimes look for this and expect it to exist (e.g. in graph.as_graph_element)
+                # so we add one back to avoid errors.
+                # read_out is already the output tensor of the generated identity op
+                read_out = array_ops.identity(partitioned_var_tensor,
+                                              name=ops.prepend_name_scope("read", var_op.name))
+                update_consumers(get_consumers(op), op.outputs[0], read_out)
+            elif is_read_var_op(op, version=2):
+                read_out = array_ops.identity(partitioned_var_tensor,
+                                              name=ops.prepend_name_scope("Read/ReadVariableOp", var_op.name))
+                update_consumers(get_consumers(op), op.outputs[0], read_out)
 
     def _update_node_config(self, var, var_list):
         """
