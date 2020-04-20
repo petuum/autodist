@@ -4,6 +4,7 @@ from copy import deepcopy
 from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python import ops
+from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import variable_scope as vs, array_ops, math_ops
 from tensorflow.python.util.compat import as_bytes
@@ -249,8 +250,8 @@ class VariablePartitioner(Kernel):
                         values=new_graph_item.graph.get_tensor_by_name(gradient.values.name),
                         dense_shape=new_graph_item.graph.get_tensor_by_name(gradient.dense_shape.name)
                     )
-                    split_grad = self._split_indexed_slices(new_grad, len(var_list), var.shape[0],
-                                                            name=f"gradients/splits/sparse_split_{var_op_name}")
+                    split_grad = self._split_indexed_slices_v3(new_grad, len(var_list), var.shape[0],
+                                                               name=f"gradients/splits/sparse_split_{var_op_name}")
                 else:
                     new_grad = new_graph_item.graph.get_tensor_by_name(gradient.name)
                     split_grad = array_ops.split(new_grad, len(var_list),
@@ -396,9 +397,54 @@ class VariablePartitioner(Kernel):
         indices = [all_indices[0:i * size_per_shard] + all_indices[(i + 1) * size_per_shard:] for i in range(num_split)]
         split_grads = []
         for i in range(0, num_split):
+            # `sparse_mask` op might have severe performance issue when the length of the embedding is huge.
             s = array_ops.sparse_mask(sp_input, indices[i], name=name + f"-{i}")
             s._indices = math_ops.floormod(s.indices, size_per_shard, name=name + f"-{i}/mod")
             split_grads.append(s)
+        return split_grads
+
+    # @staticmethod
+    # def _split_indexed_slices_v2(sp_input=None, num_split=None, dim_size=0, name=None):
+    #     ids_per_partition = dim_size // num_split
+    #     extras = dim_size % num_split
+    #     # Hao: AutoDist PartitionedPS strategy will guarantee even partitions (i.e. extra = 0),
+    #     # but for safety we keep the extra for now.
+    #     p_assignments = math_ops.maximum(sp_input.indices // (ids_per_partition + 1),
+    #                                      (sp_input.indices - extras) // ids_per_partition,
+    #                                      name=name)
+    #     split_values = data_flow_ops.dynamic_partition(sp_input.values,
+    #                                                    p_assignments,
+    #                                                    num_split,
+    #                                                    name=name + f"-values")
+    #     split_indices = data_flow_ops.dynamic_partition(sp_input.indices,
+    #                                                     p_assignments,
+    #                                                     num_split,
+    #                                                     name=name + f"-indices")
+    #     split_grads = []
+    #     for i in range(0, num_split):
+    #         indices = math_ops.floormod(split_indices[i], ids_per_partition, name=name + f"-{i}/indices")
+    #         # we must deliberately split the i-th out as a standalone tensor to avoid SparseAccumulator from hanging.
+    #         values = array_ops.identity(split_values[i], name=name + f"-{i}/values")
+    #         s = ops.IndexedSlices(values, indices, sp_input.dense_shape)
+    #         split_grads.append(s)
+    #     return split_grads
+
+    @staticmethod
+    def _split_indexed_slices_v3(sp_input=None, num_split=None, dim_size=0, name=None):
+        ids_per_partition = dim_size // num_split
+        extras = dim_size % num_split
+        with ops.name_scope(name):
+            p_assignments = math_ops.maximum(sp_input.indices // (ids_per_partition + 1),
+                                             (sp_input.indices - extras) // ids_per_partition)
+            split_grads = []
+            for i in range(0, num_split):
+                with ops.name_scope(f"part_{i}"):
+                    ids_not_in_i = array_ops.where(math_ops.not_equal(p_assignments, i))
+                    flat_ids_not_in_i = array_ops.reshape(ids_not_in_i, [-1])
+                    flat_ids_not_in_i = math_ops.cast(flat_ids_not_in_i, dtypes.int32)
+                    s = array_ops.sparse_mask(sp_input, flat_ids_not_in_i)
+                    s._indices = math_ops.floormod(s.indices, ids_per_partition)
+                split_grads.append(s)
         return split_grads
 
     @staticmethod
