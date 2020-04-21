@@ -53,11 +53,11 @@ class AllReduceSynchronizer(Synchronizer):
         Note that collective ops now only supports dense tensors.
 
         Args:
-            graph_item (GraphItem): the graph_item to be distributed
+            graph_item (graph_item.GraphItem): the graph_item to be distributed
             var_name (str): the corresponded variable name
 
         Returns:
-            GraphItem: The new graph
+            graph_item.GraphItem: The new graph
         """
         # Skip allreduce synchronizer when rank <= 1
         if self.num_replicas * self.num_workers <= 1:

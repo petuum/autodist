@@ -54,7 +54,7 @@ class PSSynchronizer(Synchronizer):
             var_name: the variable name w/o replica prefix
 
         Returns:
-            GraphItem
+            graph_item.GraphItem
 
         """
         item = graph_item
@@ -136,13 +136,13 @@ class PSSynchronizer(Synchronizer):
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
-            graph_item (GraphItem): The graph to put the new ops in.
+            graph_item (graph_item.GraphItem): The graph to put the new ops in.
             old_update_op (Op): The update op corresponding to the grad and target.
             old_grad: The gradient object.
             old_target: The target tensor.
 
         Returns:
-            GraphItem
+            graph_item.GraphItem
         """
         def ctrl_consumers(op):
             return op._control_outputs  # pylint: disable=protected-access
@@ -236,7 +236,7 @@ class PSSynchronizer(Synchronizer):
             var_name: the variable to be synchronized.
 
         Returns:
-            GraphItem: updated graph item.
+            graph_item.GraphItem: updated graph item.
         """
         if not self._sync:
             return graph_item
@@ -266,7 +266,7 @@ class PSSynchronizer(Synchronizer):
         3. Gradient aggregation
 
         Args:
-            graph_item (GraphItem): the graph
+            graph_item (graph_item.GraphItem): the graph
             var_update_op: The op
             variable_replicator: The dictionary of master variable op name
                 -> list of replicated variables, could be None
