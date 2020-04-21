@@ -51,11 +51,11 @@ class Synchronizer(ABC):
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
-            graph_item (GraphItem): The graph to put the new ops in.
+            graph_item (graph_item.GraphItem): The graph to put the new ops in.
             var_name (str): The variable name w/o the replica prefix.
 
         Returns:
-            GraphItem
+            graph_item.GraphItem
         """
         return
 
@@ -65,11 +65,11 @@ class Synchronizer(ABC):
         Apply between-graph synchronization to the target ops in the graph.
 
         Args:
-            graph_item (GraphItem): The graph to put the new ops in.
+            graph_item (graph_item.GraphItem): The graph to put the new ops in.
             var_name (str): The variable name w/o the replica prefix.
 
         Returns:
-            GraphItem
+            graph_item.GraphItem
         """
         return
 

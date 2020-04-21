@@ -94,7 +94,7 @@ class StrategyBuilder(ABC):
         Build strategy representation instance with a graph item and a resource spec.
 
         Args:
-            graph_item (GraphItem): the graph for which to develop a strategy
+            graph_item (graph_item.GraphItem): the graph for which to develop a strategy
             resource_spec (ResourceSpec): resource information
 
         Returns:
