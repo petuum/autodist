@@ -1,0 +1,35 @@
+/**
+ * AutoDist distributed strategy messages.
+ *
+ * Represents how to distribute a TensorFlow computational graph.
+ */
+syntax = "proto3";
+
+package autodist.proto;
+
+import "google/protobuf/any.proto";
+import "autodist/proto/synchronizers.proto";
+
+
+/**
+ * Represents the strategy the AutoDist backend will implement.
+ */
+message GraphItem {
+    google.protobuf.Any graph_def = 1; /// TensorFlow graph_def
+
+    map<string, string> grad_target_pairs = 2; /// Mapping from grad tensor name to variable name
+
+    /**
+     * Represents the essential transformed subset of TensorFlow MetaGraph
+     *
+     * Right now, it represents a essential AutoDist subset of collections of MetaGraph.
+     * In the future, it will generalize to captures.
+     */
+    message Info{
+        repeated google.protobuf.Any variables = 1;
+        repeated string table_initializers = 2;
+        repeated google.protobuf.Any savers = 3;
+    }
+
+    Info info = 3;
+}
