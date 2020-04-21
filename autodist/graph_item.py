@@ -5,6 +5,7 @@ import copy
 import functools
 from typing import Union, Callable
 
+from google.protobuf.any_pb2 import Any
 from tensorflow.core.framework.graph_pb2 import GraphDef
 from tensorflow.core.framework.variable_pb2 import VariableDef
 from tensorflow.core.protobuf.saver_pb2 import SaverDef
@@ -16,6 +17,7 @@ from tensorflow.python.ops.variables import Variable
 from autodist.const import COLOCATION_PREFIX
 from autodist.kernel.common import op_info
 from autodist.kernel.common.utils import parse_name_scope, get_op_name
+from autodist.proto import graphitem_pb2
 from autodist.utils import logging
 
 VariableType = Union[VariableDef, dict, Variable]
@@ -55,6 +57,7 @@ def get_default_graph_item():
 
 def wrap_optimizer_init(fn: Callable):
     """Wraps the __init__ function of OptimizerV2 objects and stores the info in the default GraphItem."""
+
     def wrapper(*args, **kwargs):
         # args[0] should be `self`, which is an object of type == optimizer class
         containing_class = type(args[0])
@@ -69,6 +72,7 @@ def wrap_optimizer_init(fn: Callable):
             _default_graph_item.extend_optimizer_info(containing_class, *args, **kwargs)
             logging.debug('Registered optimizer: {} \nwith args: {} \nkwargs: {}'.format(class_name, args, kwargs))
         return fn(*args, **kwargs)
+
     return wrapper
 
 
@@ -86,6 +90,7 @@ def wrap_optimizer_apply_gradient(fn: Callable):
             logging.debug('Registered grads: \n {} with targets: \n {}'.format(grads, variables))
         args = (args[0], grads_and_vars)  # Replace possible generator with definite list
         return fn(*args, **kwargs)
+
     return wrapper
 
 
@@ -187,6 +192,13 @@ class Info:
         """Copy info."""
         return copy.deepcopy(self)
 
+    def __eq__(self, other):
+        return all([
+            self.variables == other.variables,
+            self.initializers == other.initializers,
+            self.savers == other.savers
+        ])
+
 
 class GraphItem:
     """
@@ -215,16 +227,6 @@ class GraphItem:
         # Info
         self.info = Info()
         self.optimizer, self.optimizer_args, self.optimizer_kwargs = None, None, None
-
-    def copy(self):
-        """Get a duplicated current GraphItem."""
-        g = GraphItem(graph_def=self._graph.as_graph_def())
-        g.info = self.info.copy()
-        g.optimizer = self.optimizer
-        g.optimizer_args = self.optimizer_args
-        g.optimizer_kwargs = self.optimizer_kwargs
-        g._grad_target_pairs = self._grad_target_pairs.copy()
-        return g
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -312,7 +314,7 @@ class GraphItem:
             if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
-                res[var_op.name] = expected_var_ops[var_op] + (op, )
+                res[var_op.name] = expected_var_ops[var_op] + (op,)
         return res
 
     def _is_auxiliary(self, update_op: ops.Operation):
@@ -411,3 +413,59 @@ class GraphItem:
         """Prepare for building strategy and/or transforming graph."""
         self.info.update_variables(self.graph.get_collection(ops.GraphKeys.GLOBAL_VARIABLES), replace=True)
         self.info.update_table_initializers(self.graph.get_collection(ops.GraphKeys.TABLE_INITIALIZERS), replace=True)
+
+    def serialize(self, path):
+        """Serialize a graph_item to a specific proto string down to a file path."""
+        item_def = graphitem_pb2.GraphItem()
+        # GraphDef
+        item_def.graph_def.Pack(self.graph.as_graph_def())
+        # Grad Target Pairs
+        for k, v in self._grad_target_pairs.items():
+            if isinstance(k, tuple):
+                k = ';'.join(k)
+            item_def.grad_target_pairs[k] = v
+
+        # Info
+        def f(v, repeated_any):
+            a = Any()
+            a.Pack(v)
+            repeated_any.append(a)
+
+        for v in self.info.variables:
+            f(v, item_def.info.variables)
+        for v in self.info.savers:
+            f(v, item_def.info.savers)
+        item_def.info.table_initializers.extend(self.info.table_initializers)
+        logging.warning('GraphItem currently does not serialize optimizer info, '
+                        'while optimizer info is only temporarily used for partitioner.')
+        # Serialization
+        item_def.SerializeToString()
+        with open(path, "wb+") as f:
+            f.write(item_def.SerializeToString())
+
+    @classmethod
+    def deserialize(cls, path):
+        """Deserialize a graph_item serialized proto message from a file path."""
+        item_def = graphitem_pb2.GraphItem()
+        with open(path, "rb") as f:
+            item_def.ParseFromString(f.read())
+        # GraphDef
+        gdef = GraphDef()
+        item_def.graph_def.Unpack(gdef)
+        g = cls(graph_def=gdef)
+        # Grad Target Pairs
+        for k, v in item_def.grad_target_pairs.items():
+            k = k.split(';')
+            k = k[0] if len(k) == 1 else tuple(k)
+            g._grad_target_pairs[k] = v
+        # Info
+        for a in item_def.info.variables:
+            v = VariableDef()
+            a.Unpack(v)
+            g.info.update_variables([v], replace=False)
+        for a in item_def.info.savers:
+            v = SaverDef()
+            a.Unpack(v)
+            g.info.update_savers([v], replace=False)
+        g.info.update_table_initializers(item_def.info.table_initializers)
+        return g

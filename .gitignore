@@ -91,6 +91,7 @@ tags
 docs/_build/
 docs/api/
 docs/symlink*
+docs/**/*_docgen.md
 
 ### OS ###
 **/.DS_Store
