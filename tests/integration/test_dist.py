@@ -25,7 +25,7 @@ def test_dist():
     combinations = itertools.product(resource_specs, STRATEGIES_FOR_DISTRIBUTED_TESTS.keys(), cases)
     for r, s, c in combinations:
         # skip allreduce for sparse variables (TensorFlow bug)
-        if s in ['AllReduce', 'PartitionedAR'] and c not in ["c0", "c1"]:
+        if s in ['AllReduce', 'PartitionedAR', 'AllReduce_2'] and c not in ["c0", "c1"]:
             continue
         # skip while_loop case for partitionPS (buggy)
         if s == 'PartitionedPS' and c == 'c4':

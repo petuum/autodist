@@ -32,11 +32,12 @@ class Parallax(PSLoadBalancing, AllReduce):
 
         # Generate node config
         node_config = []
-        for var in graph_item.get_trainable_variables():
+        for idx, var in enumerate(graph_item.get_trainable_variables()):
             var_op_name = get_op_name(var.name)
             grad, _, _ = graph_item.var_op_name_to_grad_info[var_op_name]
             if isinstance(grad, ops.Tensor):  # this is a dense variable
-                config = self._gen_all_reduce_node_config(var.name, 'RING')
+                group_id = idx // self.chunk_size
+                config = self._gen_all_reduce_node_config(var.name, group=group_id)
             else:  # sparse updates
                 # For Parallax Strategy, all PS vars are sparse so we don't use a proxy.
                 # Sparse variables are likely larger, so keeping copies would be costlier,

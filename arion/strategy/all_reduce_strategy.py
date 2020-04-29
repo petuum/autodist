@@ -8,8 +8,10 @@ class AllReduce(StrategyBuilder):
     """
     AllReduce StrategyBuilder.
 
-    This StrategyBuilder generates a strategy that
-    synchronizes every dense variable using AllReduce while every sparse var using .
+    This StrategyBuilder generates a strategy that synchronizes every dense variable using AllReduce.
+    It will sequentially merge collective ops into a single collective group based on chunk_size.
+
+    This strategy does not support synchronizing sparse updates with >1 nodes due to the TF AllGather bug.
     """
 
     def __init__(self, chunk_size=128):
@@ -17,9 +19,11 @@ class AllReduce(StrategyBuilder):
         Init function.
 
         Args:
-            chunk_size (int): chunk_size is a positive integer
-                              used by scoped allocator.
+            chunk_size (int): chunk_size is a positive integer indicating how many variables will be merged
+                              sequentially as a group by scoped allocator.
         """
+        if chunk_size < 1:
+            raise ValueError('The chunk_size must be greater than zero.')
         self.chunk_size = chunk_size 
 
     def build(self, graph_item, resource_spec):
@@ -32,20 +36,23 @@ class AllReduce(StrategyBuilder):
         variables = graph_item.get_trainable_variables()
 
         # Mark each variable to be synchronized with allreduce
-        node_config = [self._gen_all_reduce_node_config(var.name) for var in variables]
-        expr.node_config.extend(node_config)
+        for i, var in enumerate(variables):
+            group_id = i // self.chunk_size
+            node_config = self._gen_all_reduce_node_config(var.name, group=group_id)
+            expr.node_config.append(node_config)
 
         return expr
 
-    def _gen_all_reduce_node_config(self, var_name, all_reduce_spec="AUTO", compressor="PowerSGDCompressor"):
+    @staticmethod
+    def _gen_all_reduce_node_config(var_name, group=0, all_reduce_spec="AUTO", compressor="PowerSGDCompressor"):
         """
         Creates a NodeConfig specifying synchronization with AllReduce.
 
         Args:
             var_name (str): The name of the variable.
+            group (int): the collective group this synchronizer belongs to.
             algo (str): 'AUTO', 'NCCL', 'RING'.
             compressor (str): Gradient compression algorithm to use.
-            TODO(Hao): add more specs and descriptions for each allreduce spec.
 
         Returns:
             strategy_pb2.Strategy.Node: the config for the node.
@@ -54,5 +61,5 @@ class AllReduce(StrategyBuilder):
         node.var_name = var_name
         node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value(all_reduce_spec)
         node.AllReduceSynchronizer.compressor = synchronizers_pb2.AllReduceSynchronizer.Compressor.Value(compressor)
-        node.AllReduceSynchronizer.chunk_size = self.chunk_size
+        node.AllReduceSynchronizer.group = group
         return node
