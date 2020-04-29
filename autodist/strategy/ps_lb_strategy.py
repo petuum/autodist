@@ -58,7 +58,7 @@ class PSLoadBalancing(StrategyBuilder):
 
         node = strategy_pb2.Strategy.Node()
         node.var_name = var.name
-        node.PSSynchronizer.reduction_destinations.extend([min_ps])
+        node.PSSynchronizer.reduction_destination = min_ps
         node.PSSynchronizer.local_replication = local_proxy_variable
         node.PSSynchronizer.sync = sync
         node.PSSynchronizer.staleness = staleness

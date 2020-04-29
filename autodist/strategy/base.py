@@ -120,13 +120,21 @@ class StrategyCompiler:
         self._device_resolver = resolver
         return self
 
+    def _resolve_reduction_destination(self, node):
+        synchronizer = getattr(node, node.WhichOneof('synchronizer'))
+        if hasattr(synchronizer, 'reduction_destination'):
+            d = synchronizer.reduction_destination
+            synchronizer.reduction_destination = self._device_resolver(d)
+
     def _resolve_devices(self, strategy):
         s = strategy.copy()
         for n in s.node_config:
-            synchronizer = getattr(n, n.WhichOneof('synchronizer'))
-            if hasattr(synchronizer, 'reduction_destinations'):
-                d = synchronizer.reduction_destinations
-                synchronizer.reduction_destinations[:] = self._device_resolver(d)
+            if n.partitioner:
+                # meaning this var is going to be partitioned
+                for part in n.part_config:
+                    self._resolve_reduction_destination(part)
+            else:
+                self._resolve_reduction_destination(n)
         d = s.graph_config.replicas
         s.graph_config.replicas[:] = self._device_resolver(d)
         return s

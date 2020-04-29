@@ -1,6 +1,6 @@
 """Variable Partitioner."""
-from copy import deepcopy
 
+import numpy as np
 from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python import ops
@@ -12,10 +12,122 @@ from tensorflow.python.util.compat import as_bytes
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
 from autodist.graph_item import GraphItem, Info
 from autodist.kernel.common.op_info import MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS
-from autodist.kernel.common.variable_utils import is_read_var_op
 from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers, parse_name_scope
+from autodist.kernel.common.variable_utils import is_read_var_op
 from autodist.kernel.kernel import Kernel
 from autodist.utils import logging
+
+
+class PartitionerConfig():
+    """Helper class to conveniently convert between partition list and partition string."""
+
+    def __init__(self, partition_list=None, partition_str=None):
+        if partition_list:
+            self._partition_list = partition_list
+            self._partition_str = self.serialize(partition_list)
+        elif partition_str:
+            self._partition_list = self.deserialize(partition_str)
+            self._partition_str = partition_str
+        else:
+            raise ValueError('At least and only one of partition_list and partition_str needs to be provided.')
+
+    @staticmethod
+    def _check_partition_list(partition_list):
+        if not partition_list:
+            logging.warning('Partition list is empty.')
+            return False
+        all_one = True
+        active_axis = 0
+        for p in partition_list:
+            if p == 0:
+                return False
+            if p > 1:
+                all_one = False
+                active_axis += 1
+        if all_one:
+            logging.warning('Partition list is trivial -- num_split is 1 on every axis.')
+            return False
+        if active_axis > 1:
+            logging.warning('Currently AutoDist only support partitioning along one axis.')
+            return False
+        return True
+
+    def serialize(self, partition_list):
+        """
+        Serialize a partition list to a partition str if it is valid.
+
+        Args:
+            partition_list (List): A list of integers indicating how many shards to split along each dimension.
+
+        Returns:
+            partition_str (str): A serialized string format of the partition list.
+        """
+        if self._check_partition_list(partition_list):
+            return ','.join(str(x) for x in partition_list)
+        else:
+            raise ValueError()
+
+    def deserialize(self, partition_str):
+        """
+        Deserialize a partition string to a partition list and check if it is valid.
+
+        Args:
+            partition_str (str): A serialized string format of the partition list.
+
+        Returns:
+            partition_list (List): A valid partition list.
+        """
+        if len(partition_str) == 0:
+            raise ValueError('Empty partition string.')
+        partition_list = [int(num_split) for num_split in partition_str.split(',')]
+        if self._check_partition_list(partition_list):
+            return partition_list
+        else:
+            raise ValueError('Invalid partition list.')
+
+    @property
+    def partition_str(self):
+        """
+        The partition string indicating the partition config.
+
+        Returns:
+            str
+        """
+        return self._partition_str
+
+    @property
+    def partition_list(self):
+        """
+        The partition list indicating the partition config.
+
+        Returns:
+            List(int)
+        """
+        return self._partition_list
+
+    @property
+    def num_shards(self):
+        """
+        The number of total partitions.
+
+        Returns:
+            int
+        """
+        return np.product(self.partition_list)
+
+    @property
+    def axis(self):
+        """
+        The axis to partition along with.
+
+        Returns:
+            int
+        """
+        idx = 0
+        for idx, p in enumerate(self.partition_list):
+            if p > 1:
+                break
+        return idx
 
 
 class VariablePartitioner(Kernel):
@@ -91,17 +203,23 @@ class VariablePartitioner(Kernel):
         Analyzes the strategy and returns mappings for the vars to partition and the vars to not.
 
         Returns:
-            vars_to_partition (Dict): Mapping of variable names to number of shards for vars to be partitioned.
+            vars_to_partition (Dict): Mapping of variable names to the tuple of partition_str and reduction devices.
             unpartitioned_vars (Dict): Mapping from variable name to gradient name of unpartitioned vars.
         """
         vars_to_partition = {}
         unpartitioned_vars = {}
         for node in self.node_config:
-            synchronizer = getattr(node, node.WhichOneof('synchronizer'))
-            shards = getattr(synchronizer, 'reduction_destinations', [])
-            if len(shards) > 1:
-                vars_to_partition[node.var_name] = shards
-                logging.info("Partitioning variable {} across {}".format(node.var_name, shards))
+            partitioner = getattr(node, 'partitioner')
+            if partitioner:
+                reduction_destinations = []
+                for part in node.part_config:
+                    synchronizer = getattr(part, part.WhichOneof('synchronizer'))
+                    if hasattr(synchronizer, 'reduction_destination'):
+                        reduction_destinations.append(synchronizer.reduction_destination)
+                    else:
+                        reduction_destinations.append('')
+                vars_to_partition[node.var_name] = (partitioner, reduction_destinations)
+                logging.info("Partitioning variable {} with configuration {}".format(node.var_name, partitioner))
             else:
                 grad, _, _ = self.graph_item.var_op_name_to_grad_info[get_op_name(node.var_name)]
                 unpartitioned_vars[node.var_name] = grad
@@ -225,23 +343,25 @@ class VariablePartitioner(Kernel):
         """
         new_grads, new_vars = [], []
         with new_graph_item.graph.as_default():
-            for var_name, shards in vars_to_partition.items():
+            for var_name, (partition_str, reduction_destinations) in vars_to_partition.items():
                 var_op_name = get_op_name(var_name)
                 var_op = self.graph_item.graph.get_operation_by_name(var_op_name)
                 var = self.graph_item.trainable_var_op_to_var[var_op]
                 gradient = self.graph_item.var_op_name_to_grad_info[var_op_name][0]
 
                 # Create partitioned variable and split gradients
-                num_shards = len(shards)
-                partitioner = fixed_size_partitioner(num_shards)
+                pc = PartitionerConfig(partition_str=partition_str)
                 initial_value = new_graph_item.graph.get_tensor_by_name(var.initial_value.name)
                 partitioned_var = vs.get_variable(var_op.name, shape=None, initializer=initial_value,
-                                                  partitioner=partitioner, validate_shape=False, use_resource=True)
+                                                  partitioner=lambda pconf=pc, **unused_kwargs: pconf.partition_list,
+                                                  validate_shape=False, use_resource=True)
                 var_list = partitioned_var._variable_list
 
-                # Distribute the partitioned variable
-                for device, var_slice in zip(shards, var_list):
-                    var_slice.op._set_device_from_string(device)
+                # Distribute the partitioned variable if they have a PS synchornizer
+                # Actually maybe this is not necessary
+                for var_slice, device in zip(var_list, reduction_destinations):
+                    if device:
+                        var_slice.op._set_device_from_string(device)
 
                 if isinstance(gradient, ops.IndexedSlices):
                     # Sparse variable
@@ -319,27 +439,11 @@ class VariablePartitioner(Kernel):
                 update_consumers(get_consumers(op), op.outputs[0], read_out)
 
     def _update_node_config(self, var, var_list):
-        """
-        Updates the strategy to have one synchronizer per variable shard.
-
-        We do this by removing the config corresponding to the old var,
-        duplicating it `num_shards` times and changing the `reduction_destinations`
-        in each copy accordingly.
-
-        Args:
-            var (Variable): the original variable.
-            var_list (List[Variable]): the new sharded variables.
-        """
-        num_shards = len(var_list)
+        """Updates the strategy to have the correct name for partitioned vars."""
         og_node = next(n for n in self.node_config if n.var_name == var.name)
-        conf = [deepcopy(og_node) for _ in range(num_shards)]
-        for idx, (v, node) in enumerate(zip(var_list, conf)):
-            node.var_name = v.name
-            synchronizer = getattr(node, node.WhichOneof('synchronizer'))
-            devices = synchronizer.reduction_destinations
-            synchronizer.reduction_destinations[:] = [devices[idx]]
-        self.node_config.remove(og_node)
-        self.node_config.extend(conf)
+        for v, node in zip(var_list, og_node.part_config):
+            if node.var_name != v.name:
+                node.var_name = v.name
 
     def _delete_marked_ops(self, graph_item, name_scope):
         """
@@ -456,23 +560,3 @@ class VariablePartitioner(Kernel):
             node (NodeDef): a Graphdef node.
         """
         node.input[:] = [s for s in node.input if s]
-
-
-def fixed_size_partitioner(num_shards, axis=0):
-    """
-    Partitioner to specify a fixed number of shards along given axis.
-
-    Args:
-    num_shards: `int`, number of shards to partition variable.
-    axis: `int`, axis to partition on.
-
-    Returns:
-    A partition function usable as the `partitioner` argument to
-    `variable_scope` and `get_variable`.
-    """
-    def _partitioner(shape, **unused_args):
-        partitions_list = [1] * len(shape)
-        partitions_list[axis] = min(num_shards, shape.dims[axis].value)
-        return partitions_list
-
-    return _partitioner

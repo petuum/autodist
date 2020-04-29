@@ -36,7 +36,7 @@ class PSSynchronizer(Synchronizer):
     """
 
     def __init__(self, config: synchronizers_pb2.PSSynchronizer):
-        self.target_device = config.reduction_destinations[0] if config.reduction_destinations else ""
+        self.target_device = config.reduction_destination if config.reduction_destination else ""
         self._local_replication = config.local_replication
         self._sync = config.sync
         self._staleness = config.staleness

@@ -32,6 +32,8 @@ message Strategy {
             autodist.proto.PSSynchronizer PSSynchronizer = 2;  // One of a synchronizer to choose
             autodist.proto.AllReduceSynchronizer AllReduceSynchronizer = 3;  // One of a synchronizer to choose
         }
+        string partitioner = 4;  // Optional partitioner configuration, e.g. `1, 2, 1`
+        repeated Node part_config = 5;   // Optional node configs for each node partition (if partitioned)
     }
 
     /** configuration of some individual nodes of the computational graph */
