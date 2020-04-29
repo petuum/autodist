@@ -1,6 +1,5 @@
 """AllReduce Synchronizer."""
 from collections import defaultdict
-from itertools import count
 
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
@@ -34,16 +33,14 @@ class AllReduceSynchronizer(Synchronizer):
     2. any other types of hybrid reduction of PS and AllReduce.
     """
 
-    _ids = count(0)
-
     def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer):
         self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(config.spec)
         self._compressor_type = synchronizers_pb2.AllReduceSynchronizer.Compressor.Name(config.compressor)
-        self._chunk_size = config.chunk_size
-        # NOTE: python generator is not thread safe!!!
-        # Current assumption is this class will be used in
-        # a single thread.
-        self._chunk_id = next(self._ids) // self._chunk_size
+
+        # Collective ops within the same group will be merged by the scoped optimizer.
+        # Normally the group index shall be smaller than the number of variables in the graph; this kernel assumes
+        # the strategy will validate the group assignments are legitimate.
+        self._group = config.group
         super().__init__()
 
     def in_graph_apply(self, graph_item, var_name):
@@ -97,7 +94,7 @@ class AllReduceSynchronizer(Synchronizer):
             conf.merge_op = 'Add'
             conf.final_op = 'Div'
             # "\/" is added for name scope reuse
-            with ops.name_scope(replica_prefix(i) + "/collective-chunk-{}/".format(self._chunk_id)):
+            with ops.name_scope(replica_prefix(i) + "/collective-group-{}/".format(self._group)):
                 with ops.colocate_with(grad.op):
                     reduced_grad = compressors[i].reduce(grad, conf)
             update_consumers(grad_consumers, grad, reduced_grad)

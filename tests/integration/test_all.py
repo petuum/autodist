@@ -32,7 +32,7 @@ resource_specs = [
 strategies = [
     PS(),
     PartitionedPS(local_proxy_variable=True),
-    AllReduce(),
+    AllReduce(chunk_size=1),
     PSLoadBalancing(local_proxy_variable=True),
     Parallax(local_proxy_variable=True),
     PartitionedAR()

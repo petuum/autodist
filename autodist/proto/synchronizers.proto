@@ -37,5 +37,7 @@ message AllReduceSynchronizer {
     }
 
     Compressor compressor = 2;  // One of the compressors to choose
-    int32 chunk_size = 3;  // Size threshold for batching all-reduce communications
+
+    /** The allreduce group to merge with. The group index should be less than the number of variables */
+    int32 group = 3;
 }

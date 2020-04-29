@@ -15,10 +15,21 @@ class PartitionedAR(StrategyBuilder):
     This StrategyBuilder generates a strategy that partitions each variable along its first dimension,
     and synchronizes them using AllReduce. It might be advantageous for communicating extremely large
     messages -- when synchronizing a single message is bounded by single-flow bandwidth.
+
+    It will also sequentially merge collective ops into a single collective group based on chunk_size.
     This strategy does not support synchronizing sparse updates with >1 nodes due to the TF AllGather bug.
     """
 
     def __init__(self, chunk_size=128):
+        """
+        Init function.
+
+        Args:
+            chunk_size (int): chunk_size is a positive integer indicating how many variables will be merged
+                              sequentially as a group by scoped allocator.
+        """
+        if chunk_size < 1:
+            raise ValueError('The chunk_size must be greater than zero.')
         self.chunk_size = chunk_size
 
     def build(self, graph_item, resource_spec):
@@ -31,17 +42,21 @@ class PartitionedAR(StrategyBuilder):
         variables = graph_item.trainable_var_op_to_var.values()
 
         # Mark each variable to be synchronized with allreduce
-        node_config = [self._gen_node_config(var) for var in variables]
-        expr.node_config.extend(node_config)
+        var_counter = 0
+        for var in variables:
+            node_config, num_shards = self._gen_node_config(var, var_counter)
+            var_counter += num_shards
+            expr.node_config.append(node_config)
 
         return expr
 
-    def _gen_node_config(self, var):
+    def _gen_node_config(self, var, var_counter):
         """
         Creates a NodeConfig specifying partitioning and synchronization with AllReduce.
 
         Args:
             var (Variable): The variable to generate a config for.
+            var_counter (int): variable counter for collective group assignment.
 
         Returns:
             Dict: the config dict for the node.
@@ -55,8 +70,8 @@ class PartitionedAR(StrategyBuilder):
             node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
             node.AllReduceSynchronizer.compressor = \
                 synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")
-            node.AllReduceSynchronizer.chunk_size = self.chunk_size
-            return node
+            node.AllReduceSynchronizer.group = var_counter // self.chunk_size
+            return node, num_shards
 
         # num_parts > 1 means the variable will be partitioned
         # generate the partitioner config
@@ -76,9 +91,9 @@ class PartitionedAR(StrategyBuilder):
             part.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
             part.AllReduceSynchronizer.compressor = \
                 synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")
-            part.AllReduceSynchronizer.chunk_size = self.chunk_size
+            part.AllReduceSynchronizer.group = (var_counter + i) // self.chunk_size
             node.part_config.extend([part])
-        return node
+        return node, num_shards
 
     @staticmethod
     def get_num_shards(var):
