@@ -5,7 +5,8 @@ from tensorflow.python.framework import tensor_shape
 
 from autodist.const import ENV
 from autodist.kernel.common.op_info import CONTROL_FLOW_OPS
-from autodist.kernel.common.utils import get_consumers
+from autodist.kernel.common.utils import get_consumers, get_op_name
+from autodist.kernel.partitioner import PartitionerConfig
 from autodist.strategy.base import Strategy, StrategyBuilder
 from autodist.proto import strategy_pb2
 
@@ -28,7 +29,7 @@ class PartitionedPS(StrategyBuilder):
         self._sync = sync
         self._staleness = staleness
         if self._staleness > 0:
-            assert self._sync, 'If staleness is positive, sync has to be set true.'
+            assert self._sync, 'If staleness is positive, sync has to be set True.'
         self.loads = {}
 
     def build(self, graph_item, resource_spec):
@@ -65,6 +66,8 @@ class PartitionedPS(StrategyBuilder):
             num_shards = 1
         else:
             num_shards = self.get_num_shards(var)
+
+        # Determine placement of vars/parts
         sorted_ps = sorted(self.loads, key=self.loads.get)
         if num_shards > len(self.loads):
             # If there's more shards than servers, round-robin in greedy order
@@ -73,12 +76,32 @@ class PartitionedPS(StrategyBuilder):
         for ps in min_ps:
             self.loads[ps] += byte_size_load_fn(var) / num_shards
 
+        # setup node config
         node = strategy_pb2.Strategy.Node()
         node.var_name = var.name
-        node.PSSynchronizer.reduction_destinations.extend(min_ps)
-        node.PSSynchronizer.local_replication = self._local_proxy_variable
-        node.PSSynchronizer.sync = self._sync
-        node.PSSynchronizer.staleness = self._staleness
+
+        if num_shards == 1:
+            node.PSSynchronizer.reduction_destination = min_ps[0]
+            node.PSSynchronizer.local_replication = self._local_proxy_variable
+            node.PSSynchronizer.sync = self._sync
+            node.PSSynchronizer.staleness = self._staleness
+        else:
+            # generate the partitioner config
+            shape = var.initial_value.shape
+            partition_list = [1] * len(var.initial_value.shape)
+            partition_axis = 0
+            partition_list[partition_axis] = min(num_shards, shape.dims[partition_axis].value)
+            pc = PartitionerConfig(partition_list=partition_list)
+            node.partitioner = pc.partition_str
+
+            for i in range(num_shards):
+                part = strategy_pb2.Strategy.Node()
+                part.var_name = '{}/part_{}:0'.format(get_op_name(var.name), i)
+                part.PSSynchronizer.reduction_destination = min_ps[i]
+                part.PSSynchronizer.local_replication = self._local_proxy_variable
+                part.PSSynchronizer.sync = self._sync
+                part.PSSynchronizer.staleness = self._staleness
+                node.part_config.extend([part])
         return node
 
     @staticmethod

@@ -7,6 +7,7 @@ from autodist.strategy.parallax_strategy import Parallax
 from autodist.strategy.partitioned_ps_strategy import PartitionedPS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.strategy.ps_strategy import PS
+from autodist.strategy.partitioned_all_reduce_strategy import PartitionedAR
 
 STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'PS': PS(sync=True),
@@ -16,7 +17,8 @@ STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'AllReduce': AllReduce(),
     'Parallax': Parallax(),
     'PSLoadBalancingProxy_stale_3': PSLoadBalancing(local_proxy_variable=True, staleness=3),
-    'ParallaxProxy': Parallax(local_proxy_variable=True)
+    'ParallaxProxy': Parallax(local_proxy_variable=True),
+    'PartitionedAR': PartitionedAR()
 }
 
 

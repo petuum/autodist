@@ -11,6 +11,7 @@ from autodist.strategy.parallax_strategy import Parallax
 from autodist.strategy.partitioned_ps_strategy import PartitionedPS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.strategy.ps_strategy import PS
+from autodist.strategy.partitioned_all_reduce_strategy import PartitionedAR
 from .cases import c0, c1, c2, c3, c4, c5, c6, c7, c8
 
 cases = [
@@ -33,7 +34,8 @@ strategies = [
     PartitionedPS(local_proxy_variable=True),
     AllReduce(),
     PSLoadBalancing(local_proxy_variable=True),
-    Parallax(local_proxy_variable=True)
+    Parallax(local_proxy_variable=True),
+    PartitionedAR()
 ]
 
 
@@ -43,7 +45,7 @@ def test_all():
     for r, s in combinations:
         for c in cases:
             # skip allreduce for sparse variables (TensorFlow bug)
-            if type(s) is AllReduce and c not in [c0, c1]:
+            if type(s) in [AllReduce, PartitionedAR] and c not in [c0, c1]:
                 continue
 
             def run():

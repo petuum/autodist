@@ -9,7 +9,7 @@ package autodist.proto;
  * Synchronization using a Parameter Server.
  */
 message PSSynchronizer {
-    repeated string reduction_destinations = 1;  // Parameter Servers to use
+    string reduction_destination = 1;  // Parameter Server to use
     bool local_replication = 2;  // Whether to create local proxies of each PS variable
     bool sync = 3;  // Whether to sync gradients across between-graph replications
     int32 staleness = 4;  // Staleness

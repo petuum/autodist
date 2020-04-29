@@ -78,14 +78,20 @@ class GraphTransformer:
         return final_item
 
     def _initialize_synchronizers(self):
-        self._synchronizers = {
-            node.var_name: Synchronizer.create(node.WhichOneof('synchronizer'),
-                                               getattr(node, node.WhichOneof('synchronizer')))
-            for node in self._strategy.node_config
-        }
+        self._synchronizers = {}
+        for node in self._strategy.node_config:
+            partitioner = getattr(node, 'partitioner')
+            if partitioner:
+                for part in node.part_config:
+                    self._synchronizers[part.var_name] = \
+                        Synchronizer.create(part.WhichOneof('synchronizer'),
+                                            getattr(part, part.WhichOneof('synchronizer')))
+            else:
+                self._synchronizers[node.var_name] = \
+                    Synchronizer.create(node.WhichOneof('synchronizer'),
+                                        getattr(node, node.WhichOneof('synchronizer')))
 
         config = self._strategy.graph_config.replicas
-
         replica_devices = {device_spec.DeviceSpecV2.from_string(s) for s in config}
         replica_hosts = {self._cluster.get_address_from_task(d.job, d.task) for d in replica_devices}
         self._num_workers = len(replica_hosts)

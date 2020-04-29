@@ -8,7 +8,6 @@ syntax = "proto3";
 package autodist.proto;
 
 import "google/protobuf/any.proto";
-import "autodist/proto/synchronizers.proto";
 
 
 /**
