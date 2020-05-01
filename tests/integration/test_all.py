@@ -12,6 +12,9 @@ from autodist.strategy.partitioned_ps_strategy import PartitionedPS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.strategy.ps_strategy import PS
 from autodist.strategy.partitioned_all_reduce_strategy import PartitionedAR
+from autodist.strategy.uneven_partition_ps_strategy import UnevenPartitionedPS
+from autodist.strategy.random_axis_partition_all_reduce_strategy import RandomAxisPartitionAR
+
 from .cases import c0, c1, c2, c3, c4, c5, c6, c7, c8
 
 cases = [
@@ -35,7 +38,9 @@ strategies = [
     AllReduce(chunk_size=1),
     PSLoadBalancing(local_proxy_variable=True),
     Parallax(local_proxy_variable=True),
-    PartitionedAR()
+    PartitionedAR(),
+    UnevenPartitionedPS(local_proxy_variable=True),
+    RandomAxisPartitionAR(chunk_size=4)
 ]
 
 
@@ -45,7 +50,7 @@ def test_all():
     for r, s in combinations:
         for c in cases:
             # skip allreduce for sparse variables (TensorFlow bug)
-            if type(s) in [AllReduce, PartitionedAR] and c not in [c0, c1]:
+            if type(s) in [AllReduce, PartitionedAR, RandomAxisPartitionAR] and c not in [c0, c1]:
                 continue
 
             def run():

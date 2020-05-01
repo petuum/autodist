@@ -8,6 +8,8 @@ from autodist.strategy.partitioned_ps_strategy import PartitionedPS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.strategy.ps_strategy import PS
 from autodist.strategy.partitioned_all_reduce_strategy import PartitionedAR
+from autodist.strategy.uneven_partition_ps_strategy import UnevenPartitionedPS
+from autodist.strategy.random_axis_partition_all_reduce_strategy import RandomAxisPartitionAR
 
 STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'PS': PS(sync=True),
@@ -19,7 +21,9 @@ STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'Parallax': Parallax(),
     'PSLoadBalancingProxy_stale_3': PSLoadBalancing(local_proxy_variable=True, staleness=3),
     'ParallaxProxy': Parallax(local_proxy_variable=True),
-    'PartitionedAR': PartitionedAR()
+    'PartitionedAR': PartitionedAR(),
+    'RandomAxisPartitionAR': RandomAxisPartitionAR(chunk_size=4),
+    'UnevenPartitionedPS': UnevenPartitionedPS(local_proxy_variable=True)
 }
 
 

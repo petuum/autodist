@@ -1,6 +1,5 @@
 """Variable Partitioner."""
 
-import numpy as np
 from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python import ops
@@ -113,7 +112,10 @@ class PartitionerConfig():
         Returns:
             int
         """
-        return np.product(self.partition_list)
+        shard = 1
+        for i in self.partition_list:
+            shard = shard * i
+        return shard
 
     @property
     def axis(self):
@@ -351,6 +353,12 @@ class VariablePartitioner(Kernel):
 
                 # Create partitioned variable and split gradients
                 pc = PartitionerConfig(partition_str=partition_str)
+
+                # Now check compatibility
+                if isinstance(gradient, ops.IndexedSlices) and pc.axis != 0:
+                    raise ValueError('Embedding variables can only be partitioned along the first axis due to '
+                                     'the limitation on the `embedding_lookup_v2` op.')
+
                 initial_value = new_graph_item.graph.get_tensor_by_name(var.initial_value.name)
                 partitioned_var = vs.get_variable(var_op.name, shape=None, initializer=initial_value,
                                                   partitioner=lambda pconf=pc, **unused_kwargs: pconf.partition_list,
@@ -370,15 +378,15 @@ class VariablePartitioner(Kernel):
                         values=new_graph_item.graph.get_tensor_by_name(gradient.values.name),
                         dense_shape=new_graph_item.graph.get_tensor_by_name(gradient.dense_shape.name)
                     )
-                    split_grad = self._split_indexed_slices_v3(new_grad, len(var_list), var.shape[0],
+                    split_grad = self._split_indexed_slices_v2(new_grad, len(var_list), var.shape[0],
                                                                name=f"gradients/splits/sparse_split_{var_op_name}")
                 else:
                     new_grad = new_graph_item.graph.get_tensor_by_name(gradient.name)
-                    split_grad = array_ops.split(new_grad, len(var_list),
-                                                 name=f"gradients/splits/split_{var_op_name}")
 
+                    # sometimes new_grad will have polymorphic shape (None), so we use the shape of the original var
+                    split_grad = self._split_tensor_v2(new_grad, pc.num_shards, var.shape, pc.axis,
+                                                       name=f"gradients/splits/split_{var_op_name}")
                 self._handle_read(new_graph_item, var_op, partitioned_var)
-
                 self._update_node_config(var, var_list)
 
                 self.info.update_variables(var_list, replace=False)
@@ -507,37 +515,13 @@ class VariablePartitioner(Kernel):
             split_grads.append(s)
         return split_grads
 
-    # @staticmethod
-    # def _split_indexed_slices_v2(sp_input=None, num_split=None, dim_size=0, name=None):
-    #     ids_per_partition = dim_size // num_split
-    #     extras = dim_size % num_split
-    #     # Hao: AutoDist PartitionedPS strategy will guarantee even partitions (i.e. extra = 0),
-    #     # but for safety we keep the extra for now.
-    #     p_assignments = math_ops.maximum(sp_input.indices // (ids_per_partition + 1),
-    #                                      (sp_input.indices - extras) // ids_per_partition,
-    #                                      name=name)
-    #     split_values = data_flow_ops.dynamic_partition(sp_input.values,
-    #                                                    p_assignments,
-    #                                                    num_split,
-    #                                                    name=name + f"-values")
-    #     split_indices = data_flow_ops.dynamic_partition(sp_input.indices,
-    #                                                     p_assignments,
-    #                                                     num_split,
-    #                                                     name=name + f"-indices")
-    #     split_grads = []
-    #     for i in range(0, num_split):
-    #         indices = math_ops.floormod(split_indices[i], ids_per_partition, name=name + f"-{i}/indices")
-    #         # we must deliberately split the i-th out as a standalone tensor to avoid SparseAccumulator from hanging.
-    #         values = array_ops.identity(split_values[i], name=name + f"-{i}/values")
-    #         s = ops.IndexedSlices(values, indices, sp_input.dense_shape)
-    #         split_grads.append(s)
-    #     return split_grads
-
     @staticmethod
-    def _split_indexed_slices_v3(sp_input=None, num_split=None, dim_size=0, name=None):
+    def _split_indexed_slices_v2(sp_input=None, num_split=None, dim_size=0, name=None):
         ids_per_partition = dim_size // num_split
         extras = dim_size % num_split
         with ops.name_scope(name):
+            # When the partitioned dim cannot be divided by num_split, the reminders are
+            # evenly assigned from the first partition to the last.
             p_assignments = math_ops.maximum(sp_input.indices // (ids_per_partition + 1),
                                              (sp_input.indices - extras) // ids_per_partition)
             split_grads = []
@@ -547,8 +531,43 @@ class VariablePartitioner(Kernel):
                     flat_ids_not_in_i = array_ops.reshape(ids_not_in_i, [-1])
                     flat_ids_not_in_i = math_ops.cast(flat_ids_not_in_i, dtypes.int32)
                     s = array_ops.sparse_mask(sp_input, flat_ids_not_in_i)
-                    s._indices = math_ops.floormod(s.indices, ids_per_partition)
+                    if i < extras:
+                        s._indices = math_ops.floor_mod(s.indices, ids_per_partition + 1)
+                    else:
+                        s._indices = math_ops.floor_mod(s.indices - extras, ids_per_partition)
                 split_grads.append(s)
+        return split_grads
+
+    @staticmethod
+    def _split_tensor(value, num_splits, shape, axis=0, name=None):
+        # This implementation has problems with scope_allocator optimization. When two collective
+        # ops from two different merge scopes take the input from the same split operation (below)
+        # scope_allocator will be abandoned.
+        size_per_partition = shape[axis] // num_splits
+        extras = shape[axis] % num_splits
+        split_list = [size_per_partition + 1 if i < extras else size_per_partition
+                      for i in range(num_splits)]
+        split_grads = array_ops.split(value, split_list, axis, name=name)
+        return split_grads
+
+    @staticmethod
+    def _split_tensor_v2(value, num_splits, shape, axis=0, name=None):
+
+        def _iter_slices(full_shape, num_slices, slice_dim):
+            """Slices a given a shape along the specified dimension."""
+            num_slices_with_excess = full_shape[slice_dim] % num_slices
+            offset = [0] * len(full_shape)
+            min_slice_len = full_shape[slice_dim] // num_slices
+            for i in range(num_slices):
+                shape = full_shape[:]
+                shape[slice_dim] = min_slice_len + bool(i < num_slices_with_excess)
+                yield offset[:], shape
+                offset[slice_dim] += shape[slice_dim]
+
+        split_grads = []
+        for idx, (begin, var_shape) in enumerate(
+                _iter_slices(shape.as_list(), num_splits, axis)):
+            split_grads.append(array_ops.slice(value, begin, var_shape, name=name + f'_part_{idx}'))
         return split_grads
 
     @staticmethod
