@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from autodist.const import ENV
 from autodist.checkpoint.saver import Saver
-from autodist.strategy import AllReduce, Parallax, PartitionedAR
+from autodist.strategy import AllReduce, Parallax, PartitionedAR, RandomAxisPartitionAR
 
 
 def main(autodist):
@@ -110,7 +110,8 @@ def main(autodist):
                 if dist[0] != dist[1] and \
                         (isinstance(autodist._strategy_builder, AllReduce) or
                          isinstance(autodist._strategy_builder, Parallax) or
-                         isinstance(autodist._strategy_builder, PartitionedAR)):
+                         isinstance(autodist._strategy_builder, PartitionedAR) or
+                         isinstance(autodist._strategy_builder, RandomAxisPartitionAR)):
                     assert np.allclose(b_val, 0.01 * (4.17503 * dist[0] + 4.05530 * dist[1]) / (dist[0] + dist[1]))
                 else:
                     assert np.allclose(b_val, 0.01 * (4.17503 + 4.05530) / 2)
