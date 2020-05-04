@@ -1,8 +1,8 @@
 """A collection of useful functions for the kernel submodule."""
 from collections import deque
 
-from tensorflow_core.core.framework.attr_value_pb2 import AttrValue
-from tensorflow_core.python.util.compat import as_bytes
+from tensorflow.core.framework.attr_value_pb2 import AttrValue
+from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import AUTODIST_REPLICA_PREFIX, COLOCATION_PREFIX
 

@@ -1,6 +1,7 @@
 """Partitioned PS StrategyBuilder with Greedy Load Balancer."""
 
 import numpy as np
+from tensorflow.python.framework.ops import IndexedSlices
 
 from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.partitioner import PartitionerConfig
@@ -44,13 +45,14 @@ class RandomAxisPartitionAR(StrategyBuilder):
         # Mark each variable to be synchronized with allreduce
         var_counter = 0
         for var in variables:
-            node_config, num_shards = self._gen_node_config(var, var_counter)
+            grad = graph_item.var_op_name_to_grad_info[var.op.name][0]
+            node_config, num_shards = self._gen_node_config(var, var_counter, grad)
             var_counter += num_shards
             expr.node_config.append(node_config)
 
         return expr
 
-    def _gen_node_config(self, var, var_counter):
+    def _gen_node_config(self, var, var_counter, grad):
         """
         Creates a NodeConfig specifying partitioning and synchronization with AllReduce.
 
@@ -61,8 +63,7 @@ class RandomAxisPartitionAR(StrategyBuilder):
         Returns:
             Dict: the config dict for the node.
         """
-        num_shards, partition_axis = self.get_num_shards_and_axis(var)
-
+        num_shards, partition_axis = self.get_num_shards_and_axis(var, grad)
         node = strategy_pb2.Strategy.Node()
         node.var_name = var.name
 
@@ -93,7 +94,7 @@ class RandomAxisPartitionAR(StrategyBuilder):
         return node, num_shards
 
     @staticmethod
-    def get_num_shards_and_axis(var):
+    def get_num_shards_and_axis(var, grad):
         """Gets the minimum number of shards for a variable."""
         if not var.initial_value.shape.ndims:
             return 1, 0
@@ -106,8 +107,11 @@ class RandomAxisPartitionAR(StrategyBuilder):
         if not non_one_dim:
             return 1, 0
 
-        idx = int(np.random.randint(0, len(non_one_dim)))
-        partition_axis = non_one_dim[idx]
+        if isinstance(grad, IndexedSlices):
+            partition_axis = 0
+        else:
+            idx = int(np.random.randint(0, len(non_one_dim)))
+            partition_axis = non_one_dim[idx]
         n = int(var.initial_value.shape[partition_axis])
         for i in range(2, n):
             if n % i == 0:

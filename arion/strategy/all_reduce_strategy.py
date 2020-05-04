@@ -44,7 +44,7 @@ class AllReduce(StrategyBuilder):
         return expr
 
     @staticmethod
-    def _gen_all_reduce_node_config(var_name, group=0, all_reduce_spec="AUTO", compressor="PowerSGDCompressor"):
+    def _gen_all_reduce_node_config(var_name, group=0, all_reduce_spec="NCCL", compressor="PowerSGDCompressor"):
         """
         Creates a NodeConfig specifying synchronization with AllReduce.
 

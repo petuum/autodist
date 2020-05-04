@@ -5,6 +5,8 @@ from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
 from tensorflow.python.ops import collective_ops
 
+import autodist
+from autodist.const import ENV
 from autodist.kernel.common.utils import get_consumers, update_consumers, \
     replica_prefix, get_control_consumers, update_control_consumers
 from autodist.kernel.common.utils import get_op_name
@@ -12,6 +14,7 @@ from autodist.kernel.synchronization.collective_key import get_collective_keys
 from autodist.kernel.synchronization.compressor import Compressor, CollectiveOpsConfig
 from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.proto import synchronizers_pb2
+from autodist.utils import logging
 
 
 class AllReduceSynchronizer(Synchronizer):
@@ -35,6 +38,12 @@ class AllReduceSynchronizer(Synchronizer):
 
     def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer):
         self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(config.spec)
+        if autodist.float_major_minor_tf_version < 1.15 or autodist.float_major_minor_tf_version < 2.1:
+            logging.warning('Collective synchronizer spec "{}" a.k.a communication_hint has no effect '
+                            'until tensorflow-gpu 1.x>= 1.15 or 2.x>=2.1. It may cause error currently.'
+                            .format(self._spec))
+            self._spec = None
+
         self._compressor_type = synchronizers_pb2.AllReduceSynchronizer.Compressor.Name(config.compressor)
 
         # Collective ops within the same group will be merged by the scoped optimizer.
@@ -81,18 +90,21 @@ class AllReduceSynchronizer(Synchronizer):
 
         compressors = defaultdict(lambda: Compressor.create(self._compressor_type, var_op_name))
 
+        conf = CollectiveOpsConfig()
+        conf.group_size = len(self.all_canonical_replica_devices)
+        conf.group_key = get_collective_keys().get_group_key(self.all_canonical_replica_devices)
+        conf.instance_key = get_collective_keys().get_instance_key(var_op_name)
+        conf.merge_op = 'Add'
+        conf.final_op = 'Div'
+        if self._spec:
+            setattr(conf, 'communication_hint', self._spec)
+
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
             grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
             # TODO (Tairui): (3) Merge of reduction for performance
             grad_consumers = get_consumers(grad.op)  # this line must happen before the reduction
 
-            conf = CollectiveOpsConfig()
-            conf.group_size = len(self.all_canonical_replica_devices)
-            conf.group_key = get_collective_keys().get_group_key(self.all_canonical_replica_devices)
-            conf.instance_key = get_collective_keys().get_instance_key(var_op_name)
-            conf.merge_op = 'Add'
-            conf.final_op = 'Div'
             # "\/" is added for name scope reuse
             with ops.name_scope(replica_prefix(i) + "/collective-group-{}/".format(self._group)):
                 with ops.colocate_with(grad.op):
@@ -102,9 +114,14 @@ class AllReduceSynchronizer(Synchronizer):
 
     def _collect_sparse_gradients(self, graph_item, var_op_name):
         """Append collective ops after the gradient is calculated."""
-        if self.num_workers > 1:
-            raise NotImplementedError('Currently the collective all_gather is being fixed for multi-node execution. '
+        if self.num_workers > 1 and not ENV.AUTODIST_INTERNAL_TF.value:
+            raise NotImplementedError('Currently the collective NCCL AllGather is not supported in TensorFlow release.'
                                       'Please choose another strategy.')
+        conf = {}
+        if self._spec:
+            conf = {'communication_hint': self._spec}
+        if self._compressor_type:
+            logging.warning('AllGather currently does not support AutoDist compressor so it skips.')
         if self.num_replicas * self.num_workers <= 1:
             raise ValueError('CollectiveOps requires collective group size > 1')
         for i in range(0, self.num_replicas):
@@ -121,13 +138,17 @@ class AllReduceSynchronizer(Synchronizer):
                         grad.indices,
                         self.num_replicas * self.num_workers,
                         get_collective_keys().get_group_key(self.all_canonical_replica_devices),
-                        get_collective_keys().get_instance_key(var_op_name + '-indices'))
+                        get_collective_keys().get_instance_key(var_op_name + '-indices'),
+                        **conf
+                    )
                 with ops.colocate_with(grad.values.op):
                     new_values = collective_ops.all_gather(
                         grad.values,
                         self.num_replicas * self.num_workers,
                         get_collective_keys().get_group_key(self.all_canonical_replica_devices),
-                        get_collective_keys().get_instance_key(var_op_name + '-values'))
+                        get_collective_keys().get_instance_key(var_op_name + '-values'),
+                        **conf
+                    )
             update_consumers(indices_c_ops, grad.indices, new_indices)
             update_control_consumers(indices_cc_ops, grad.indices.op, new_indices.op)
             update_consumers(values_c_ops, grad.values, new_values)

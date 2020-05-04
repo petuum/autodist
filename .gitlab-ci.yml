@@ -64,11 +64,13 @@ build_wheel:
 .job_template: &tests_template
   stage: test
   except:
-    # - master # For dev coverage report
-    - /^release-.+$/
-    - /^.*doc.*$/
-    - tags
-    - /^.*skip.*$/
+    refs:
+      # - master # For dev coverage report
+      - /^release-.+$/
+      - /^.*doc.*$/
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip-test\]/
   before_script:
     # dist as artifacts from build_wheel
     - ls dist  # print whl version
@@ -133,7 +135,7 @@ dist_tests_branch:
   <<: *dist_tests
   only:
     variables:
-      - $CI_COMMIT_MESSAGE =~ /\[run-dist\]/
+      - $CI_COMMIT_MESSAGE =~ /\[run-dist/
 
 release_docs:
   only:

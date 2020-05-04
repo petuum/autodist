@@ -49,9 +49,6 @@ def test_all():
     combinations = itertools.product(resource_specs, strategies)
     for r, s in combinations:
         for c in cases:
-            # skip allreduce for sparse variables (TensorFlow bug)
-            if type(s) in [AllReduce, PartitionedAR, RandomAxisPartitionAR] and c not in [c0, c1]:
-                continue
 
             def run():
                 """This wrapper will handle the AutoDist destructor and garbage collections."""
