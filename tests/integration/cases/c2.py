@@ -7,9 +7,9 @@ def main(autodist):
     vocab_size = 10000
     embedding_size = 16
     hidden_dim = 16
-    max_steps = 200
+    max_steps = 60
     batch_size = 128
-    log_frequency = 100
+    log_frequency = 10
 
     class SimpleModel:
         def __init__(self):
@@ -87,7 +87,10 @@ def main(autodist):
     train_labels = train_labels.astype(np.float32)
     with tf.Graph().as_default(), autodist.scope():  # AutoDist code
         my_iterator = tf.compat.v1.data.Dataset.from_tensor_slices((train_data, train_labels)) \
-            .shuffle(25000).batch(batch_size).repeat().make_one_shot_iterator().get_next()
+            .shuffle(25000).batch(batch_size).repeat(1).make_one_shot_iterator().get_next()
+        # The fix https://github.com/tensorflow/tensorflow/pull/34295 is only included after TensorFlow > 2.1
+        # e.g in TensorFlow 2.2.0rc1 or after
+        # Before that, we never touch the end of iterator in this test case with limited steps.
         # my_iterator = MyIterator().get_next()
         model = SimpleModel()
         prev_time = time.time()

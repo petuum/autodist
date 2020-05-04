@@ -11,7 +11,6 @@ from autodist.utils import logging
 class CollectiveOpsConfig:
     """Config for using Collective Ops."""
 
-    # TODO(Hao): add in next TF version -- communication_hint = 'nccl'
     group_size: int
     group_key: str
     instance_key: str
@@ -79,12 +78,7 @@ class Compressor(ABC):
         Returns:
             The All-Reduced Tensor
         """
-        return collective_ops.all_reduce(tensor,
-                                         conf.group_size,
-                                         conf.group_key,
-                                         conf.instance_key,
-                                         conf.merge_op,
-                                         conf.final_op)
+        return collective_ops.all_reduce(tensor, **conf.__dict__)
 
     @classmethod
     def create(cls, name, *args, **kwargs):
