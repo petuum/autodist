@@ -1,3 +1,4 @@
+import os
 import sys
 
 from tensorflow import version
@@ -9,6 +10,12 @@ from .patch import PatchTensorFlow
 from .utils import logging
 
 logging.set_verbosity(ENV.AUTODIST_MIN_LOG_LEVEL.val)
+
+# Enforce abspath
+if sys.argv and os.path.exists(sys.argv[0]) and not os.path.isabs(sys.argv[0]):
+    logging.error('AutoDist requires the script path "{}" to be an absolute path to be shared across workers. '
+                  'Now exit.'.format(sys.argv[0]))
+    sys.exit(1)
 
 # Runtime compatibility checking
 COMPAT_TF_VERSIONS = [1.15, 2.1]
