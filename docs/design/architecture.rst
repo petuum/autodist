@@ -19,7 +19,7 @@ This means that the code is broadly separated into two parts: Strategy Generatio
 General Workflow
 ----------------
 
-.. image:: images/autodist-arch-vert.png
+.. image:: images/autodist-arch.png
   :align: center
   :scale: 40
   :alt: Architecture Diagram
@@ -79,6 +79,8 @@ partitions. The :code:`Replicator` does in-graph replication of the graph, dupli
 number of devices in that worker (e.g., a worker with 2 GPUs will have two identical subgraphs,
 :code:`AutoDist-Replica-1/...` and :code:`AutoDist-Replica-2/...`). Lastly, the synchronizers handle adding the ops for
 both in-graph and between-graph synchronization, again, according to the strategy.
+
+For more information, please refer to :doc:`Graph Transformation Kernels<kernels>`
 
 Networking
 ----------

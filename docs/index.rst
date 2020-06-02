@@ -14,7 +14,7 @@ across many GPUs with scalability and minimal code change.
 .. toctree::
    :titlesonly:
 
-   Overview<symlink_README.md>
+   Overview<README.md>
    Performance<usage/performance.md>
 
 .. toctree::
@@ -37,6 +37,7 @@ across many GPUs with scalability and minimal code change.
 
    design/rationale.md
    design/architecture.rst
+   design/kernels.md
    usage/proto_docgen.md
    Developer API References<api/autodist.rst>
    usage/orchestra-integration.md
