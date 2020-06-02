@@ -92,6 +92,7 @@ docs/_build/
 docs/api/
 docs/symlink*
 docs/**/*_docgen.md
+docs/README*
 
 ### OS ###
 **/.DS_Store

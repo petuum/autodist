@@ -161,7 +161,8 @@ release_docs:
     - HOME=$(pwd) python setup.py build
     - pip install -e .
     - cd docs
-    - ln -s ../README.md symlink_README.md
+    - cp ../README.md README.md
+    - sed -i.bak 's+docs/++g' README.md
     - make clean
     - make apidoc
     - make html
