@@ -529,7 +529,10 @@ class VariablePartitioner(Kernel):
                 with ops.name_scope(f"part_{i}"):
                     ids_not_in_i = array_ops.where(math_ops.not_equal(p_assignments, i))
                     flat_ids_not_in_i = array_ops.reshape(ids_not_in_i, [-1])
-                    flat_ids_not_in_i = math_ops.cast(flat_ids_not_in_i, dtypes.int32)
+                    if sp_input.indices.dtype == dtypes.int64:
+                        flat_ids_not_in_i = math_ops.cast(flat_ids_not_in_i, dtypes.int64)
+                    else:
+                        flat_ids_not_in_i = math_ops.cast(flat_ids_not_in_i, dtypes.int32)                    
                     s = array_ops.sparse_mask(sp_input, flat_ids_not_in_i)
                     if i < extras:
                         s._indices = math_ops.floor_mod(s.indices, ids_per_partition + 1)
