@@ -24,6 +24,7 @@ across many GPUs with scalability and minimal code change.
    usage/tutorials/getting-started.md
    usage/tutorials/multi-node.md
    usage/tutorials/save-restore.md
+   usage/tutorials/installation.md
    usage/tutorials/docker.md
    usage/tutorials/choose-strategy.md
    usage/tutorials/customize-strategy.md
