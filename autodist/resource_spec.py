@@ -17,7 +17,6 @@ import os
 import re
 from enum import Enum
 from typing import NamedTuple, Optional, Dict
-
 import yaml
 import paramiko
 
@@ -116,6 +115,22 @@ class ResourceSpec:
         return self.__gpu_devices.items()
 
     @property
+    def node_gpu_devices(self):
+        """Node_address-to-device_string mapping of all gpu devices."""
+        _gpu_devices = dict()
+        for device in self.gpu_devices:
+            _gpu_devices.setdefault(device[0].split(':')[0], []).append(device[0])
+        return _gpu_devices
+
+    @property
+    def node_cpu_devices(self):
+        """Node_address-to-device_string mapping of all cpu devices."""        
+        _cpu_devices = dict()
+        for device in self.cpu_devices:
+            _cpu_devices.setdefault(device[0].split(':')[0], []).append(device[0])
+        return _cpu_devices
+
+    @property
     def num_gpus(self):
         """Number of all gpu devices."""
         if not self.__num_gpus:
@@ -152,8 +167,10 @@ class ResourceSpec:
             raise ValueError("Must specify one of the nodes to be chief.")
 
         # all other configs except nodes are (optional) ssh config
+        gpu_devices = self.node_gpu_devices
         if is_local_address(self.__chief_address):
-            self.__ssh_config_map = SSHConfigMap(resource_info.pop('ssh', {}), self.__ssh_group)
+            self.__ssh_config_map = SSHConfigMap(
+                resource_info.pop('ssh', {}), self.__ssh_group, gpu_devices)
 
         # checks
         if self.__chief_address is None:
@@ -169,14 +186,15 @@ class ResourceSpec:
             # 2) If there is only one node, it is chief by default
             logging.info("Chief: %s" % host_address)
             self.__chief_address = host_address
-        host_cpu = DeviceSpec(host_address)
+        host_cpu = DeviceSpec(host_address, device_index=0)
         self._add_device(host_cpu)
-        # handle any other CPUs
-        for cpu_index in node.get('cpus', [])[1:]:
-            cpu = DeviceSpec(host_address, host_cpu, DeviceType.CPU, cpu_index)
-            self._add_device(cpu)
+        # handle any other CPUs when GPU is unavailable
+        if len(node.get('gpus', [])) == 0:
+            for cpu_index in set(sorted(node.get('cpus', []))) - {0}:
+                cpu = DeviceSpec(host_address, host_cpu, DeviceType.CPU, cpu_index)
+                self._add_device(cpu)
         # handle GPUs
-        for gpu_index in node.get('gpus', []):
+        for gpu_index in set(sorted(node.get('gpus', []))):
             gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
             self._add_device(gpu)
         self.__ssh_group[host_address] = node.get('ssh_config')
@@ -204,13 +222,13 @@ class DeviceSpec:
             else:
                 self.host_device = DeviceSpec(host_address)
         else:
-            self.device_index = 0
+            self.device_index = device_index
             self.host_device = self
 
     def name_string(self):
         """Name string."""
         if self.device_type is DeviceType.CPU:
-            return self.host_address + ':' + DeviceType.CPU.name + ':0'
+            return self.host_address + ':' + DeviceType.CPU.name + ':' + str(self.device_index)
         else:
             return self.host_address + ':' + self.device_type.name + ':' + str(self.device_index)
 
@@ -280,7 +298,7 @@ class SSHConfig(NamedTuple):
 class SSHConfigMap(dict):
     """Contains all necessary SSH configs, grouped by config name."""
 
-    def __init__(self, info: Dict[str, Dict], node_groups: Dict[str, str]):
+    def __init__(self, info: Dict[str, Dict], node_groups: Dict[str, str], gpu_devices: Dict[str, str]):
         """
         Initialize the object with a dictionary of SSH information.
 
@@ -289,6 +307,7 @@ class SSHConfigMap(dict):
                 This dict should map from identifier to dict of SSH info
                 (username, port, keyfile, etc.).
             node_groups (dict): mapping from hostnames to SSH group names.
+            gpu_devices: GPU devices in each node
         """
         super().__init__()
 

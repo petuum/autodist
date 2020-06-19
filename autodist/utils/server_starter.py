@@ -45,7 +45,7 @@ def _clean_stale_servers():
             raise
 
 
-def start_server(cluster_spec, job_name: str, task_index: int):
+def start_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: int):
     """
     Start a TensorFlow server.
 
@@ -53,6 +53,7 @@ def start_server(cluster_spec, job_name: str, task_index: int):
         cluster_spec (dict): TensorFlow ClusterSpec dict
         job_name: TensorFlow job name
         task_index: TensorFlow task index
+        cpu_device_num: The number of CPU devices
     """
     _clean_stale_servers()
 
@@ -64,7 +65,12 @@ def start_server(cluster_spec, job_name: str, task_index: int):
         ClusterSpec(cluster_spec),
         job_name=job_name,
         task_index=task_index,
-        config=config_pb2.ConfigProto(experimental=experimental)
+        config=config_pb2.ConfigProto(
+            experimental=experimental,
+            device_count={"CPU": cpu_device_num},
+            inter_op_parallelism_threads=0,
+            intra_op_parallelism_threads=0
+        )
     )
     s.join()
 
@@ -89,10 +95,17 @@ if __name__ == '__main__':
         type=str,
         default="cluster_spec.json",
     )
+    parser.add_argument(
+        "--cpu_device_num",
+        help="the number of cpu devices in the server",
+        type=int,
+        default=0,
+    )
 
     FLAGS, unparsed = parser.parse_known_args()
 
     cluster_spec_path = os.path.join(DEFAULT_WORKING_DIR, FLAGS.cluster_spec_filename)
     cluster_spec_dict = json.load(open(cluster_spec_path))
 
-    start_server(cluster_spec_dict, job_name=FLAGS.job_name, task_index=FLAGS.task_index)
+    start_server(cluster_spec_dict, job_name=FLAGS.job_name, task_index=FLAGS.task_index, 
+                 cpu_device_num=FLAGS.cpu_device_num)
