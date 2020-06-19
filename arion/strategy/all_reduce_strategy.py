@@ -46,6 +46,10 @@ class AllReduce(StrategyBuilder):
 
         # get each variable, generate variable synchronizer config
         expr.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
+        for k, v in resource_spec.node_cpu_devices.items():
+            if k not in resource_spec.node_gpu_devices:
+                expr.graph_config.replicas.extend(v)    
+
         # find all variables
         variables = graph_item.get_trainable_variables()
 

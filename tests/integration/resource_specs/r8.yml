@@ -1,0 +1,16 @@
+# multi-nodes, each node with one GPU experiment
+
+nodes:
+  - address: 10.20.41.98
+    cpus: [0]
+    chief: true
+    ssh_config: conf
+  - address: 10.20.41.19
+    cpus: [0]
+    ssh_config: conf
+ssh:
+  conf:
+    username: 'autodist'
+    key_file: '/home/autodist/.ssh/id_rsa'
+    # NOTE: python_venv is not needed in ci tests
+    python_venv: 'source /home/autodist/venv/autodist/bin/activate'

@@ -1,0 +1,5 @@
+# Single-node single-GPU experiment
+
+nodes:
+  - address: localhost
+    cpus: [0]

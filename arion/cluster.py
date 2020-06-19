@@ -53,6 +53,8 @@ class Cluster(metaclass=ABCMeta):
 
     def __init__(self, resource_spec: ResourceSpec):
         self.cluster_spec = self._get_default_cluster_spec(resource_spec)
+        self._cpu_devices = self._get_node_cpu_devices(resource_spec)
+        self._gpu_devices = self._get_node_gpu_devices(resource_spec)
         self._chief = resource_spec.chief
         self._full_addresses = [full_address for tasks in self.cluster_spec.values() for full_address in tasks]
         # noinspection PyTypeChecker
@@ -78,6 +80,20 @@ class Cluster(metaclass=ABCMeta):
                 ) for n in sorted(resource_spec.nodes)
             ]
         }
+
+    @staticmethod
+    def _get_node_cpu_devices(resource_spec: ResourceSpec):
+        _cpu_devices = dict()
+        for device in resource_spec.cpu_devices:
+            _cpu_devices.setdefault(device[0].split(':')[0], []).append(':'.join(device[0].split(':')[1:]))
+        return _cpu_devices
+
+    @staticmethod
+    def _get_node_gpu_devices(resource_spec: ResourceSpec):
+        _gpu_devices = dict()
+        for device in resource_spec.gpu_devices:
+            _gpu_devices.setdefault(device[0].split(':')[0], []).append(':'.join(device[0].split(':')[1:]))
+        return _gpu_devices
 
     def is_chief(self, address=None):
         """
@@ -140,6 +156,7 @@ class Cluster(metaclass=ABCMeta):
         port = self._address_to_port[self.get_local_address()]
         return 'grpc://localhost:' + port
 
+    # pylint: disable=too-many-locals
     def start(self):
         """
         Start tf.servers on all nodes.
@@ -165,13 +182,15 @@ class Cluster(metaclass=ABCMeta):
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
-                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index]
-
+                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
+                        '--cpu_device_num=%d' % len(self._cpu_devices[address])]
+                if address in self._gpu_devices:
+                    envs_cuda = []
+                else:
+                    envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
                 if self.is_chief(address):
                     json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
-
-                    cmd = envs + [sys.executable, '-m', module_name] + args
-
+                    cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
                     # pylint: disable=subprocess-popen-preexec-fn
                     proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
                     self.subprocesses.append(proc)
@@ -183,7 +202,7 @@ class Cluster(metaclass=ABCMeta):
                 else:  # remote
                     self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                    bash = envs + ['python', '-u', file] + args
+                    bash = envs + envs_cuda + ['python', '-u', file] + args
                     logging.info("Launching tf.server on %s" % address)
                     proc = self.remote_exec(bash, hostname=address)
                     # The above line immediately follows the Popen
