@@ -27,59 +27,34 @@ Besides all these advanced features, AutoDist is cautiously designed to isolate 
 from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
 for all-level users.
 
-<p float="left">
-<img src="docs/_static/img/Figure1.png " width="400" />
-<img src="docs/_static/img/Figure2.png " width="400" /> 
-</p>
-
-
-
-## Installation
-
-#### Install From Release Wheel 
-
-```bash
-pip install --extra-index-url http://pypi.int.petuum.com:8080/simple --trusted-host pypi.int.petuum.com autodist
-```
-
-#### Install From Latest Source
-
-Before running AutoDist, we require a small compilation of our Protocol Buffers. 
-To do so, you must first have [protoc installed](https://google.github.io/proto-lens/installing-protoc.html).
-
-Then, you can run the following command :
-```bash
-git clone https://gitlab.int.petuum.com/internal/scalable-ml/autodist.git
-cd autodist
-PROTOC=`which protoc` python setup.py build  # compile our protobufs
-pip install -e .  # install in development mode
-```
-
-To clean up any compiled files, run:
-```bash
-python setup.py clean --all
-```
-
 ## Using AutoDist
+
+Installation:
+
+```bash
+pip install autodist
+```
 
 It should be incredibly easy to modify existing TensorFlow code to use AutoDist.
 
 ```python
 import tensorflow as tf
-from autodist import AutoDist  # Import AutoDist
+from autodist import AutoDist
 
-autodist = AutoDist(resource_spec_file="resource_spec.yml")  # Config AutoDist
+ad = AutoDist(resource_spec_file="resource_spec.yml")
 
-with tf.Graph().as_default(), autodist.scope():  # Build under AutoDist
-    # ... BUILD YOUR_MODEL ...
-    sess = autodist.create_distributed_session()  # Run with AutoDist
-    sess.run(YOUR_MODEL.fetches)
+with tf.Graph().as_default(), ad.scope():
+    ########################################################
+    # Build Your Model Here and Train it Distributedly
+    ########################################################
+    sess = ad.create_distributed_session()
+    sess.run(...)
 ```
 
 ## References & Acknowledgements
 
-We learned and borrowed insights from a few open source projects:
-
-- [tf.distribute.strategy](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute)
-- [Horovod](https://github.com/horovod/horovod)
-- [Parallax](https://github.com/snuspl/parallax)
+We learned and borrowed insights from a few open source projects 
+including
+[Horovod](https://github.com/horovod/horovod),
+[Parallax](https://github.com/snuspl/parallax),
+[tf.distribute](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute).

@@ -29,7 +29,7 @@ Inside the docker environment, you will be able to run the examples using the ma
 properly set up your `<WORK_DIR>/resource_spec.yml`
 
 ```bash
-python linear_regression.py
+python /mnt/linear_regression.py
 ```
 
 ## Multiple Machine Setup

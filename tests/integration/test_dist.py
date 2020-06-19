@@ -33,8 +33,8 @@ def test_dist():
         # only run c9 for staleness
         if (c == "c9" and 'stale' not in s) or (c != "c9" and 'stale' in s):
             continue
-        cmd = ("python /home/autodist/autodist/tests/integration/single_run.py "
-               "--case={} --strategy={} --resource={}").format(c, s, r)
+        p = os.path.join(os.path.dirname(__file__), 'single_run.py')
+        cmd = ("python {} --case={} --strategy={} --resource={}").format(p, c, s, r)
         print("=====> test starts!")
         print("=====> cmd is {}".format(cmd))
         status = subprocess.run(args=cmd, shell=True)

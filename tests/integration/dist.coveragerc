@@ -1,0 +1,11 @@
+[run]
+branch = True
+include = *autodist*
+data_file = /mnt/.coverage
+parallel = True
+[report]
+exclude_lines =
+        pragma: no cover
+show_missing = True
+[html]
+directory = htmlcov
