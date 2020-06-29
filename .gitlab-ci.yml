@@ -191,15 +191,16 @@ release_autodist_wheel:
     - ls dist  # print whl version
     - twine upload --repository-url=http://pypi.int.petuum.com:8080/ -u "" -p "" dist/autodist*.whl
 
-docker:
-  only:
-    - master
-  stage: release
-  tags:
-    - docker_runner
-  before_script:
-    - docker login -u ${DEV_REG_USER} -p ${DEV_REG_TOKEN} ${DEV_REG_REGISTRY}
-    - export RELEASE_IMAGE=${DEV_REG_REGISTRY}/autodist:$(sh GENVER)
-  script:
-    - docker build --tag ${RELEASE_IMAGE} -f docker/toolchain/autodist-sym.Dockerfile .
-    - docker push ${RELEASE_IMAGE}
+# Skip docker release
+# docker:
+#   only:
+#     - master
+#   stage: release
+#   tags:
+#     - docker_runner
+#   before_script:
+#     - docker login -u ${DEV_REG_USER} -p ${DEV_REG_TOKEN} ${DEV_REG_REGISTRY}
+#     - export RELEASE_IMAGE=${DEV_REG_REGISTRY}/autodist:$(sh GENVER)
+#   script:
+#     - docker build --tag ${RELEASE_IMAGE} -f docker/toolchain/autodist-sym.Dockerfile .
+#     - docker push ${RELEASE_IMAGE}

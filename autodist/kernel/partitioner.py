@@ -13,16 +13,20 @@
 # limitations under the License.
 
 """Variable Partitioner."""
+import collections
+import re
 
 from google.protobuf.pyext._message import RepeatedScalarContainer
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python import ops
-from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import dtypes, versions
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import variable_scope as vs, array_ops, math_ops
+from tensorflow.python.ops.variables import Variable, PartitionedVariable
 from tensorflow.python.util.compat import as_bytes
 
 from autodist.const import AUTODIST_TO_DELETE_SCOPE, COLOCATION_PREFIX
+from autodist.checkpoint.saver import Saver
 from autodist.graph_item import GraphItem, Info
 from autodist.kernel.common.op_info import MUTABLE_STATE_OP_DIRECT_CONSUMER_OPS
 from autodist.kernel.common.utils import get_op_name, get_consumers, update_consumers, parse_name_scope
@@ -174,7 +178,7 @@ class VariablePartitioner(Kernel):
         self.graph_item: GraphItem = graph_item
         self.info: Info = graph_item.info.copy()
 
-    def _apply(self, *args, **kwargs):
+    def _apply(self, *args, **kwargs):      # pylint: disable-msg=too-many-locals
         """Partition the variables, returning a new GraphItem and a new corresponding Strategy."""
         # Get ops to partition
         vars_to_partition, unpartitioned_vars = self._get_vars_to_partition()
@@ -183,7 +187,7 @@ class VariablePartitioner(Kernel):
             return self.graph_item, self.node_config
 
         # Get everything we want to delete
-        to_delete = self._get_ops_to_delete(vars_to_partition)
+        to_delete, top_update_op_scopes = self._get_ops_to_delete(vars_to_partition)
 
         # In GraphDef, move everything in to_rename under a separate name scope
         # This allows us to create new ops with the to-be-deleted ops' original names
@@ -191,7 +195,7 @@ class VariablePartitioner(Kernel):
 
         # Create new variables and ops in the new graph
         new_graph_item.copy_gradient_info_from(self.graph_item)
-        new_vars = self._create_new_vars(new_graph_item, vars_to_partition, unpartitioned_vars)
+        new_vars, partition_config = self._create_new_vars(new_graph_item, vars_to_partition, unpartitioned_vars)
         # Remove the ops that are marked for deletion
         output_graph_item = self._delete_marked_ops(new_graph_item, AUTODIST_TO_DELETE_SCOPE)
 
@@ -211,8 +215,136 @@ class VariablePartitioner(Kernel):
         output_graph_item.info = self.info.copy()
         output_graph_item.copy_gradient_info_from(new_graph_item)
 
+        with self.graph_item.graph.as_default():
+            # this can be used to get the shape for partitioned vars
+            ori_vars = self.graph_item.get_all_variables()
+        with output_graph_item.graph.as_default():
+            self._update_save_ops(
+                graph_item=output_graph_item,
+                ori_vars=ori_vars,
+                update_op_scopes=top_update_op_scopes,
+                partition_config=partition_config
+            )
         logging.info('Successfully partitioned variables')
         return output_graph_item, self.node_config
+
+    @staticmethod
+    def _group_partitioned_vars(vars_to_group):
+        """Group the ops within the same partition."""
+        op_names = [v.op.name for v in vars_to_group]
+        partition_pattern = r"part_?\d+"
+        group = collections.defaultdict(list)
+        for name in op_names:
+            name_list = name.split("/")
+            # the ops in the optimizer
+            if len(name_list) >= 2 and re.match(partition_pattern, name_list[-2]):
+                name_list.pop(-2)
+                ori_name = "/".join(name_list)
+                group[ori_name].append(name)
+            # the ops outside the optimizer
+            elif re.match(partition_pattern, name_list[-1]):
+                name_list.pop(-1)
+                ori_name = "/".join(name_list)
+                group[ori_name].append(name)
+        return group
+
+    @staticmethod
+    def _get_paritioned_var_info(ori_vars,      # pylint: disable-msg=too-many-locals
+                                 new_vars,
+                                 var_group,
+                                 update_op_scopes,
+                                 partition_config):
+        """Get the construction info of all PartitionedVariables."""
+        partitioned_vars = dict()
+        ori_var_ops_to_vars = {v.op.name: v for v in ori_vars}
+        new_var_ops_to_vars = {v.op.name: v for v in new_vars}
+
+        major_version = versions.VERSION.split('.')[0]
+        for var_op_name, split_var_names in var_group.items():
+            ori_var = ori_var_ops_to_vars[var_op_name]
+            # get partition config
+            partition_name = ori_var.op.name
+            if major_version == "1":
+                for prefix in update_op_scopes:
+                    split_partition_name = partition_name.split("/")
+                    if split_partition_name[-1].startswith(prefix):
+                        partition_name = "/".join((split_partition_name[:-1]))
+                        break
+            elif major_version == "2":
+                for prefix in update_op_scopes:
+                    if partition_name.startswith(prefix):
+                        partition_name = partition_name[len(prefix) + 1:]
+                        partition_name = partition_name.split("/")
+                        partition_name = "/".join((partition_name[:-1]))
+                        break
+            else:
+                raise ValueError("Unknow version of tensorflow!!")
+            pc = partition_config[partition_name]
+
+            # create partitioned_var_info
+            partitioned_vars[ori_var.name] = {
+                "name": ori_var.op.name,
+                "shape": ori_var.shape.as_list(),
+                "dtype": ori_var.dtype,
+                "var_list": [new_var_ops_to_vars[var_op_name] for var_op_name in split_var_names],
+                "partitions": pc._partition_list
+            }
+            # NOTE: here is a strong assumption: partition vars offset in optimizer follows the naming order!!!
+            v_list = partitioned_vars[ori_var.name]["var_list"]
+            if not all(v._get_save_slice_info() is not None for v in v_list):
+                # set SaveSliceInfo
+                v_list.sort(key=lambda x: x.name)
+                slice_dim, num_slices = vs._get_slice_dim_and_num_slices(pc._partition_list)
+                for i, (var_offset, var_shape) in enumerate(
+                        vs._iter_slices(ori_var.shape.as_list(), num_slices, slice_dim)):
+                    v = v_list[i]
+                    v._set_save_slice_info(
+                        Variable.SaveSliceInfo(
+                            ori_var.name,
+                            ori_var.shape.as_list(),
+                            var_offset,
+                            var_shape
+                        )
+                    )
+        return partitioned_vars
+
+    def _update_save_ops(       # pylint: disable-msg=too-many-locals
+            self,
+            graph_item,
+            ori_vars,
+            update_op_scopes,
+            partition_config):
+
+        if not self.info.savers:
+            return
+        all_vars = graph_item.get_all_variables()
+        partitioned_var_group = self._group_partitioned_vars(all_vars)
+        partitioned_vars = self._get_paritioned_var_info(
+            ori_vars,
+            all_vars,
+            partitioned_var_group,
+            update_op_scopes,
+            partition_config
+        )
+        # new PartitionedVariables
+        new_vars = list()
+        for _, pv_config in partitioned_vars.items():
+            p_var = PartitionedVariable(
+                name=pv_config["name"],     # NOTE: this should be the op name
+                shape=pv_config["shape"],
+                dtype=pv_config["dtype"],
+                variable_list=pv_config["var_list"],
+                partitions=pv_config["partitions"]
+            )
+            all_vars = [v for v in all_vars if v not in pv_config["var_list"]]
+            new_vars.append(p_var)
+
+        for proto in self.info.savers:
+            saver = Saver.from_proto(proto)
+            saver._is_built = False
+            saver.saver_def = None
+            saver._var_list = all_vars + new_vars
+            saver.build()
 
     def _get_vars_to_partition(self):
         """
@@ -257,11 +389,13 @@ class VariablePartitioner(Kernel):
 
         # Mark all ops part of the optimizer for deletion
         update_op_scopes = set()
+        top_update_op_scopes = set()
         opt_name = self.graph_item.optimizer_args[0]._name
         for var_op_name, (_, _, update_op) in self.graph_item.var_op_name_to_grad_info.items():
             top_level_scope_opt = update_op.name[:update_op.name.find(opt_name) + len(opt_name)]
             # An optimizer can create all its relevant ops under the top level optimizer scope
             update_op_scopes.add(top_level_scope_opt)
+            top_update_op_scopes.add(top_level_scope_opt)
             #   as well as nested optimizer scopes under each variable name scope
             update_op_scopes.add(var_op_name + '/' + opt_name)
 
@@ -281,12 +415,15 @@ class VariablePartitioner(Kernel):
 
         to_delete.update({o for o in self.graph_item.graph.get_operations()
                           if any(o.name.startswith(top_level_scope) for top_level_scope in update_op_scopes)})
+        # NOTE: Here we assume the name_scope in saver is the default one.
+        to_delete.update({o for o in self.graph_item.graph.get_operations()
+                          if o.name.startswith("save/")})
         # If the user uses optimizer.get_gradients, gradients are stored under optimizer_name/gradients.
         # We don't want to delete those.
         # There could be other cases which require this logic to be made more robust, though.
         to_delete = {o for o in to_delete
                      if not any(o.name.startswith(tl_scope + '/gradients/') for tl_scope in update_op_scopes)}
-        return to_delete
+        return to_delete, top_update_op_scopes
 
     def _batch_prepend_name_scope(self, to_rename, new_name_scope):
         """
@@ -358,6 +495,7 @@ class VariablePartitioner(Kernel):
             List of new variables.
         """
         new_grads, new_vars = [], []
+        partition_config = {}
         with new_graph_item.graph.as_default():
             for var_name, (partition_str, reduction_destinations) in vars_to_partition.items():
                 var_op_name = get_op_name(var_name)
@@ -367,6 +505,7 @@ class VariablePartitioner(Kernel):
 
                 # Create partitioned variable and split gradients
                 pc = PartitionerConfig(partition_str=partition_str)
+                partition_config[var_op_name] = pc
 
                 # Now check compatibility
                 if isinstance(gradient, ops.IndexedSlices) and pc.axis != 0:
@@ -374,6 +513,8 @@ class VariablePartitioner(Kernel):
                                      'the limitation on the `embedding_lookup_v2` op.')
 
                 initial_value = new_graph_item.graph.get_tensor_by_name(var.initial_value.name)
+                # NOTE: to enable the saver, for now we only support partition on the one dimension
+                # https://github.com/tensorflow/tensorflow/blob/r2.0/tensorflow/python/ops/variables.py#L2915
                 partitioned_var = vs.get_variable(var_op.name, shape=None, initializer=initial_value,
                                                   partitioner=lambda pconf=pc, **unused_kwargs: pconf.partition_list,
                                                   validate_shape=False, use_resource=True)
@@ -430,7 +571,7 @@ class VariablePartitioner(Kernel):
             optimizer = self.graph_item.optimizer(*self.graph_item.optimizer_args[1:],
                                                   **self.graph_item.optimizer_kwargs)
             _ = optimizer.apply_gradients(zip(all_grads, all_vars))
-        return new_vars
+        return new_vars, partition_config
 
     @staticmethod
     def _handle_read(new_graph_item, var_op, partitioned_var):
