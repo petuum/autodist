@@ -246,6 +246,11 @@ class GraphItem:
         """Get variables that need to be synchronized if doing data parallelism."""
         return [op.outputs[0] for op in self.trainable_var_op_to_var]
 
+    def get_all_variables(self):
+        """Get all variables in this graph item."""
+        with self.graph.as_default():
+            return [_from_proto_fn(var_def) for var_def in self.info.variables]
+
     @contextlib.contextmanager
     def as_default(self):
         """A context scope with current graph item as the default."""
@@ -322,6 +327,8 @@ class GraphItem:
             var_scope = var_op.name
             update_op_scope = parse_name_scope(op.name)
             is_initialization = update_op_scope == var_scope
+            # TODO: we should not hardcode this scope.
+            # It is actually coming from the name given to the saver
             is_saving = update_op_scope.endswith('save')
 
             # TODO(future): support one variable -> multiple update ops (see AdamWeightDecay optimizer)
