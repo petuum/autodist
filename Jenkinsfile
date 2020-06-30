@@ -16,9 +16,9 @@ pipeline {
             }
             steps {
                 updateGitlabCommitStatus name: 'jenkins', state: 'running'
-                sh "docker build --build-arg TF_VERSION=1.15.0 -t ${DOCKER_REGISTRY}:tf1 -f docker/Dockerfile.gpu ."
+                sh "docker build --build-arg TF_VERSION=1.15.0 --no-cache -t ${DOCKER_REGISTRY}:tf1 -f docker/Dockerfile.gpu ."
                 sh "docker push ${DOCKER_REGISTRY}:tf1"
-                sh "docker build --build-arg TF_VERSION=2.0.1 -t ${DOCKER_REGISTRY}:tf2 -f docker/Dockerfile.gpu ."
+                sh "docker build --build-arg TF_VERSION=2.0.1 --no-cache -t ${DOCKER_REGISTRY}:tf2 -f docker/Dockerfile.gpu ."
                 sh "docker push ${DOCKER_REGISTRY}:tf2"
             }
         }
@@ -38,6 +38,7 @@ pipeline {
                 stage('tf1') {
                     agent {
                         docker {
+                            alwaysPull true
                             label 'GPU1'
                             image "${DOCKER_REGISTRY}:tf1"
                             args '--gpus all'
@@ -57,6 +58,7 @@ pipeline {
                 stage('tf2') {
                     agent {
                         docker {
+                            alwaysPull true
                             label 'GPU2'
                             image "${DOCKER_REGISTRY}:tf2"
                             args '--gpus all'
