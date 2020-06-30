@@ -39,7 +39,7 @@ from utils import input_pipeline
 from utils import bert_utils
 
 #########################################################################
-# Import AutoDist and Aroin Strategy
+# Import AutoDist and Strategy
 from autodist import AutoDist
 from autodist.strategy.all_reduce_strategy import AllReduce
 from autodist.strategy.ps_strategy import PS

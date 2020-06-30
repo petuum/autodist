@@ -45,7 +45,7 @@ class Saver(tf_saver.Saver):
                  filename=None):
         # pylint: disable=too-many-arguments, too-many-locals
         """
-        AutoDist saver.
+        Saver for AutoDist.
 
         This saver saves the variables that maps to the *original*, *user-declared*, *single-node* graph,
         instead of the transformed graph. Hence, the saved variables can be loaded either by the original

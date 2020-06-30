@@ -40,7 +40,7 @@ from utils import common
 from utils import imagenet_preprocessing
 
 #########################################################################
-# Import AutoDist and Aroin Strategy
+# Import AutoDist and Strategy
 from autodist import AutoDist
 from autodist.strategy.ps_strategy import PS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
