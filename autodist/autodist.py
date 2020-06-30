@@ -211,14 +211,14 @@ class _V2Graph(_GraphModeInterface):
     def _get_new_args(self, args, kwargs):
         # TODO: currently this follows Keras convention to treat the first dimension as batch dim
         #   However, we should use the tf.function to handle the complete cases of input signatures
-        _warning_msg = 'AutoDist treats the first dimension of autodist.function input with shape {} as batch dimenstion'
+        _warn_msg = 'AutoDist treats the first dimension of autodist.function input with shape {} as batch dimenstion'
 
         # Insert placeholders in place of ndarrays
         args_with_ph = []
         kwargs_with_ph = {}
         for i, arg in enumerate(args):
             if isinstance(arg, np.ndarray):
-                logging.warning(_warning_msg.format(arg.shape))
+                logging.warning(_warn_msg.format(arg.shape))
                 ph = array_ops.placeholder(dtype=arg.dtype, shape=(None, *arg.shape[1:]))
                 args_with_ph.append(ph)
                 self._ph_feed_index[ph] = i
@@ -226,7 +226,7 @@ class _V2Graph(_GraphModeInterface):
                 args_with_ph.append(arg)
         for (k, v) in kwargs.items():
             if isinstance(v, np.ndarray):
-                logging.warning(_warning_msg.format(v.shape))
+                logging.warning(_warn_msg.format(v.shape))
                 ph = array_ops.placeholder(dtype=v.dtype, shape=(None, *v.shape[1:]))
                 kwargs_with_ph[k] = ph
                 self._ph_feed_index[ph] = k

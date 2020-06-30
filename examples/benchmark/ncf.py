@@ -46,7 +46,7 @@ from utils.misc import keras_utils
 from utils.misc import model_helpers
 
 #########################################################################
-# Import AutoDist and Aroin Strategy
+# Import AutoDist and Strategy
 from autodist import AutoDist
 from autodist.strategy.ps_strategy import PS
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
