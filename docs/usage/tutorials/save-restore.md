@@ -16,10 +16,10 @@ from autodist.checkpoint.saver import Saver as autodist_saver
 # Build your model
 model = get_your_model()
 
-# create the AutoDist Saver
+# Create the AutoDist Saver
 saver = autodist_saver()
 
-# create the AutoDist session
+# Create the AutoDist session
 sess = autodist.create_distributed_session()
 for steps in steps_to_train:
     # some training steps
@@ -29,7 +29,26 @@ for steps in steps_to_train:
 saver.save(sess, checkpoint_name, global_step=step)
 ```
 
-More detailed usage, including the model restore, can be found [Here](../../../tests/checkpoint/test_keras_saver.py).
+The saved checkpoint can be loaded without AutoDist, just like normal TensorFlow Model.
+
+```
+with tf.compat.v1.Session() as sess:
+    # Build your model
+    model = get_your_model()
+
+    # Create the saver
+    tf_saver = tf.compat.v1.train.Saver()
+
+    # Restore the variables
+    saver.save(sess, checkpoint_name, global_step=step)
+
+# Fine-tuning
+for steps in steps_to_train:
+    # some training steps
+    ...
+```
+
+More detailed usage can be found [here](../../../tests/checkpoint/test_keras_saver.py).
 
 ## SavedModelBuilder
 
@@ -54,4 +73,32 @@ builder.add_meta_graph_and_variables(
 builder.save()
 ```
 
-More detailed usage, including the model fine-tuning, can be found [Here](../../../tests/checkpoint/test_saved_model.py).
+The output of *SavedModelBuilder* is a serialized data, including model weights, model graph and some other training information. However, as the same as the saver, user still can load the saved model without Autodist for fine-tuning or serving on a single node.
+
+```
+with tf.compat.v1.Session() as sess:
+    # Load the model
+    loaded = tf.compat.v1.saved_model.loader.load(sess, [TAG_NAME], EXPORT_DIR)
+
+    # Get training operation
+    train_op = tf.compat.v1.get_collection(TRAIN_OP_KEY)
+
+    # Retrieve model feed and fetch
+    serving_signature = loaded.signature_def["serving_default"]
+    input_op_names, input_tensor_names = _get_input_tensor_and_op(
+        serving_signature.inputs)
+    output_op_names, output_tensor_names = _get_output_tensor_and_op(
+        serving_signature.outputs)
+    input_table = dict(zip(input_op_names, input_tensor_names))
+    output_table = dict(zip(output_op_names, output_tensor_names))
+
+    # Fine-tuning
+    for _ in range(EPOCHS):
+        l, _ = sess.run([output_table["loss"], train_op], feed_dict={input_table["input_data"]:inputs})
+        print('loss: {}\n'.format(l))
+```
+
+We don't need to build our model in this case, because the model graph is loaded from the serialized data.
+
+
+More detailed usage, can be found [here](../../../tests/checkpoint/test_saved_model.py).
