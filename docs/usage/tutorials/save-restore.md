@@ -40,7 +40,7 @@ with tf.compat.v1.Session() as sess:
     tf_saver = tf.compat.v1.train.Saver()
 
     # Restore the variables
-    saver.save(sess, checkpoint_name, global_step=step)
+    tf_saver.restore(sess, tf.train.latest_checkpoint(checkpoint_dir))
 
 # Fine-tuning
 for steps in steps_to_train:
