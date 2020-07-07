@@ -1,4 +1,4 @@
-# Rationale (WIP)
+# Rationale
 
 As ML and deep learning models become more structurally complex, existing distributed ML systems have struggled to provide 
 excellent _all-round_ performance on a wide variety of models, since most of them are specialized upon one monolithic system architecture or technology.
