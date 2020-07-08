@@ -10,7 +10,7 @@ synchronizing sparse parameter variables like those embedding layers found in ma
 Unlike existing systems, AutoDist is motivated by the fact that different ML models (or different components in a complex model) exhibit different runtime characteristics, and different learning algorithms demonstrate distinct computational patterns, which demand model and algorithm-aware system or parallelization treatments for distributed execution performance, illustrated below.
 
 <p align="center">
-  <image src="images/motivation.png" width=500/>
+  <image src="images/motivation.png" width=600/>
 </p>
 
 AutoDist distributes an incoming model by first analyzing the computational graph of an incoming model. Depending on the detailed characteristics of model building blocks and resource specifications, AutoDist achieves adaptiveness by composing various, seemingly different, atomic distributed ML techniques together as a _distribution strategy_, a unified model- and resource-depdent representation which instructs how the model should be parallelized on the target cluster. It then transforms the original single-node computational graph based on the generated strategy to a distributed one, running on distributed clusters. 
