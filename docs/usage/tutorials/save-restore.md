@@ -48,7 +48,7 @@ for steps in steps_to_train:
     ...
 ```
 
-More detailed usage can be found [here](../../../tests/checkpoint/test_keras_saver.py).
+More detailed usage with Keras can be found [here](https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_keras_saver.py).
 
 ## SavedModelBuilder
 
@@ -101,4 +101,4 @@ with tf.compat.v1.Session() as sess:
 We don't need to build our model in this case, because the model graph is loaded from the serialized data.
 
 
-More detailed usage, can be found [here](../../../tests/checkpoint/test_saved_model.py).
+More detailed usage, can be found [here](https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_saved_model.py).
