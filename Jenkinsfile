@@ -2,7 +2,6 @@ def myflag = false
 
 pipeline {
   options {
-    gitLabConnection('Gitlab')
     timeout(time: 2, unit: 'HOURS')
   }
   environment {
@@ -15,7 +14,6 @@ pipeline {
                 label 'GPU1'
             }
             steps {
-                updateGitlabCommitStatus name: 'jenkins', state: 'running'
                 sh "docker build --build-arg TF_VERSION=1.15.0 --no-cache -t ${DOCKER_REGISTRY}:tf1 -f docker/Dockerfile.gpu ."
                 sh "docker push ${DOCKER_REGISTRY}:tf1"
                 sh "docker build --build-arg TF_VERSION=2.0.1 --no-cache -t ${DOCKER_REGISTRY}:tf2 -f docker/Dockerfile.gpu ."
@@ -49,7 +47,7 @@ pipeline {
                         sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf1"
                     }
                     post {
-                        success {
+                        always {
                             junit allowEmptyResults: true, testResults: 'tests/test_local.xml'
                             stash includes: 'tests/.coverage.local.tf1', name: 'testcov_local_tf1'
                         }
@@ -69,7 +67,7 @@ pipeline {
                         sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf2"
                     }
                     post {
-                        success {
+                        always {
                             junit allowEmptyResults: true, testResults: 'tests/test_local.xml'
                             stash includes: 'tests/.coverage.local.tf2', name: 'testcov_local_tf2'
                         }
@@ -92,7 +90,7 @@ pipeline {
                         echo "${myflag}"
                     }
                     post {
-                        success {
+                        always {
                             junit allowEmptyResults: true, testResults: 'tests/test_dist.xml'
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_chief'
                         }
@@ -111,7 +109,7 @@ pipeline {
                         echo "${myflag}"
                     }
                     post {
-                        success {
+                        always {
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_worker'
                         }
                     }
@@ -143,17 +141,6 @@ pipeline {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage-report/htmlcov.tar.gz', fingerprint: true
                 }
             }
-        }
-    }
-    post {
-        success {
-            updateGitlabCommitStatus name: 'jenkins', state: 'success'
-        }
-        failure {
-            updateGitlabCommitStatus name: 'jenkins', state: 'failed'
-        }
-        aborted {
-            updateGitlabCommitStatus name: 'jenkins', state: 'canceled'
         }
     }
 }

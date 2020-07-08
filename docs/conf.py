@@ -236,7 +236,7 @@ def linkcode_resolve(domain, info):
     if info['module'].endswith('_pb2'):
         return None
     path = info['module'].replace('.', '/')
-    return "https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tree/master/" + path + '.py'
+    return "https://github.com/petuum/autodist/blob/master/" + path + '.py'
 
 # -- Options for intersphinx and extlinks extension --------------------------
 

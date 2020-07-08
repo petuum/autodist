@@ -7,7 +7,7 @@ To facilitate the installation process on GPU machines, the AutoDist team has pu
 First clone the AutoDist repository.
 
 ```bash
-git clone https://gitlab.int.petuum.com/internal/scalable-ml/autodist.git
+git clone https://github.com/petuum/autodist.git
 ```
 
 Once we cloned the repository successfully we can build the Docker image with the provided Dockerfile.

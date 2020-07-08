@@ -14,7 +14,7 @@ with the specific version indicated in `setup.py`.
 
 Then, you can run the following command :
 ```bash
-git clone https://gitlab.int.petuum.com/internal/scalable-ml/autodist.git
+git clone https://github.com/petuum/autodist.git
 cd autodist
 PROTOC=`which protoc` python setup.py build  # compile our protobufs
 pip install -e .  # install in development mode
@@ -23,4 +23,5 @@ pip install -e .  # install in development mode
 To clean up any compiled files, run:
 ```bash
 python setup.py clean --all
+```
 

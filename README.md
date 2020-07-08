@@ -1,4 +1,3 @@
-# AutoDist
 
 <p align="center">
   <image src="docs/_static/img/logo.png" width=400 />
@@ -8,8 +7,7 @@
 [![coverage report](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/coverage.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
 
 [Documentation](http://10.20.41.55:8080) |
-[Examples](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tree/master/examples) |
-[Releases](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/releases)
+[Examples](https://github.com/petuum/autodist/tree/master/examples/benchmark) |
 
 **AutoDist** is a distributed deep-learning training engine. 
 AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models 
