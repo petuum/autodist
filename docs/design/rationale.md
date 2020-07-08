@@ -29,7 +29,7 @@ The figure below contrasts AutoDist (lower) with most existing distributed ML sy
 
 AutoDist offers the following competitive features over existing parallel ML training systems:
 
-- **Unified representation for DL parallelization**. AutoDist develops a unified representation that encodes multiple contributing factors to data-parallel synchronization performance. The strategy is explicitly represented, executable by low-level systems, and transferable across users.
+- **Unified representation for DL parallelization**. AutoDist develops a unified representation that encodes multiple contributing factors to DL parallelization performance. The strategy is explicitly represented, executable by low-level systems, and transferable across users.
 
 - **Composable system architecture.** AutoDist allows for strategy composition -- each aspect of DL parallelization maps to a primitive dataflow graph rewriting kernel in the backend system. A complete synchronization strategy is hence materialized by composing multiple primitive kernels, based on the strategy representation. This approach isolates strategy prototyping from low-level distributed systems, allows composition, assessment and execution of complex synchronization strategies via a unified interface, and is extensible to emerging synchronization techniques.
 
