@@ -123,7 +123,7 @@ html_theme = 'sphinx_rtd_theme'
 # Register the theme as an extension to generate a sitemap.xml
 extensions.append("sphinx_rtd_theme")
 # logo
-html_logo = '_static/img/autodist.png'
+html_logo = '_static/img/logo.png'
 html_favicon = '_static/img/favicon.ico'
 
 # Theme options are theme-specific and customize the look and feel of a theme

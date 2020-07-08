@@ -1,4 +1,8 @@
-# AutoDist:  Easy and Composable Distributed Deep Learning
+# AutoDist
+
+<p align="center">
+  <image src="docs/_static/img/logo.png" width=400 />
+</p>
 
 [![pipeline status](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/pipeline.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
 [![coverage report](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/coverage.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
@@ -28,8 +32,8 @@ from ML prototyping, and exposes a simple API that makes it easy to use and swit
 for all-level users.
 
 <p float="left">
-<img src="docs/_static/img/Figure1.png " width="400" />
-<img src="docs/_static/img/Figure2.png " width="400" /> 
+<img src="docs/_static/img/Figure1.png" width=400 />
+<img src="docs/_static/img/Figure2.png" width=400 /> 
 </p>
 
 ## Using AutoDist
