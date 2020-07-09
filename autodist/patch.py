@@ -170,7 +170,7 @@ class _KerasPatch:
             for x, y in zip(feed_symbols, symbol_vals):
                 connection = callable_opts.tensor_connection.add()
                 if x.dtype != y.dtype:
-                    y = math_ops.cast(y, dtype=x.dtype)
+                    y = math_ops.cast(y, x.dtype)
                 from_tensor = ops._as_graph_element(y)
                 if from_tensor is None:
                     from_tensor = y

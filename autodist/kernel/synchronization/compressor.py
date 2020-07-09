@@ -193,7 +193,7 @@ class HorovodCompressor(Compressor):
         if tensor.dtype.is_floating:
             # Only allow compression from other floating point types
             # TODO: dtypes.float16 if using TF2.1.x (errors in 2.0)
-            tensor_compressed = math_ops.cast(tensor, dtype=dtypes.float32)
+            tensor_compressed = math_ops.cast(tensor, dtypes.float32)
         return tensor_compressed
 
     def _decompress(self, compressed_tensor: Tensor):
@@ -279,5 +279,5 @@ class PowerSGDCompressor(CompressorEF):
 
             begin, rest = matrix[:, :i], matrix[:, (i + 1):]
             rest -= math_ops.matmul(v, rest, transpose_a=True) * v
-            matrix = array_ops.concat([begin, v, rest], axis=1)
+            matrix = array_ops.concat([begin, v, rest], 1)
         return matrix

@@ -32,7 +32,7 @@ if sys.argv and os.path.exists(sys.argv[0]) and not os.path.isabs(sys.argv[0]):
     sys.exit(1)
 
 # Runtime compatibility checking
-COMPAT_TF_VERSIONS = [1.15, 2.1]
+COMPAT_TF_VERSIONS = [1.15, 2.2]
 float_major_minor_tf_version = float(version.VERSION[:version.VERSION.rfind('.')])
 if not COMPAT_TF_VERSIONS[0] <= float_major_minor_tf_version <= COMPAT_TF_VERSIONS[1]:
     logging.error('AutoDist is only compatible with `tensorflow-gpu>={}, <={}`, but the current version is {}'.format(
