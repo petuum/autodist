@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -243,8 +248,63 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="logging">
-<h1>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.utils.logging">
+<span id="logging"></span><h1>Logging<a class="headerlink" href="#module-autodist.utils.logging" title="Permalink to this headline">¶</a></h1>
+<p>AutoDist logger.</p>
+<dl class="py function">
+<dt id="autodist.utils.logging.get_logger">
+<code class="sig-name descname">get_logger</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.get_logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the AutoDist logger instance.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.log">
+<code class="sig-name descname">log</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">level</span></em>, <em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message at a given level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.debug">
+<code class="sig-name descname">debug</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message at the DEBUG level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.error">
+<code class="sig-name descname">error</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message at the ERROR level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.critical">
+<code class="sig-name descname">critical</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.critical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message at the CRITICAL level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.info">
+<code class="sig-name descname">info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message at the INFO level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.warning">
+<code class="sig-name descname">warning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message at the WARNING level.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.set_verbosity">
+<code class="sig-name descname">set_verbosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.set_verbosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity of autodist logger.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.utils.logging.get_verbosity">
+<code class="sig-name descname">get_verbosity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/utils/logging.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.utils.logging.get_verbosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the verbosity of autodist logger.</p>
+</dd></dl>
+
 </div>
 
 

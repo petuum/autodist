@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -245,8 +250,34 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="collective-key">
-<h1>Collective Key<a class="headerlink" href="#collective-key" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.kernel.synchronization.collective_key">
+<span id="collective-key"></span><h1>Collective Key<a class="headerlink" href="#module-autodist.kernel.synchronization.collective_key" title="Permalink to this headline">¶</a></h1>
+<p>Utility functions for <cite>AllReduceSynchronizer</cite>.</p>
+<dl class="py function">
+<dt id="autodist.kernel.synchronization.collective_key.get_collective_keys">
+<code class="sig-name descname">get_collective_keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/collective_key.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.collective_key.get_collective_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a singleton instance of CollectiveKey.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.kernel.synchronization.collective_key.CollectiveKey">
+<em class="property">class </em><code class="sig-name descname">CollectiveKey</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">group_key_start</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/collective_key.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.collective_key.CollectiveKey" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A hash that generates group key and instance key for AllReduce.</p>
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.collective_key.CollectiveKey.get_group_key">
+<code class="sig-name descname">get_group_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">canonical_devices</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/collective_key.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.collective_key.CollectiveKey.get_group_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate or retrieve the group key based on a list of strings of the participating devices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.collective_key.CollectiveKey.get_instance_key">
+<code class="sig-name descname">get_instance_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_op_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/collective_key.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.collective_key.CollectiveKey.get_instance_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate or retrieve the instance key based on the <em>original</em> variable op name.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

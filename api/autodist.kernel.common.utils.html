@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -245,8 +250,261 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="utils">
-<h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.kernel.common.utils">
+<span id="utils"></span><h1>Utils<a class="headerlink" href="#module-autodist.kernel.common.utils" title="Permalink to this headline">¶</a></h1>
+<p>A collection of useful functions for the kernel submodule.</p>
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.get_op_name">
+<code class="sig-name descname">get_op_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tensor_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.get_op_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a tensor name, return the corresponding op name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tensor_name</strong> – The name of a tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The op name</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.strip_replica_prefix">
+<code class="sig-name descname">strip_replica_prefix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.strip_replica_prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a tensor or op name, strip the AUTODIST-REPLICA prefix if there exists as the prefix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – op or tensor name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The stripped name</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.parse_name_scope">
+<code class="sig-name descname">parse_name_scope</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.parse_name_scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a tensor or op name, return the name scope of the raw name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of a tensor or an op.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The name scope</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.parse_optimizer_scope">
+<code class="sig-name descname">parse_optimizer_scope</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">update_op_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.parse_optimizer_scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the name of an update_op, return its optimizer name scope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>update_op_name</strong> – the name of an update_op (usually ResourceApply).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The outermost name scope of the optimizer</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.replica_prefix">
+<code class="sig-name descname">replica_prefix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">replica_id</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.replica_prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate replica prefix based on replica id.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">replica_prefix</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">{AUTODIST_REPLICA_PREFIX}1</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>replica_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – 0,1,2,3…</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The replica prefix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.get_consumers">
+<code class="sig-name descname">get_consumers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">op</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.get_consumers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a flat list from [output[0].consumers(), output[1].consumers(), …].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>op</strong> – TensorFlow Operator</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The list of consumers</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[Operation]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.get_control_consumers">
+<code class="sig-name descname">get_control_consumers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">op</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.get_control_consumers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a flat list of the control-dependency consumers ([B]) of the op (A).</p>
+<p>A: [B]
+A –&gt; B
+B depends on A</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>op</strong> – TensorFlow Operator</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The list of control-dependency consumers</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[Operation]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.traverse">
+<code class="sig-name descname">traverse</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_ops</span></em>, <em class="sig-param"><span class="n">end_ops</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">neighbors_fn</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.traverse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Traverse a graph and output the visited nodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_ops</strong> (<em>iter</em>) – The nodes to start the traversal from.</p></li>
+<li><p><strong>end_ops</strong> (<em>iter</em>) – Optional. The nodes at which to stop traversing.</p></li>
+<li><p><strong>neighbors_fn</strong> (<em>func</em>) – Optional. Function from Op -&gt; Iter[Op] that provides the neighbors of an op.
+Defaults to <cite>get_consumers</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The visited nodes</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Set[Operation]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.get_ancestors">
+<code class="sig-name descname">get_ancestors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_ops</span></em>, <em class="sig-param"><span class="n">end_ops</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_control_inputs</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.get_ancestors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all ancestor ops of the start ops.</p>
+<p>Starting from start_ops,
+follow the computation graph backwards from consumer to input to find ancestors.
+Stop navigating the graph at end_ops.
+Include both start_ops and end_ops in the returning set of ancestor ops.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_ops</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.8)"><em>set</em></a>) – The set of ops from which to begin traversing the graph.</p></li>
+<li><p><strong>end_ops</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.8)"><em>set</em></a>) – The set of ops at which to stop traversing the graph.</p></li>
+<li><p><strong>include_control_inputs</strong> – Whether or not to also consider control dependencies as edges.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The ancestor ops</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Set[Operation]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.update_consumers">
+<code class="sig-name descname">update_consumers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">consumers</span></em>, <em class="sig-param"><span class="n">old_tensor</span></em>, <em class="sig-param"><span class="n">new_tensor</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.update_consumers" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each consumer’s inputs, replace old_tensor with new_tensor.</p>
+<p>Be careful using op.consumers() directly as an argument,
+since this causes incorrect list iteration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>consumers</strong> (<em>List</em><em>[</em><em>Operation</em><em>]</em>) – The consumer ops in the graph to be modified.</p></li>
+<li><p><strong>old_tensor</strong> (<em>Tensor</em>) – The tensor whose link to its consumer will be removed</p></li>
+<li><p><strong>new_tensor</strong> (<em>Tensor</em>) – The tensor which will replace old_tensor</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.update_control_consumers">
+<code class="sig-name descname">update_control_consumers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">control_consumer_ops</span></em>, <em class="sig-param"><span class="n">old_op</span></em>, <em class="sig-param"><span class="n">new_op</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.update_control_consumers" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each consumer’s control inputs, replace old_op with new_op.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>control_consumer_ops</strong> (<em>List</em><em>[</em><em>Operation</em><em>]</em>) – The control-dep consumer ops in the graph to be modified.</p></li>
+<li><p><strong>old_op</strong> (<em>Operation</em>) – The op whose link to its control-dep consumer will be removed</p></li>
+<li><p><strong>new_op</strong> (<em>Operation</em>) – The op which will replace old_op</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.update_colocation_group">
+<code class="sig-name descname">update_colocation_group</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ops</span></em>, <em class="sig-param"><span class="n">old_op</span></em>, <em class="sig-param"><span class="n">new_op</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.update_colocation_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each op in ops, we replace the colocation group as old_op to colocation group as new_op.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ops</strong> (<em>Iterable</em><em>[</em><em>Operation</em><em>]</em>) – The operations to update</p></li>
+<li><p><strong>old_op</strong> (<em>Operation</em>) – The op having the old colocation group</p></li>
+<li><p><strong>new_op</strong> (<em>Operation</em>) – The op having the new colocation group</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.remove_from_control_consumers">
+<code class="sig-name descname">remove_from_control_consumers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">control_consumer_ops</span></em>, <em class="sig-param"><span class="n">op_to_remove</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.remove_from_control_consumers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the op_to_remove from the control inputs for each op in “control_consumer_ops”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>control_consumer_ops</strong> (<em>List</em><em>[</em><em>Operation</em><em>]</em>) – Ops that have op_to_remove as their current control inputs</p></li>
+<li><p><strong>op_to_remove</strong> (<em>Operation</em>) – The op to be removed</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.utils.get_index_from_tensor_name">
+<code class="sig-name descname">get_index_from_tensor_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tensor_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.utils.get_index_from_tensor_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the index of the tensor of a certain op.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tensor_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The tensor name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The index of the tensor</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 

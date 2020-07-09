@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +246,38 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="coordinator">
-<h1>Coordinator<a class="headerlink" href="#coordinator" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.coordinator">
+<span id="coordinator"></span><h1>Coordinator<a class="headerlink" href="#module-autodist.coordinator" title="Permalink to this headline">¶</a></h1>
+<p>Coordinator.</p>
+<dl class="py class">
+<dt id="autodist.coordinator.Coordinator">
+<em class="property">class </em><code class="sig-name descname">Coordinator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">strategy</span></em>, <em class="sig-param"><span class="n">cluster</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/coordinator.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.coordinator.Coordinator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Coordinator is responsible for running user code on a cluster.</p>
+<p>Has one main method, <cite>launch_clients</cite>, which runs the user’s code
+on every node of the cluster. Since all we pass to each worker are
+their worker id and the distribution strategy, this means that each
+worker will do its own full graph transformation based on the strategy.
+Then the workers will sync up when they run the graphs.</p>
+<p><cite>join</cite> is called by <cite>atexit</cite> so that we can try to make sure the
+remote processes are killed with the chief’s process is ended.</p>
+<dl class="py method">
+<dt id="autodist.coordinator.Coordinator.launch_clients">
+<code class="sig-name descname">launch_clients</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/coordinator.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.coordinator.Coordinator.launch_clients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Launch the user’s code on each worker.</p>
+<p>Sets environment variables so that we run the correct AutoDist code paths on workers.
+(i.e., the non-chief code-paths).</p>
+<p>Store each new process created into the class so they can be monitored with <cite>join</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.coordinator.Coordinator.join">
+<code class="sig-name descname">join</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/coordinator.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.coordinator.Coordinator.join" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for all subprocesses of remote workers to be completed.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -243,8 +248,497 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="strategy-pb2">
-<h1>Strategy Pb2<a class="headerlink" href="#strategy-pb2" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.proto.strategy_pb2">
+<span id="strategy-pb2"></span><h1>Strategy Pb2<a class="headerlink" href="#module-autodist.proto.strategy_pb2" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="autodist.proto.strategy_pb2.Strategy">
+<em class="property">class </em><code class="sig-name descname">Strategy</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.pyext._message.CMessage</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.message.Message</span></code></p>
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.ByteSize">
+<code class="sig-name descname">ByteSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.ByteSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the message in bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Clear">
+<code class="sig-name descname">Clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.ClearExtension">
+<code class="sig-name descname">ClearExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.ClearExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.ClearField">
+<code class="sig-name descname">ClearField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.ClearField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.CopyFrom">
+<code class="sig-name descname">CopyFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.CopyFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.DESCRIPTOR">
+<code class="sig-name descname">DESCRIPTOR</code><em class="property"> = &lt;google.protobuf.pyext._message.MessageDescriptor object&gt;</em><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.DESCRIPTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.DiscardUnknownFields">
+<code class="sig-name descname">DiscardUnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.DiscardUnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discards the unknown fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Extensions">
+<code class="sig-name descname">Extensions</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Extensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extension dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.FindInitializationErrors">
+<code class="sig-name descname">FindInitializationErrors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.FindInitializationErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds unset required fields.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.FromString">
+<code class="sig-name descname">FromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.FromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates new method instance from given serialized data.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig">
+<em class="property">class </em><code class="sig-name descname">GraphConfig</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.pyext._message.CMessage</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.message.Message</span></code></p>
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.ByteSize">
+<code class="sig-name descname">ByteSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.ByteSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the message in bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.Clear">
+<code class="sig-name descname">Clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.Clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.ClearExtension">
+<code class="sig-name descname">ClearExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.ClearExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.ClearField">
+<code class="sig-name descname">ClearField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.ClearField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.CopyFrom">
+<code class="sig-name descname">CopyFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.CopyFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.DESCRIPTOR">
+<code class="sig-name descname">DESCRIPTOR</code><em class="property"> = &lt;google.protobuf.pyext._message.MessageDescriptor object&gt;</em><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.DESCRIPTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.DiscardUnknownFields">
+<code class="sig-name descname">DiscardUnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.DiscardUnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discards the unknown fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.Extensions">
+<code class="sig-name descname">Extensions</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.Extensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extension dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.FindInitializationErrors">
+<code class="sig-name descname">FindInitializationErrors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.FindInitializationErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds unset required fields.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.FromString">
+<code class="sig-name descname">FromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.FromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates new method instance from given serialized data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.HasExtension">
+<code class="sig-name descname">HasExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.HasExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.HasField">
+<code class="sig-name descname">HasField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.HasField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.IsInitialized">
+<code class="sig-name descname">IsInitialized</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.IsInitialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all required fields of a protocol message are set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.ListFields">
+<code class="sig-name descname">ListFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.ListFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all set fields of a message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.MergeFrom">
+<code class="sig-name descname">MergeFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.MergeFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.MergeFromString">
+<code class="sig-name descname">MergeFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.MergeFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.ParseFromString">
+<code class="sig-name descname">ParseFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.ParseFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.RegisterExtension">
+<code class="sig-name descname">RegisterExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.RegisterExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an extension with the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.SerializePartialToString">
+<code class="sig-name descname">SerializePartialToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.SerializePartialToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, even if it isn’t initialized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.SerializeToString">
+<code class="sig-name descname">SerializeToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.SerializeToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, only for initialized messages.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.SetInParent">
+<code class="sig-name descname">SetInParent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.SetInParent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the has bit of the given field in its parent message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.UnknownFields">
+<code class="sig-name descname">UnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.UnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse unknown field set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.WhichOneof">
+<code class="sig-name descname">WhichOneof</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.WhichOneof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the field set inside a oneof, or None if no field is set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.GraphConfig.replicas">
+<code class="sig-name descname">replicas</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.GraphConfig.replicas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.GraphConfig.replicas</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.HasExtension">
+<code class="sig-name descname">HasExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.HasExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.HasField">
+<code class="sig-name descname">HasField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.HasField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.IsInitialized">
+<code class="sig-name descname">IsInitialized</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.IsInitialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all required fields of a protocol message are set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.ListFields">
+<code class="sig-name descname">ListFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.ListFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all set fields of a message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.MergeFrom">
+<code class="sig-name descname">MergeFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.MergeFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.MergeFromString">
+<code class="sig-name descname">MergeFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.MergeFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node">
+<em class="property">class </em><code class="sig-name descname">Node</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.pyext._message.CMessage</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.message.Message</span></code></p>
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.AllReduceSynchronizer">
+<code class="sig-name descname">AllReduceSynchronizer</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.AllReduceSynchronizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.Node.AllReduceSynchronizer</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.ByteSize">
+<code class="sig-name descname">ByteSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.ByteSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the message in bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.Clear">
+<code class="sig-name descname">Clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.Clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.ClearExtension">
+<code class="sig-name descname">ClearExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.ClearExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.ClearField">
+<code class="sig-name descname">ClearField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.ClearField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.CopyFrom">
+<code class="sig-name descname">CopyFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.CopyFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.DESCRIPTOR">
+<code class="sig-name descname">DESCRIPTOR</code><em class="property"> = &lt;google.protobuf.pyext._message.MessageDescriptor object&gt;</em><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.DESCRIPTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.DiscardUnknownFields">
+<code class="sig-name descname">DiscardUnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.DiscardUnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discards the unknown fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.Extensions">
+<code class="sig-name descname">Extensions</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.Extensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extension dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.FindInitializationErrors">
+<code class="sig-name descname">FindInitializationErrors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.FindInitializationErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds unset required fields.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.FromString">
+<code class="sig-name descname">FromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.FromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates new method instance from given serialized data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.HasExtension">
+<code class="sig-name descname">HasExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.HasExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.HasField">
+<code class="sig-name descname">HasField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.HasField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.IsInitialized">
+<code class="sig-name descname">IsInitialized</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.IsInitialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all required fields of a protocol message are set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.ListFields">
+<code class="sig-name descname">ListFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.ListFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all set fields of a message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.MergeFrom">
+<code class="sig-name descname">MergeFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.MergeFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.MergeFromString">
+<code class="sig-name descname">MergeFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.MergeFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.PSSynchronizer">
+<code class="sig-name descname">PSSynchronizer</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.PSSynchronizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.Node.PSSynchronizer</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.ParseFromString">
+<code class="sig-name descname">ParseFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.ParseFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.RegisterExtension">
+<code class="sig-name descname">RegisterExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.RegisterExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an extension with the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.SerializePartialToString">
+<code class="sig-name descname">SerializePartialToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.SerializePartialToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, even if it isn’t initialized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.SerializeToString">
+<code class="sig-name descname">SerializeToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.SerializeToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, only for initialized messages.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.SetInParent">
+<code class="sig-name descname">SetInParent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.SetInParent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the has bit of the given field in its parent message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.UnknownFields">
+<code class="sig-name descname">UnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.UnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse unknown field set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.WhichOneof">
+<code class="sig-name descname">WhichOneof</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.WhichOneof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the field set inside a oneof, or None if no field is set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.part_config">
+<code class="sig-name descname">part_config</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.part_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.Node.part_config</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.partitioner">
+<code class="sig-name descname">partitioner</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.partitioner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.Node.partitioner</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.Node.var_name">
+<code class="sig-name descname">var_name</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.Node.var_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.Node.var_name</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.ParseFromString">
+<code class="sig-name descname">ParseFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.ParseFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.RegisterExtension">
+<code class="sig-name descname">RegisterExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.RegisterExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an extension with the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.SerializePartialToString">
+<code class="sig-name descname">SerializePartialToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.SerializePartialToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, even if it isn’t initialized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.SerializeToString">
+<code class="sig-name descname">SerializeToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.SerializeToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, only for initialized messages.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.SetInParent">
+<code class="sig-name descname">SetInParent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.SetInParent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the has bit of the given field in its parent message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.UnknownFields">
+<code class="sig-name descname">UnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.UnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse unknown field set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.strategy_pb2.Strategy.WhichOneof">
+<code class="sig-name descname">WhichOneof</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.WhichOneof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the field set inside a oneof, or None if no field is set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.graph_config">
+<code class="sig-name descname">graph_config</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.graph_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.graph_config</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.id">
+<code class="sig-name descname">id</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.id</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.node_config">
+<code class="sig-name descname">node_config</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.node_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.node_config</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.strategy_pb2.Strategy.path">
+<code class="sig-name descname">path</code><a class="headerlink" href="#autodist.proto.strategy_pb2.Strategy.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.Strategy.path</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

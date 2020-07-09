@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -243,8 +248,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="saved-model-builder">
-<h1>Saved Model Builder<a class="headerlink" href="#saved-model-builder" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.checkpoint.saved_model_builder">
+<span id="saved-model-builder"></span><h1>Saved Model Builder<a class="headerlink" href="#module-autodist.checkpoint.saved_model_builder" title="Permalink to this headline">¶</a></h1>
+<p>AutoDist SavedModelBuilder.</p>
+<dl class="py class">
+<dt id="autodist.checkpoint.saved_model_builder.SavedModelBuilder">
+<em class="property">class </em><code class="sig-name descname">SavedModelBuilder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">export_dir</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/checkpoint/saved_model_builder.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.checkpoint.saved_model_builder.SavedModelBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tensorflow.python.saved_model.builder_impl.SavedModelBuilder</span></code></p>
+<p>Wrapper of SavedModelBuilder.</p>
+<dl class="py method">
+<dt id="autodist.checkpoint.saved_model_builder.SavedModelBuilder.add_meta_graph_and_variables">
+<code class="sig-name descname">add_meta_graph_and_variables</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sess</span></em>, <em class="sig-param"><span class="n">tags</span></em>, <em class="sig-param"><span class="n">signature_def_map</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">assets_collection</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">legacy_init_op</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clear_devices</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">main_op</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">strip_default_attrs</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">saver</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">train_op</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/checkpoint/saved_model_builder.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.checkpoint.saved_model_builder.SavedModelBuilder.add_meta_graph_and_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save graph variables and metagraph.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

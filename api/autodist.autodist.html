@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +246,97 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="autodist">
-<h1>Autodist<a class="headerlink" href="#autodist" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.autodist">
+<span id="autodist"></span><h1>Autodist<a class="headerlink" href="#module-autodist.autodist" title="Permalink to this headline">¶</a></h1>
+<p>User Interface.</p>
+<dl class="py function">
+<dt id="autodist.autodist.set_default_autodist">
+<code class="sig-name descname">set_default_autodist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">o</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.set_default_autodist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the AutoDist object the scope of which you are in.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.autodist.get_default_autodist">
+<code class="sig-name descname">get_default_autodist</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.get_default_autodist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the AutoDist object the scope of which you are in.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.autodist.AutoDist">
+<em class="property">class </em><code class="sig-name descname">AutoDist</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.AutoDist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.autodist._V1Graph</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.autodist._V2Graph</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.autodist._V2Eager</span></code></p>
+<p>AutoDist is a scalable ML engine.</p>
+<p>AutoDist provides user-friendly interfaces to distribute local deep-learning model training
+across multiple processing units with scalability and minimal code changes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource_spec_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – file path of a resource specification yaml</p></li>
+<li><p><strong>strategy_builder</strong> (<a class="reference internal" href="autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder" title="autodist.strategy.base.StrategyBuilder"><em>base.StrategyBuilder</em></a>) – (optional) a strategy builder object</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="autodist.autodist.AutoDist.scope">
+<code class="sig-name descname">scope</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.AutoDist.scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a context manager capturing the code block to be distributed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields</dt>
+<dd class="field-odd"><p>AutoDist context</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.autodist.AutoDist.build_strategy">
+<code class="sig-name descname">build_strategy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.AutoDist.build_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build distributed strategy based on the default graph in the scope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Distributed strategy representation object.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="autodist.strategy.base.html#autodist.strategy.base.Strategy" title="autodist.strategy.base.Strategy">base.Strategy</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.autodist.AutoDist.create_distributed_session">
+<code class="sig-name descname">create_distributed_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.AutoDist.create_distributed_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Session object to execute the default graph in a distributed manner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A wrapped TensorFlow Session object.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="autodist.runner.html#autodist.runner.WrappedSession" title="autodist.runner.WrappedSession">WrappedSession</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.autodist.AutoDist.function">
+<code class="sig-name descname">function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.AutoDist.function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experimental interface similar to <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/function">tf.function</a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.autodist.AutoDist.is_built">
+<code class="sig-name descname">is_built</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/autodist.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.autodist.AutoDist.is_built" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the distributed graph is built for the most recent original graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if the distributed graph is built by AutoDist</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

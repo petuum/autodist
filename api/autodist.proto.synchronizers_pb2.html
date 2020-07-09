@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -243,8 +248,381 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="synchronizers-pb2">
-<h1>Synchronizers Pb2<a class="headerlink" href="#synchronizers-pb2" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.proto.synchronizers_pb2">
+<span id="synchronizers-pb2"></span><h1>Synchronizers Pb2<a class="headerlink" href="#module-autodist.proto.synchronizers_pb2" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer">
+<em class="property">class </em><code class="sig-name descname">PSSynchronizer</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.pyext._message.CMessage</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.message.Message</span></code></p>
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.ByteSize">
+<code class="sig-name descname">ByteSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.ByteSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the message in bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.Clear">
+<code class="sig-name descname">Clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.Clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.ClearExtension">
+<code class="sig-name descname">ClearExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.ClearExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.ClearField">
+<code class="sig-name descname">ClearField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.ClearField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.CopyFrom">
+<code class="sig-name descname">CopyFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.CopyFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.DESCRIPTOR">
+<code class="sig-name descname">DESCRIPTOR</code><em class="property"> = &lt;google.protobuf.pyext._message.MessageDescriptor object&gt;</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.DESCRIPTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.DiscardUnknownFields">
+<code class="sig-name descname">DiscardUnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.DiscardUnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discards the unknown fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.Extensions">
+<code class="sig-name descname">Extensions</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.Extensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extension dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.FindInitializationErrors">
+<code class="sig-name descname">FindInitializationErrors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.FindInitializationErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds unset required fields.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.FromString">
+<code class="sig-name descname">FromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.FromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates new method instance from given serialized data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.HasExtension">
+<code class="sig-name descname">HasExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.HasExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.HasField">
+<code class="sig-name descname">HasField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.HasField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.IsInitialized">
+<code class="sig-name descname">IsInitialized</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.IsInitialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all required fields of a protocol message are set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.ListFields">
+<code class="sig-name descname">ListFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.ListFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all set fields of a message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.MergeFrom">
+<code class="sig-name descname">MergeFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.MergeFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.MergeFromString">
+<code class="sig-name descname">MergeFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.MergeFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.ParseFromString">
+<code class="sig-name descname">ParseFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.ParseFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.RegisterExtension">
+<code class="sig-name descname">RegisterExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.RegisterExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an extension with the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.SerializePartialToString">
+<code class="sig-name descname">SerializePartialToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.SerializePartialToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, even if it isn’t initialized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.SerializeToString">
+<code class="sig-name descname">SerializeToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.SerializeToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, only for initialized messages.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.SetInParent">
+<code class="sig-name descname">SetInParent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.SetInParent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the has bit of the given field in its parent message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.UnknownFields">
+<code class="sig-name descname">UnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.UnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse unknown field set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.WhichOneof">
+<code class="sig-name descname">WhichOneof</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.WhichOneof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the field set inside a oneof, or None if no field is set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.local_replication">
+<code class="sig-name descname">local_replication</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.local_replication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.PSSynchronizer.local_replication</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.reduction_destination">
+<code class="sig-name descname">reduction_destination</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.reduction_destination" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.PSSynchronizer.reduction_destination</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.staleness">
+<code class="sig-name descname">staleness</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.staleness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.PSSynchronizer.staleness</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.PSSynchronizer.sync">
+<code class="sig-name descname">sync</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.PSSynchronizer.sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.PSSynchronizer.sync</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer">
+<em class="property">class </em><code class="sig-name descname">AllReduceSynchronizer</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.pyext._message.CMessage</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">google.protobuf.message.Message</span></code></p>
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.AUTO">
+<code class="sig-name descname">AUTO</code><em class="property"> = 0</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.AUTO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ByteSize">
+<code class="sig-name descname">ByteSize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ByteSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the message in bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Clear">
+<code class="sig-name descname">Clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ClearExtension">
+<code class="sig-name descname">ClearExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ClearExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ClearField">
+<code class="sig-name descname">ClearField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ClearField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears a message field.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Compressor">
+<code class="sig-name descname">Compressor</code><em class="property"> = &lt;google.protobuf.internal.enum_type_wrapper.EnumTypeWrapper object&gt;</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Compressor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.CopyFrom">
+<code class="sig-name descname">CopyFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.CopyFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.DESCRIPTOR">
+<code class="sig-name descname">DESCRIPTOR</code><em class="property"> = &lt;google.protobuf.pyext._message.MessageDescriptor object&gt;</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.DESCRIPTOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.DiscardUnknownFields">
+<code class="sig-name descname">DiscardUnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.DiscardUnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discards the unknown fields.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Extensions">
+<code class="sig-name descname">Extensions</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Extensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extension dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.FindInitializationErrors">
+<code class="sig-name descname">FindInitializationErrors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.FindInitializationErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds unset required fields.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.FromString">
+<code class="sig-name descname">FromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.FromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates new method instance from given serialized data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HasExtension">
+<code class="sig-name descname">HasExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HasExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HasField">
+<code class="sig-name descname">HasField</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HasField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a message field is set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HorovodCompressor">
+<code class="sig-name descname">HorovodCompressor</code><em class="property"> = 1</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HorovodCompressor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HorovodCompressorEF">
+<code class="sig-name descname">HorovodCompressorEF</code><em class="property"> = 2</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HorovodCompressorEF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.IsInitialized">
+<code class="sig-name descname">IsInitialized</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.IsInitialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if all required fields of a protocol message are set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ListFields">
+<code class="sig-name descname">ListFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ListFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all set fields of a message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.MergeFrom">
+<code class="sig-name descname">MergeFrom</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.MergeFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a protocol message into the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.MergeFromString">
+<code class="sig-name descname">MergeFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.MergeFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.NCCL">
+<code class="sig-name descname">NCCL</code><em class="property"> = 1</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.NCCL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.NoneCompressor">
+<code class="sig-name descname">NoneCompressor</code><em class="property"> = 0</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.NoneCompressor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ParseFromString">
+<code class="sig-name descname">ParseFromString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ParseFromString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a serialized message into the current message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.PowerSGDCompressor">
+<code class="sig-name descname">PowerSGDCompressor</code><em class="property"> = 3</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.PowerSGDCompressor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.RING">
+<code class="sig-name descname">RING</code><em class="property"> = 2</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.RING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.RegisterExtension">
+<code class="sig-name descname">RegisterExtension</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.RegisterExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an extension with the current message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SerializePartialToString">
+<code class="sig-name descname">SerializePartialToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SerializePartialToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, even if it isn’t initialized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SerializeToString">
+<code class="sig-name descname">SerializeToString</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SerializeToString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes the message to a string, only for initialized messages.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SetInParent">
+<code class="sig-name descname">SetInParent</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SetInParent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the has bit of the given field in its parent message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Spec">
+<code class="sig-name descname">Spec</code><em class="property"> = &lt;google.protobuf.internal.enum_type_wrapper.EnumTypeWrapper object&gt;</em><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Spec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.UnknownFields">
+<code class="sig-name descname">UnknownFields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.UnknownFields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse unknown field set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.WhichOneof">
+<code class="sig-name descname">WhichOneof</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.WhichOneof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the field set inside a oneof, or None if no field is set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.compressor">
+<code class="sig-name descname">compressor</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.compressor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.AllReduceSynchronizer.compressor</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.group">
+<code class="sig-name descname">group</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.AllReduceSynchronizer.group</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.proto.synchronizers_pb2.AllReduceSynchronizer.spec">
+<code class="sig-name descname">spec</code><a class="headerlink" href="#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.spec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Field autodist.proto.AllReduceSynchronizer.spec</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

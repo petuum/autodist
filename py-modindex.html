@@ -1,0 +1,555 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Python Module Index &mdash; AutoDist  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/customized.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+ 
+
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/performance.html">Performance</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/multi-node.html">Train on Multiple Nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/save-restore.html">Save and Restore Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/docker.html">Train with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/choose-strategy.html">Choose Strategy Builders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/tutorials/customize-strategy.html">Customize a Strategy Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/faq.html">FAQ</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="design/rationale.html">Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/autodist.html">Developer API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.checkpoint.html">Checkpoint</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.checkpoint.saver.html">Saver</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.kernel.html">Kernel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.common.html">Common</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.common.op_info.html">Op Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.common.proxy_variable.html">Proxy Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.common.utils.html">Utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.common.variable_utils.html">Variable Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.device.html">Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.device.resolver.html">Resolver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.synchronization.html">Synchronization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html">All Reduce Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.synchronization.collective_key.html">Collective Key</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.synchronization.compressor.html">Compressor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.synchronization.ps_synchronizer.html">Ps Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/autodist.kernel.synchronization.synchronizer.html">Synchronizer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.graph_transformer.html">Graph Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.kernel.html">Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.partitioner.html">Partitioner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.kernel.replicator.html">Replicator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.proto.html">Proto</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.proto.graphitem_pb2.html">Graphitem Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.proto.strategy_pb2.html">Strategy Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.proto.synchronizers_pb2.html">Synchronizers Pb2</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.strategy.html">Strategy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.all_reduce_strategy.html">All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.base.html">Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.parallax_strategy.html">Parallax Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.partitioned_all_reduce_strategy.html">Partitioned All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.partitioned_ps_strategy.html">Partitioned Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.ps_lb_strategy.html">Ps Lb Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.ps_strategy.html">Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html">Random Axis Partition All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.strategy.uneven_partition_ps_strategy.html">Uneven Partition Ps Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.utils.logging.html">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.utils.network.html">Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.utils.server_starter.html">Server Starter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/autodist.utils.visualization_util.html">Visualization Util</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.autodist.html">Autodist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.cluster.html">Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.const.html">Const</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.coordinator.html">Coordinator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.graph_item.html">Graph Item</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.patch.html">Patch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.remapper.html">Remapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.resource_spec.html">Resource Spec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/autodist.runner.html">Runner</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AutoDist</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Python Module Index</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+
+   <h1>Python Module Index</h1>
+
+   <div class="modindex-jumpbox">
+   <a href="#cap-a"><strong>a</strong></a>
+   </div>
+
+   <table class="indextable modindextable">
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-a"><td></td><td>
+       <strong>a</strong></td><td></td></tr>
+     <tr>
+       <td><img src="_static/minus.png" class="toggler"
+              id="toggle-1" style="display: none" alt="-" /></td>
+       <td>
+       <a href="api/autodist.html#module-autodist"><code class="xref">autodist</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.autodist.html#module-autodist.autodist"><code class="xref">autodist.autodist</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.checkpoint.html#module-autodist.checkpoint"><code class="xref">autodist.checkpoint</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.checkpoint.saved_model_builder.html#module-autodist.checkpoint.saved_model_builder"><code class="xref">autodist.checkpoint.saved_model_builder</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.checkpoint.saver.html#module-autodist.checkpoint.saver"><code class="xref">autodist.checkpoint.saver</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.cluster.html#module-autodist.cluster"><code class="xref">autodist.cluster</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.const.html#module-autodist.const"><code class="xref">autodist.const</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.coordinator.html#module-autodist.coordinator"><code class="xref">autodist.coordinator</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.graph_item.html#module-autodist.graph_item"><code class="xref">autodist.graph_item</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.html#module-autodist.kernel"><code class="xref">autodist.kernel</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.common.html#module-autodist.kernel.common"><code class="xref">autodist.kernel.common</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.common.op_info.html#module-autodist.kernel.common.op_info"><code class="xref">autodist.kernel.common.op_info</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.common.proxy_variable.html#module-autodist.kernel.common.proxy_variable"><code class="xref">autodist.kernel.common.proxy_variable</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.common.utils.html#module-autodist.kernel.common.utils"><code class="xref">autodist.kernel.common.utils</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.common.variable_utils.html#module-autodist.kernel.common.variable_utils"><code class="xref">autodist.kernel.common.variable_utils</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.device.html#module-autodist.kernel.device"><code class="xref">autodist.kernel.device</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.device.resolver.html#module-autodist.kernel.device.resolver"><code class="xref">autodist.kernel.device.resolver</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.graph_transformer.html#module-autodist.kernel.graph_transformer"><code class="xref">autodist.kernel.graph_transformer</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.kernel.html#module-autodist.kernel.kernel"><code class="xref">autodist.kernel.kernel</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.partitioner.html#module-autodist.kernel.partitioner"><code class="xref">autodist.kernel.partitioner</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.replicator.html#module-autodist.kernel.replicator"><code class="xref">autodist.kernel.replicator</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.synchronization.html#module-autodist.kernel.synchronization"><code class="xref">autodist.kernel.synchronization</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#module-autodist.kernel.synchronization.all_reduce_synchronizer"><code class="xref">autodist.kernel.synchronization.all_reduce_synchronizer</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.synchronization.collective_key.html#module-autodist.kernel.synchronization.collective_key"><code class="xref">autodist.kernel.synchronization.collective_key</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.synchronization.compressor.html#module-autodist.kernel.synchronization.compressor"><code class="xref">autodist.kernel.synchronization.compressor</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.synchronization.ps_synchronizer.html#module-autodist.kernel.synchronization.ps_synchronizer"><code class="xref">autodist.kernel.synchronization.ps_synchronizer</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.kernel.synchronization.synchronizer.html#module-autodist.kernel.synchronization.synchronizer"><code class="xref">autodist.kernel.synchronization.synchronizer</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.patch.html#module-autodist.patch"><code class="xref">autodist.patch</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.proto.html#module-autodist.proto"><code class="xref">autodist.proto</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.proto.graphitem_pb2.html#module-autodist.proto.graphitem_pb2"><code class="xref">autodist.proto.graphitem_pb2</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.proto.strategy_pb2.html#module-autodist.proto.strategy_pb2"><code class="xref">autodist.proto.strategy_pb2</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.proto.synchronizers_pb2.html#module-autodist.proto.synchronizers_pb2"><code class="xref">autodist.proto.synchronizers_pb2</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.remapper.html#module-autodist.remapper"><code class="xref">autodist.remapper</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.resource_spec.html#module-autodist.resource_spec"><code class="xref">autodist.resource_spec</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.runner.html#module-autodist.runner"><code class="xref">autodist.runner</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.html#module-autodist.strategy"><code class="xref">autodist.strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.all_reduce_strategy.html#module-autodist.strategy.all_reduce_strategy"><code class="xref">autodist.strategy.all_reduce_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.base.html#module-autodist.strategy.base"><code class="xref">autodist.strategy.base</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.parallax_strategy.html#module-autodist.strategy.parallax_strategy"><code class="xref">autodist.strategy.parallax_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.partitioned_all_reduce_strategy.html#module-autodist.strategy.partitioned_all_reduce_strategy"><code class="xref">autodist.strategy.partitioned_all_reduce_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.partitioned_ps_strategy.html#module-autodist.strategy.partitioned_ps_strategy"><code class="xref">autodist.strategy.partitioned_ps_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.ps_lb_strategy.html#module-autodist.strategy.ps_lb_strategy"><code class="xref">autodist.strategy.ps_lb_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.ps_strategy.html#module-autodist.strategy.ps_strategy"><code class="xref">autodist.strategy.ps_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html#module-autodist.strategy.random_axis_partition_all_reduce_strategy"><code class="xref">autodist.strategy.random_axis_partition_all_reduce_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.strategy.uneven_partition_ps_strategy.html#module-autodist.strategy.uneven_partition_ps_strategy"><code class="xref">autodist.strategy.uneven_partition_ps_strategy</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.utils.html#module-autodist.utils"><code class="xref">autodist.utils</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.utils.logging.html#module-autodist.utils.logging"><code class="xref">autodist.utils.logging</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.utils.network.html#module-autodist.utils.network"><code class="xref">autodist.utils.network</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.utils.server_starter.html#module-autodist.utils.server_starter"><code class="xref">autodist.utils.server_starter</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="api/autodist.utils.visualization_util.html#module-autodist.utils.visualization_util"><code class="xref">autodist.utils.visualization_util</code></a></td><td>
+       <em></em></td></tr>
+   </table>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Petuum
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

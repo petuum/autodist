@@ -9,7 +9,7 @@ and especially understand the difference between eager and graph mode. If you ca
 AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`. Install the downloaded wheel file by
 
 ```bash
-pip install autodist*.whl
+pip install autodist
 ``` 
 
 The following model is based on the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced). Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs with AutoDist, we could follow these next 3 steps:

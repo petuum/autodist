@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -245,8 +250,90 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="variable-utils">
-<h1>Variable Utils<a class="headerlink" href="#variable-utils" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.kernel.common.variable_utils">
+<span id="variable-utils"></span><h1>Variable Utils<a class="headerlink" href="#module-autodist.kernel.common.variable_utils" title="Permalink to this headline">¶</a></h1>
+<p>Common helpers for <cite>ResourceVariables</cite> and <cite>RefVariables</cite>.</p>
+<dl class="py function">
+<dt id="autodist.kernel.common.variable_utils.is_read_var_op">
+<code class="sig-name descname">is_read_var_op</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">op</span></em>, <em class="sig-param"><span class="n">version</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/variable_utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.variable_utils.is_read_var_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if an op is a read var op.</p>
+<p>Checks if it is a <cite>ReadVariableOp</cite> or an <cite>IdentityOp</cite>. This is because
+<cite>ResourceVariables</cite> use <cite>ReadVariableOps</cite> and <cite>RefVariables</cite> use
+<cite>IdentityOps</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>op</strong> (<em>Operation</em>) – the operation to inspect</p></li>
+<li><p><strong>version</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – TF major version integer</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Whether or not the op is a read var op</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.variable_utils.get_read_var_ops">
+<code class="sig-name descname">get_read_var_ops</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_op</span></em>, <em class="sig-param"><span class="n">exclude_snapshot</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/variable_utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.variable_utils.get_read_var_ops" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a resource handle op, get all its read variable ops.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_op</strong> (<em>Operation</em>) – VarHandleOp for ResourceVariable, VariableV2 or Variable for RefVariable</p></li>
+<li><p><strong>exclude_snapshot</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – whether to skip the default ReadVariableOp bundled (i.e. “/Read/ReadVariableOp”).
+no extra snapshot to exclude for RefVariable, even if <cite>exclude_snapshot=True</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of read var ops of it.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[Operation]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.variable_utils.get_read_var_tensor">
+<code class="sig-name descname">get_read_var_tensor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_op</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/variable_utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.variable_utils.get_read_var_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a var op, get the tensor of its default readable value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>var_op</strong> (<em>Operation</em>) – the variable op</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The tensor of its default readable value</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.kernel.common.variable_utils.gen_read_var_op">
+<code class="sig-name descname">gen_read_var_op</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_op</span></em>, <em class="sig-param"><span class="n">dtype</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/common/variable_utils.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.common.variable_utils.gen_read_var_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a var op, generate the op for reading its value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_op</strong> (<em>Operation</em>) – The var op</p></li>
+<li><p><strong>dtype</strong> (<em>dtype</em>) – The dtype of the data to read</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The value-reading operation</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Operation</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 

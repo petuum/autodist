@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +246,325 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="graph-item">
-<h1>Graph Item<a class="headerlink" href="#graph-item" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.graph_item">
+<span id="graph-item"></span><h1>Graph Item<a class="headerlink" href="#module-autodist.graph_item" title="Permalink to this headline">¶</a></h1>
+<p>GraphItem and its supporting functionality.</p>
+<dl class="py function">
+<dt id="autodist.graph_item.cached_property">
+<code class="sig-name descname">cached_property</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.cached_property" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to make a function a “cached property”.</p>
+<p>This means that it is a property whose return value is cached after the
+first time it is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn</strong> – The function to be made a cached property</p></li>
+<li><p><strong>*args</strong> – Any args for the function</p></li>
+<li><p><strong>**kwargs</strong> – Any kwargs for the function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.graph_item.get_default_graph_item">
+<code class="sig-name descname">get_default_graph_item</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.get_default_graph_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current default graph_item under the graph_item scope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>GraphItem</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.graph_item.wrap_optimizer_init">
+<code class="sig-name descname">wrap_optimizer_init</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.wrap_optimizer_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps the __init__ function of OptimizerV2 objects and stores the info in the default GraphItem.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.graph_item.wrap_optimizer_apply_gradient">
+<code class="sig-name descname">wrap_optimizer_apply_gradient</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.wrap_optimizer_apply_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps the apply_gradients function of OptimizerV2 objects and stores the info in the default GraphItem.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.graph_item.Info">
+<em class="property">class </em><code class="sig-name descname">Info</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Stores useful variable tracking information.</p>
+<p>In essence, replaces collections, and this way
+we don’t have to deal with <cite>MetaGraphs</cite>.</p>
+<dl class="py method">
+<dt id="autodist.graph_item.Info.initializers">
+<em class="property">property </em><code class="sig-name descname">initializers</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.trainable_variables">
+<em class="property">property </em><code class="sig-name descname">trainable_variables</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.trainable_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trainable Variables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.untrainable_variables">
+<em class="property">property </em><code class="sig-name descname">untrainable_variables</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.untrainable_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Untrainable Variables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.pop_variable">
+<code class="sig-name descname">pop_variable</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.pop_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pop out a variable by its name from info tracker.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.update_variables">
+<code class="sig-name descname">update_variables</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">variables</span></em>, <em class="sig-param"><span class="n">replace</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.update_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update variables in GraphItem Info.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>variables</strong> (<em>Iterable</em><em>[</em><em>VariableType</em><em>]</em>) – Iterable of variables to insert.</p></li>
+<li><p><strong>replace</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Whether or not to overwrite existing contents.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.update_table_initializers">
+<code class="sig-name descname">update_table_initializers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">table_initializers</span></em>, <em class="sig-param"><span class="n">replace</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.update_table_initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update table initializers in GraphItem Info.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table_initializers</strong> (<em>Iterable</em><em>(</em><em>Union</em><em>[</em><em>ops.Operation</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a><em>]</em>) – Initializers for lookup tables.</p></li>
+<li><p><strong>replace</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Whether or not to overwrite existing contents.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.update_savers">
+<code class="sig-name descname">update_savers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">savers</span></em>, <em class="sig-param"><span class="n">replace</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.update_savers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update savers in GraphItem Info.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>savers</strong> (<em>Iterable</em><em>[</em><em>SaverType</em><em>]</em>) – Iterable of saverdefs to insert.</p></li>
+<li><p><strong>replace</strong> – Whether or not to overwrite existing contents.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.Info.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy info.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.graph_item.GraphItem">
+<em class="property">class </em><code class="sig-name descname">GraphItem</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph</span><span class="p">:</span> <span class="n">tensorflow.python.framework.ops.Graph</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">graph_def</span><span class="p">:</span> <span class="n">tensorflow.core.framework.graph_pb2.GraphDef</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>GraphItem is a TensorFlow Graph wrapper.</p>
+<p>It represents the states in-between consecutive AutoDist.kernel graph transformations.
+tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.</p>
+<p>A GraphItem can be constructed with either a <cite>tf.Graph</cite> or a <cite>GraphDef</cite>.</p>
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.get_trainable_variables">
+<code class="sig-name descname">get_trainable_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.get_trainable_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get variables that need to be synchronized if doing data parallelism.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.get_all_variables">
+<code class="sig-name descname">get_all_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.get_all_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all variables in this graph item.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.as_default">
+<code class="sig-name descname">as_default</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.as_default" title="Permalink to this definition">¶</a></dt>
+<dd><p>A context scope with current graph item as the default.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.extend_optimizer_info">
+<code class="sig-name descname">extend_optimizer_info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">optimizer</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.extend_optimizer_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the detected optimizer to the object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.extend_gradient_info">
+<code class="sig-name descname">extend_gradient_info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span></em>, <em class="sig-param"><span class="n">targets</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.extend_gradient_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the detected grad-target pairs to the object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.extend_gradient_info_by_names">
+<code class="sig-name descname">extend_gradient_info_by_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grads</span></em>, <em class="sig-param"><span class="n">targets</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.extend_gradient_info_by_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the detected grad-target pairs to the object by names.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.pop_gradient_info">
+<code class="sig-name descname">pop_gradient_info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.pop_gradient_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pop out a grad target pair by variable name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.copy_gradient_info_from">
+<code class="sig-name descname">copy_gradient_info_from</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.copy_gradient_info_from" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy gradient info from the another GraphItem object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.graph">
+<em class="property">property </em><code class="sig-name descname">graph</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Graph associated with this GraphItem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>ops.Graph</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.all_update_ops">
+<em class="property">property </em><code class="sig-name descname">all_update_ops</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.all_update_ops" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all ops in the graph that perform stateful operations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.var_op_name_to_grad_info">
+<em class="property">property </em><code class="sig-name descname">var_op_name_to_grad_info</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.var_op_name_to_grad_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>0”) to its (grad, var, update_op) tuple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>A mapping from VarHandleOp name (e.g. “W” not “W</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.grad_list">
+<em class="property">property </em><code class="sig-name descname">grad_list</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.grad_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of target gradients that will be updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.target_list">
+<em class="property">property </em><code class="sig-name descname">target_list</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.target_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of target variables that will be updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.grad_target_name_pairs">
+<em class="property">property </em><code class="sig-name descname">grad_target_name_pairs</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.grad_target_name_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of names of grad and target variable pairs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.grad_target_pairs">
+<em class="property">property </em><code class="sig-name descname">grad_target_pairs</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.grad_target_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of grad and target variable pairs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.trainable_var_op_to_var">
+<em class="property">property </em><code class="sig-name descname">trainable_var_op_to_var</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.trainable_var_op_to_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mapping from trainable variable ops (e.g. VarHandleOps) to the Variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.get_colocation_op">
+<code class="sig-name descname">get_colocation_op</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">colocation_group</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.get_colocation_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the binding op for a given colocation group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>colocation_group</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><em>bytes</em></a>) – The colocation group</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Op</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.get_ops_in_graph">
+<code class="sig-name descname">get_ops_in_graph</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">op_iter</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.get_ops_in_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an iterator of ops or op names, return the corresponding ops in self graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>op_iter</strong> (<em>Iterable</em><em>[</em><em>Union</em><em>[</em><em>ops.Operation</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a><em>]</em><em>]</em>) – Ops or ops names</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Iterable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.prepare">
+<code class="sig-name descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.prepare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare for building strategy and/or transforming graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.serialize">
+<code class="sig-name descname">serialize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize a graph_item to a specific proto string down to a file path.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.deserialize">
+<em class="property">classmethod </em><code class="sig-name descname">deserialize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deserialize a graph_item serialized proto message from a file path.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

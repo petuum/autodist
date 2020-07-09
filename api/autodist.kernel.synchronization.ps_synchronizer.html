@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -245,8 +250,124 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="ps-synchronizer">
-<h1>Ps Synchronizer<a class="headerlink" href="#ps-synchronizer" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.kernel.synchronization.ps_synchronizer">
+<span id="ps-synchronizer"></span><h1>Ps Synchronizer<a class="headerlink" href="#module-autodist.kernel.synchronization.ps_synchronizer" title="Permalink to this headline">¶</a></h1>
+<p>PS Synchronizer.</p>
+<dl class="py class">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer">
+<em class="property">class </em><code class="sig-name descname">PSSynchronizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n"><a class="reference internal" href="autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer" title="autodist.proto.synchronizers_pb2.PSSynchronizer">autodist.proto.synchronizers_pb2.PSSynchronizer</a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="autodist.kernel.synchronization.synchronizer.html#autodist.kernel.synchronization.synchronizer.Synchronizer" title="autodist.kernel.synchronization.synchronizer.Synchronizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.kernel.synchronization.synchronizer.Synchronizer</span></code></a></p>
+<p>PS Synchronizer.</p>
+<p>Synchronizes gradient updates using a Parameter Server.</p>
+<p>For in-graph synchronization, this just aggregates gradients on a worker’s CPU.</p>
+<p>For between-graph synchronization, this aggregates gradients on a pre-defined
+(defined in the Strategy) parameter server.</p>
+<p>To keep this gradient aggregation in sync, the chief gives each worker a token
+for each variable for the workers to mark when their variable update is complete.</p>
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.in_graph_apply">
+<code class="sig-name descname">in_graph_apply</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_item</span></em>, <em class="sig-param"><span class="n">var_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.in_graph_apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply in-graph ps synchronization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>graph_item</strong> – the old graph item</p></li>
+<li><p><strong>var_name</strong> – the variable name w/o replica prefix</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>graph_item.GraphItem</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.between_graph_apply">
+<code class="sig-name descname">between_graph_apply</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_item</span></em>, <em class="sig-param"><span class="n">var_name</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.between_graph_apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply between-graph synchronization to the target ops in the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>graph_item</strong> – The current graph.</p></li>
+<li><p><strong>var_name</strong> – the variable to be synchronized.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>updated graph item.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="autodist.graph_item.html#autodist.graph_item.GraphItem" title="autodist.graph_item.GraphItem">graph_item.GraphItem</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.add_sync_op">
+<code class="sig-name descname">add_sync_op</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_item</span></em>, <em class="sig-param"><span class="n">var_update_op</span></em>, <em class="sig-param"><span class="n">variable_replicator</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.add_sync_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds additional ops needed for synchronous distributed training into current graph.</p>
+<p>Main purpose of additional ops are:
+1. Initialization
+2. Synchronization
+3. Gradient aggregation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>graph_item</strong> (<a class="reference internal" href="autodist.graph_item.html#autodist.graph_item.GraphItem" title="autodist.graph_item.GraphItem"><em>graph_item.GraphItem</em></a>) – the graph</p></li>
+<li><p><strong>var_update_op</strong> – The op</p></li>
+<li><p><strong>variable_replicator</strong> – The dictionary of master variable op name
+-&gt; list of replicated variables, could be None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.assign_cluster_information">
+<code class="sig-name descname">assign_cluster_information</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_workers</span></em>, <em class="sig-param"><span class="n">num_replicas</span></em>, <em class="sig-param"><span class="n">worker_device</span></em>, <em class="sig-param"><span class="n">worker_id</span></em>, <em class="sig-param"><span class="n">canonical_replica_devices</span></em>, <em class="sig-param"><span class="n">is_chief</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.assign_cluster_information" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store cluster information in the synchronizer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.create">
+<em class="property">classmethod </em><code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create new Synchronizer instance given subclass name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Name of the Synchronizer subclass (e.g. PSSynchronizer).</p></li>
+<li><p><strong>*args</strong> – Any args for the subclass constructor.</p></li>
+<li><p><strong>**kwargs</strong> – Any kwargs for the subclass constructor.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Synchronizer</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner">
+<em class="property">class </em><code class="sig-name descname">PSGradientTaskAssigner</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">op_to_task</span></em>, <em class="sig-param"><span class="n">agg_grad_ops</span></em>, <em class="sig-param"><span class="n">apply_grad_ops</span></em>, <em class="sig-param"><span class="n">ps_device</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Make sure that all corresponding PS gradient ops are assigned to the same task.</p>
+<dl class="py attribute">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner.SHARED_TASK_ID">
+<code class="sig-name descname">SHARED_TASK_ID</code><em class="property"> = -1</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner.SHARED_TASK_ID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner.assign">
+<code class="sig-name descname">assign</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/ps_synchronizer.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner.assign" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bi-directionally traverse the graph and assign tasks to ops.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

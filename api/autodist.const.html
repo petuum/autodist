@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +246,80 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="const">
-<h1>Const<a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.const">
+<span id="const"></span><h1>Const<a class="headerlink" href="#module-autodist.const" title="Permalink to this headline">¶</a></h1>
+<p>Constants.</p>
+<p>Contains constants that AutoDist uses as well as
+user-settable Environment Variables that
+influence AutoDist behavior.</p>
+<dl class="py class">
+<dt id="autodist.const.ENV">
+<em class="property">class </em><code class="sig-name descname">ENV</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>AutoDist Environment Variables.</p>
+<p>Note: If there’s a cleaner/better way to do this, please do it.</p>
+<p>This is an Enum because in some instances we need to access the <cite>name</cite>
+field of a property. AFAIK, if we were to do this with normal variables
+this would require using <cite>inspect</cite>.</p>
+<p>Since we use each environment variable in such different ways,
+we just make the enum value a lambda that will be called by
+our own <cite>val</cite> property.</p>
+<p>For example, we want <cite>AUTODIST_IS_TESTING</cite> to be a bool (<cite>True</cite> or <cite>False</cite>)
+depending on the string set as an environment variable, so the lambda returns
+a comparison of the string and <cite>“True”</cite>.</p>
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_WORKER">
+<code class="sig-name descname">AUTODIST_WORKER</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_WORKER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_STRATEGY_ID">
+<code class="sig-name descname">AUTODIST_STRATEGY_ID</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_STRATEGY_ID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_MIN_LOG_LEVEL">
+<code class="sig-name descname">AUTODIST_MIN_LOG_LEVEL</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_MIN_LOG_LEVEL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_IS_TESTING">
+<code class="sig-name descname">AUTODIST_IS_TESTING</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_IS_TESTING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_DEBUG_REMOTE">
+<code class="sig-name descname">AUTODIST_DEBUG_REMOTE</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_DEBUG_REMOTE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_PATCH_TF">
+<code class="sig-name descname">AUTODIST_PATCH_TF</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_PATCH_TF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.AUTODIST_INTERNAL_TF">
+<code class="sig-name descname">AUTODIST_INTERNAL_TF</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.AUTODIST_INTERNAL_TF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.SYS_DATA_PATH">
+<code class="sig-name descname">SYS_DATA_PATH</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.SYS_DATA_PATH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="autodist.const.ENV.SYS_RESOURCE_PATH">
+<code class="sig-name descname">SYS_RESOURCE_PATH</code><em class="property"> = (&lt;enum.auto object&gt;, &lt;function ENV.&lt;lambda&gt;&gt;)</em><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.SYS_RESOURCE_PATH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="autodist.const.ENV.val">
+<em class="property">property </em><code class="sig-name descname">val</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/const.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.const.ENV.val" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the output of the lambda on the system’s value in the environment.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

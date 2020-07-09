@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +246,358 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="cluster">
-<h1>Cluster<a class="headerlink" href="#cluster" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.cluster">
+<span id="cluster"></span><h1>Cluster<a class="headerlink" href="#module-autodist.cluster" title="Permalink to this headline">¶</a></h1>
+<p>Cluster contains almost all the networking code for AutoDist.</p>
+<p>The notable exception is ResourceSpec and a couple functions in <cite>autodist.utils.network</cite>.</p>
+<p>Cluster will be used by other modules to handle:
+1) Copying files
+2) Writing files
+3) Running code
+on nodes in the cluster defined by the ResourceSpec.</p>
+<p>Prerequisites:
+* TensorFlow is already installed in the env of all nodes.
+* Only supports graph launching logic. Only one node (the Chief) runs the session client.
+* AutoDist is already installed in the env of the worker node Chief, where the main script runs.
+* The SSH private key to other nodes is accessible by AutoDist on Chief given a path.</p>
+<dl class="py class">
+<dt id="autodist.cluster.Cluster">
+<em class="property">class </em><code class="sig-name descname">Cluster</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource_spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="autodist.resource_spec.html#autodist.resource_spec.ResourceSpec" title="autodist.resource_spec.ResourceSpec">autodist.resource_spec.ResourceSpec</a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Cluster manager for TensorFlow servers.</p>
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.is_chief">
+<code class="sig-name descname">is_chief</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">address</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.is_chief" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether an address is chief or not.</p>
+<p>If the argument <cite>address</cite> is not provided,
+it will check whether the local address is chief.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – node address e.g. ip</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Whether address or self is chief</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.get_address_from_task">
+<code class="sig-name descname">get_address_from_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">job_name</span></em>, <em class="sig-param"><span class="n">task_index</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.get_address_from_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a job name and task index, return the address.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>job_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – job name</p></li>
+<li><p><strong>task_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – task index</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The address for that task</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.get_local_address">
+<code class="sig-name descname">get_local_address</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.get_local_address" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the local (ip) address.</p>
+<p>If labelled as AUTODIST_WORKER by the environment variable,
+the value of it is the address of the local node;
+otherwise the local node is chief.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Worker ip or chief address by default.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.get_local_worker_task_index">
+<code class="sig-name descname">get_local_worker_task_index</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.get_local_worker_task_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the (first) TensorFlow task index of the “worker” for the local.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Task index</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.get_local_session_target">
+<code class="sig-name descname">get_local_session_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.get_local_session_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the session target of the local session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Local session target</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start tf.servers on all nodes.</p>
+<p>Note that this only runs (and only should run) on the chief node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.terminate">
+<code class="sig-name descname">terminate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.terminate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.remote_pre_start_tf_server">
+<code class="sig-name descname">remote_pre_start_tf_server</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hostname</span></em>, <em class="sig-param"><span class="n">tf_server_starter_filepath</span></em>, <em class="sig-param"><span class="n">working_dir</span><span class="o">=</span><span class="default_value">'/tmp/autodist'</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.remote_pre_start_tf_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare to start a TensorFlow server remotely.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+<li><p><strong>tf_server_starter_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – local starter file path</p></li>
+<li><p><strong>working_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – remote working directory</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.remote_exec">
+<em class="property">abstract </em><code class="sig-name descname">remote_exec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="n">hostname</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.remote_exec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a bash script remotely.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – bash commands</p></li>
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>process handle</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Process</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.remote_file_write">
+<em class="property">abstract </em><code class="sig-name descname">remote_file_write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">remote_path</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">hostname</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.remote_file_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a remote file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>remote_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – remote file path</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – data to be written</p></li>
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.Cluster.remote_copy">
+<em class="property">abstract </em><code class="sig-name descname">remote_copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">local_path</span></em>, <em class="sig-param"><span class="n">remote_path</span></em>, <em class="sig-param"><span class="n">hostname</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.Cluster.remote_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy a file to a remote directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>local_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – local file path to be copied</p></li>
+<li><p><strong>remote_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – remote directory path</p></li>
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.cluster.SSHCluster">
+<em class="property">class </em><code class="sig-name descname">SSHCluster</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource_spec</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#autodist.cluster.Cluster" title="autodist.cluster.Cluster"><code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.cluster.Cluster</span></code></a></p>
+<p>An AutoDist Cluster Based on SSH.</p>
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.remote_exec">
+<code class="sig-name descname">remote_exec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="n">hostname</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.remote_exec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a bash script remotely.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – bash commands</p></li>
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>process handle</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Process</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.remote_file_write">
+<code class="sig-name descname">remote_file_write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">remote_path</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">hostname</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.remote_file_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a remote file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>remote_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – remote file path</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – data to be written</p></li>
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.remote_copy">
+<code class="sig-name descname">remote_copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">local_path</span></em>, <em class="sig-param"><span class="n">remote_path</span></em>, <em class="sig-param"><span class="n">hostname</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.remote_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy a file to a remote directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>local_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – local file path to be copied</p></li>
+<li><p><strong>remote_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – remote directory path</p></li>
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.get_address_from_task">
+<code class="sig-name descname">get_address_from_task</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">job_name</span></em>, <em class="sig-param"><span class="n">task_index</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.get_address_from_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a job name and task index, return the address.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>job_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – job name</p></li>
+<li><p><strong>task_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – task index</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The address for that task</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.get_local_address">
+<code class="sig-name descname">get_local_address</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.get_local_address" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the local (ip) address.</p>
+<p>If labelled as AUTODIST_WORKER by the environment variable,
+the value of it is the address of the local node;
+otherwise the local node is chief.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Worker ip or chief address by default.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.get_local_session_target">
+<code class="sig-name descname">get_local_session_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.get_local_session_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the session target of the local session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Local session target</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.get_local_worker_task_index">
+<code class="sig-name descname">get_local_worker_task_index</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.get_local_worker_task_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the (first) TensorFlow task index of the “worker” for the local.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Task index</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.is_chief">
+<code class="sig-name descname">is_chief</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">address</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.is_chief" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether an address is chief or not.</p>
+<p>If the argument <cite>address</cite> is not provided,
+it will check whether the local address is chief.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – node address e.g. ip</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Whether address or self is chief</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.remote_pre_start_tf_server">
+<code class="sig-name descname">remote_pre_start_tf_server</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hostname</span></em>, <em class="sig-param"><span class="n">tf_server_starter_filepath</span></em>, <em class="sig-param"><span class="n">working_dir</span><span class="o">=</span><span class="default_value">'/tmp/autodist'</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.remote_pre_start_tf_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare to start a TensorFlow server remotely.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hostname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – host name or address</p></li>
+<li><p><strong>tf_server_starter_filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – local starter file path</p></li>
+<li><p><strong>working_dir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – remote working directory</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start tf.servers on all nodes.</p>
+<p>Note that this only runs (and only should run) on the chief node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.cluster.SSHCluster.terminate">
+<code class="sig-name descname">terminate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/cluster.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.cluster.SSHCluster.terminate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

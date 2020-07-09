@@ -1,0 +1,772 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Strategy as ProtoBuf Message &mdash; AutoDist  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/customized.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Autodist" href="../api/autodist.html" />
+    <link rel="prev" title="Graph Transformation Kernels" href="../design/kernels.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/multi-node.html">Train on Multiple Nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/save-restore.html">Save and Restore Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/docker.html">Train with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/choose-strategy.html">Choose Strategy Builders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/customize-strategy.html">Customize a Strategy Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Strategy as ProtoBuf Message</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/autodist.html">Developer API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.checkpoint.html">Checkpoint</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.checkpoint.saver.html">Saver</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.kernel.html">Kernel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.common.html">Common</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.common.op_info.html">Op Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.common.proxy_variable.html">Proxy Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.common.utils.html">Utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.common.variable_utils.html">Variable Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.device.html">Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.device.resolver.html">Resolver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.synchronization.html">Synchronization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.synchronization.all_reduce_synchronizer.html">All Reduce Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.synchronization.collective_key.html">Collective Key</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.synchronization.compressor.html">Compressor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.synchronization.ps_synchronizer.html">Ps Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/autodist.kernel.synchronization.synchronizer.html">Synchronizer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.graph_transformer.html">Graph Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.kernel.html">Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.partitioner.html">Partitioner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.kernel.replicator.html">Replicator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.proto.html">Proto</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.proto.graphitem_pb2.html">Graphitem Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.proto.strategy_pb2.html">Strategy Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.proto.synchronizers_pb2.html">Synchronizers Pb2</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.strategy.html">Strategy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.all_reduce_strategy.html">All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.base.html">Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.parallax_strategy.html">Parallax Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.partitioned_all_reduce_strategy.html">Partitioned All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.partitioned_ps_strategy.html">Partitioned Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.ps_lb_strategy.html">Ps Lb Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.ps_strategy.html">Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.random_axis_partition_all_reduce_strategy.html">Random Axis Partition All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.strategy.uneven_partition_ps_strategy.html">Uneven Partition Ps Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.utils.logging.html">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.utils.network.html">Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.utils.server_starter.html">Server Starter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/autodist.utils.visualization_util.html">Visualization Util</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.autodist.html">Autodist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.cluster.html">Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.const.html">Const</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.coordinator.html">Coordinator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.graph_item.html">Graph Item</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.patch.html">Patch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.remapper.html">Remapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.resource_spec.html">Resource Spec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/autodist.runner.html">Runner</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">AutoDist</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Strategy as ProtoBuf Message</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/usage/proto_docgen.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="strategy-as-protobuf-message">
+<h1>Strategy as ProtoBuf Message<a class="headerlink" href="#strategy-as-protobuf-message" title="Permalink to this headline">¶</a></h1>
+<p><a name="top"></a></p>
+<p>AutoDist uses Protocol Buffer to standardize strategy representation and its configurations.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="#autodist/proto/graphitem.proto">autodist/proto/graphitem.proto</a></p>
+<ul>
+<li><p><a class="reference external" href="#autodist.proto.GraphItem">GraphItem</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.GraphItem.GradTargetPairsEntry">GraphItem.GradTargetPairsEntry</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.GraphItem.Info">GraphItem.Info</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#autodist/proto/strategy.proto">autodist/proto/strategy.proto</a></p>
+<ul>
+<li><p><a class="reference external" href="#autodist.proto.Strategy">Strategy</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.Strategy.GraphConfig">Strategy.GraphConfig</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.Strategy.Node">Strategy.Node</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#autodist/proto/synchronizers.proto">autodist/proto/synchronizers.proto</a></p>
+<ul>
+<li><p><a class="reference external" href="#autodist.proto.AllReduceSynchronizer">AllReduceSynchronizer</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.PSSynchronizer">PSSynchronizer</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.AllReduceSynchronizer.Compressor">AllReduceSynchronizer.Compressor</a></p></li>
+<li><p><a class="reference external" href="#autodist.proto.AllReduceSynchronizer.Spec">AllReduceSynchronizer.Spec</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#scalar-value-types">Scalar Value Types</a></p></li>
+</ul>
+<p><a name="autodist/proto/graphitem.proto"></a></p>
+<p align="right"><a href="#top">Top</a></p><div class="section" id="autodist-proto-graphitem-proto">
+<h2>autodist/proto/graphitem.proto<a class="headerlink" href="#autodist-proto-graphitem-proto" title="Permalink to this headline">¶</a></h2>
+<p>AutoDist distributed strategy messages.</p>
+<p>Represents how to distribute a TensorFlow computational graph.</p>
+<p><a name="autodist.proto.GraphItem"></a></p>
+<div class="section" id="graphitem">
+<h3>GraphItem<a class="headerlink" href="#graphitem" title="Permalink to this headline">¶</a></h3>
+<p>Represents the strategy the AutoDist backend will implement.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>graph_def</td>
+<td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
+<td>TensorFlow graph_def</td>
+</tr>
+<tr>
+<td>grad_target_pairs</td>
+<td><a href="#autodist.proto.GraphItem.GradTargetPairsEntry">GraphItem.GradTargetPairsEntry</a></td>
+<td>Mapping from grad tensor name to variable name</td>
+</tr>
+<tr>
+<td>info</td>
+<td><a href="#autodist.proto.GraphItem.Info">GraphItem.Info</a></td>
+<td></td>
+</tr>
+</tbody>
+</table><p><a name="autodist.proto.GraphItem.GradTargetPairsEntry"></a></p>
+</div>
+<div class="section" id="graphitem-gradtargetpairsentry">
+<h3>GraphItem.GradTargetPairsEntry<a class="headerlink" href="#graphitem-gradtargetpairsentry" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>key</td>
+<td><a href="#string">string</a></td>
+<td></td>
+</tr>
+<tr>
+<td>value</td>
+<td><a href="#string">string</a></td>
+<td></td>
+</tr>
+</tbody>
+</table><p><a name="autodist.proto.GraphItem.Info"></a></p>
+</div>
+<div class="section" id="graphitem-info">
+<h3>GraphItem.Info<a class="headerlink" href="#graphitem-info" title="Permalink to this headline">¶</a></h3>
+<p>Represents the essential transformed subset of TensorFlow MetaGraph</p>
+<p>Right now, it represents a essential AutoDist subset of collections of MetaGraph.
+In the future, it will generalize to captures.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>variables</td>
+<td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
+<td></td>
+</tr>
+<tr>
+<td>table_initializers</td>
+<td><a href="#string">string</a></td>
+<td></td>
+</tr>
+<tr>
+<td>savers</td>
+<td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
+<td></td>
+</tr>
+</tbody>
+</table> <!-- end messages --> <!-- end enums --> <!-- end HasExtensions --> <!-- end services --><p><a name="autodist/proto/strategy.proto"></a></p>
+<p align="right"><a href="#top">Top</a></p></div>
+</div>
+<div class="section" id="autodist-proto-strategy-proto">
+<h2>autodist/proto/strategy.proto<a class="headerlink" href="#autodist-proto-strategy-proto" title="Permalink to this headline">¶</a></h2>
+<p>AutoDist distributed strategy messages.</p>
+<p>Represents how to distribute a TensorFlow computational graph.</p>
+<p><a name="autodist.proto.Strategy"></a></p>
+<div class="section" id="strategy">
+<h3>Strategy<a class="headerlink" href="#strategy" title="Permalink to this headline">¶</a></h3>
+<p>Represents the strategy the AutoDist backend will implement.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td><a href="#string">string</a></td>
+<td>unique strategy identifier</td>
+</tr>
+<tr>
+<td>path</td>
+<td><a href="#string">string</a></td>
+<td>optional serialized strategy message temp path</td>
+</tr>
+<tr>
+<td>node_config</td>
+<td><a href="#autodist.proto.Strategy.Node">Strategy.Node</a></td>
+<td>configuration of some individual nodes of the computational graph</td>
+</tr>
+<tr>
+<td>graph_config</td>
+<td><a href="#autodist.proto.Strategy.GraphConfig">Strategy.GraphConfig</a></td>
+<td>configuration of the computational graph as a whole</td>
+</tr>
+</tbody>
+</table><p><a name="autodist.proto.Strategy.GraphConfig"></a></p>
+</div>
+<div class="section" id="strategy-graphconfig">
+<h3>Strategy.GraphConfig<a class="headerlink" href="#strategy-graphconfig" title="Permalink to this headline">¶</a></h3>
+<p>Represents the configuration of the graph as a whole.</p>
+<p>Based on the list of replicas, the AutoDist backend does
+a combination of in-graph and between-graph distribution.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>replicas</td>
+<td><a href="#string">string</a></td>
+<td>the number of batch-splitting/data-parallel replicas</td>
+</tr>
+</tbody>
+</table><p><a name="autodist.proto.Strategy.Node"></a></p>
+</div>
+<div class="section" id="strategy-node">
+<h3>Strategy.Node<a class="headerlink" href="#strategy-node" title="Permalink to this headline">¶</a></h3>
+<p>Represents the configuration of an individual node in the graph.</p>
+<p>Right now, these nodes are just variables in the graph, so the only
+information they contain is how to synchronize the variable’s gradients.</p>
+<p>In the future, for node partitioning, these could be any node in the graph.
+In that case, they would also have more logic for partitioning the op.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>var_name</td>
+<td><a href="#string">string</a></td>
+<td>variable name</td>
+</tr>
+<tr>
+<td>PSSynchronizer</td>
+<td><a href="#autodist.proto.PSSynchronizer">PSSynchronizer</a></td>
+<td>One of a synchronizer to choose</td>
+</tr>
+<tr>
+<td>AllReduceSynchronizer</td>
+<td><a href="#autodist.proto.AllReduceSynchronizer">AllReduceSynchronizer</a></td>
+<td>One of a synchronizer to choose</td>
+</tr>
+<tr>
+<td>partitioner</td>
+<td><a href="#string">string</a></td>
+<td>Optional partitioner configuration, e.g. <code>1, 2, 1</code></td>
+</tr>
+<tr>
+<td>part_config</td>
+<td><a href="#autodist.proto.Strategy.Node">Strategy.Node</a></td>
+<td>Optional node configs for each node partition (if partitioned)</td>
+</tr>
+</tbody>
+</table> <!-- end messages --> <!-- end enums --> <!-- end HasExtensions --> <!-- end services --><p><a name="autodist/proto/synchronizers.proto"></a></p>
+<p align="right"><a href="#top">Top</a></p></div>
+</div>
+<div class="section" id="autodist-proto-synchronizers-proto">
+<h2>autodist/proto/synchronizers.proto<a class="headerlink" href="#autodist-proto-synchronizers-proto" title="Permalink to this headline">¶</a></h2>
+<p>AutoDist synchronization messages.</p>
+<p><a name="autodist.proto.AllReduceSynchronizer"></a></p>
+<div class="section" id="allreducesynchronizer">
+<h3>AllReduceSynchronizer<a class="headerlink" href="#allreducesynchronizer" title="Permalink to this headline">¶</a></h3>
+<p>Synchronization using AllReduce.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spec</td>
+<td><a href="#autodist.proto.AllReduceSynchronizer.Spec">AllReduceSynchronizer.Spec</a></td>
+<td>Specification for collective communication</td>
+</tr>
+<tr>
+<td>compressor</td>
+<td><a href="#autodist.proto.AllReduceSynchronizer.Compressor">AllReduceSynchronizer.Compressor</a></td>
+<td>One of the compressors to choose</td>
+</tr>
+<tr>
+<td>group</td>
+<td><a href="#int32">int32</a></td>
+<td>The allreduce group to merge with. The group index should be less than the number of variables</td>
+</tr>
+</tbody>
+</table><p><a name="autodist.proto.PSSynchronizer"></a></p>
+</div>
+<div class="section" id="pssynchronizer">
+<h3>PSSynchronizer<a class="headerlink" href="#pssynchronizer" title="Permalink to this headline">¶</a></h3>
+<p>Synchronization using a Parameter Server.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>reduction_destination</td>
+<td><a href="#string">string</a></td>
+<td>Parameter Server to use</td>
+</tr>
+<tr>
+<td>local_replication</td>
+<td><a href="#bool">bool</a></td>
+<td>Whether to create local proxies of each PS variable</td>
+</tr>
+<tr>
+<td>sync</td>
+<td><a href="#bool">bool</a></td>
+<td>Whether to sync gradients across between-graph replications</td>
+</tr>
+<tr>
+<td>staleness</td>
+<td><a href="#int32">int32</a></td>
+<td>Staleness</td>
+</tr>
+</tbody>
+</table> <!-- end messages --><p><a name="autodist.proto.AllReduceSynchronizer.Compressor"></a></p>
+</div>
+<div class="section" id="allreducesynchronizer-compressor">
+<h3>AllReduceSynchronizer.Compressor<a class="headerlink" href="#allreducesynchronizer-compressor" title="Permalink to this headline">¶</a></h3>
+<p>Which gradient compression method to use</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Name</th>
+<th>Number</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NoneCompressor</td>
+<td>0</td>
+<td>No compression</td>
+</tr>
+<tr>
+<td>HorovodCompressor</td>
+<td>1</td>
+<td>Horovod's Compression</td>
+</tr>
+<tr>
+<td>HorovodCompressorEF</td>
+<td>2</td>
+<td>Horovod's Compression but with Error Feedback.</td>
+</tr>
+<tr>
+<td>PowerSGDCompressor</td>
+<td>3</td>
+<td>PowerSGD compression algorithm (arxiv.org/abs/1905.13727)</td>
+</tr>
+</tbody>
+</table><p><a name="autodist.proto.AllReduceSynchronizer.Spec"></a></p>
+</div>
+<div class="section" id="allreducesynchronizer-spec">
+<h3>AllReduceSynchronizer.Spec<a class="headerlink" href="#allreducesynchronizer-spec" title="Permalink to this headline">¶</a></h3>
+<p>Which communication method to use</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Name</th>
+<th>Number</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AUTO</td>
+<td>0</td>
+<td>Runtime's automatic choices</td>
+</tr>
+<tr>
+<td>NCCL</td>
+<td>1</td>
+<td>Use ncclAllReduce for all-reduce, and ring algorithms for all-gather</td>
+</tr>
+<tr>
+<td>RING</td>
+<td>2</td>
+<td>TensorFlow's ring algorithms for all-reduce and all-gather</td>
+</tr>
+</tbody>
+</table> <!-- end enums --> <!-- end HasExtensions --> <!-- end services --></div>
+</div>
+<div class="section" id="scalar-value-types">
+<h2>Scalar Value Types<a class="headerlink" href="#scalar-value-types" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>.proto Type</th>
+<th>Notes</th>
+<th>C++</th>
+<th>Python</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a name="double" /> double</td>
+<td></td>
+<td>double</td>
+<td>float</td>
+</tr>
+<tr>
+<td><a name="float" /> float</td>
+<td></td>
+<td>float</td>
+<td>float</td>
+</tr>
+<tr>
+<td><a name="int32" /> int32</td>
+<td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead.</td>
+<td>int32</td>
+<td>int</td>
+</tr>
+<tr>
+<td><a name="int64" /> int64</td>
+<td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead.</td>
+<td>int64</td>
+<td>int/long</td>
+</tr>
+<tr>
+<td><a name="uint32" /> uint32</td>
+<td>Uses variable-length encoding.</td>
+<td>uint32</td>
+<td>int/long</td>
+</tr>
+<tr>
+<td><a name="uint64" /> uint64</td>
+<td>Uses variable-length encoding.</td>
+<td>uint64</td>
+<td>int/long</td>
+</tr>
+<tr>
+<td><a name="sint32" /> sint32</td>
+<td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s.</td>
+<td>int32</td>
+<td>int</td>
+</tr>
+<tr>
+<td><a name="sint64" /> sint64</td>
+<td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s.</td>
+<td>int64</td>
+<td>int/long</td>
+</tr>
+<tr>
+<td><a name="fixed32" /> fixed32</td>
+<td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+<td>uint32</td>
+<td>int</td>
+</tr>
+<tr>
+<td><a name="fixed64" /> fixed64</td>
+<td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+<td>uint64</td>
+<td>int/long</td>
+</tr>
+<tr>
+<td><a name="sfixed32" /> sfixed32</td>
+<td>Always four bytes.</td>
+<td>int32</td>
+<td>int</td>
+</tr>
+<tr>
+<td><a name="sfixed64" /> sfixed64</td>
+<td>Always eight bytes.</td>
+<td>int64</td>
+<td>int/long</td>
+</tr>
+<tr>
+<td><a name="bool" /> bool</td>
+<td></td>
+<td>bool</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><a name="string" /> string</td>
+<td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+<td>string</td>
+<td>str/unicode</td>
+</tr>
+<tr>
+<td><a name="bytes" /> bytes</td>
+<td>May contain any arbitrary sequence of bytes.</td>
+<td>string</td>
+<td>str</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../api/autodist.html" class="btn btn-neutral float-right" title="Autodist" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../design/kernels.html" class="btn btn-neutral float-left" title="Graph Transformation Kernels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Petuum
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

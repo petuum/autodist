@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>AutoDist: Easy and Composable Distributed Deep Learning &mdash; AutoDist  documentation</title>
+  <title>Introduction &mdash; AutoDist  documentation</title>
   
 
   
@@ -54,9 +54,12 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="index.html">
           
 
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/autodist.html">Developer API References</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="api/autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -220,7 +225,7 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>AutoDist:  Easy and Composable Distributed Deep Learning</li>
+      <li>Introduction</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -239,19 +244,18 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="autodist-easy-and-composable-distributed-deep-learning">
-<h1>AutoDist:  Easy and Composable Distributed Deep Learning<a class="headerlink" href="#autodist-easy-and-composable-distributed-deep-learning" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master"><img alt="pipeline status" src="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/pipeline.svg" /></a>
+  <p align="center">
+  <image src="_static/img/logo.png" width=400 />
+</p><p><a class="reference external" href="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master"><img alt="pipeline status" src="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/pipeline.svg" /></a>
 <a class="reference external" href="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master"><img alt="coverage report" src="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/coverage.svg" /></a></p>
 <p><a class="reference external" href="http://10.20.41.55:8080">Documentation</a> |
-<a class="reference external" href="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tree/master/examples">Examples</a> |
-<a class="reference external" href="https://gitlab.int.petuum.com/internal/scalable-ml/autodist/releases">Releases</a></p>
+<a class="reference external" href="https://github.com/petuum/autodist/tree/master/examples/benchmark">Examples</a></p>
 <p><strong>AutoDist</strong> is a distributed deep-learning training engine.
 AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models
 across many GPUs with scalability and minimal code change.</p>
 <p>AutoDist has been tested with TensorFlow versions 1.15 through 2.1.</p>
 <div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 <p>Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
 AutoDist achieves this goal by:</p>
 <ul class="simple">
@@ -266,11 +270,11 @@ adapt to both the ML properties and the cluster specification.</p></li>
 from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques
 for all-level users.</p>
 <p float="left">
-<img src="_static/img/Figure1.png " width="400" />
-<img src="_static/img/Figure2.png " width="400" /> 
+<img src="_static/img/Figure1.png" width=400 />
+<img src="_static/img/Figure2.png" width=400 /> 
 </p></div>
 <div class="section" id="using-autodist">
-<h2>Using AutoDist<a class="headerlink" href="#using-autodist" title="Permalink to this headline">¶</a></h2>
+<h1>Using AutoDist<a class="headerlink" href="#using-autodist" title="Permalink to this headline">¶</a></h1>
 <p>Installation:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install autodist
 </pre></div>
@@ -291,13 +295,12 @@ for all-level users.</p>
 </div>
 </div>
 <div class="section" id="references-acknowledgements">
-<h2>References &amp; Acknowledgements<a class="headerlink" href="#references-acknowledgements" title="Permalink to this headline">¶</a></h2>
+<h1>References &amp; Acknowledgements<a class="headerlink" href="#references-acknowledgements" title="Permalink to this headline">¶</a></h1>
 <p>We learned and borrowed insights from a few open source projects
 including
 <a class="reference external" href="https://github.com/horovod/horovod">Horovod</a>,
 <a class="reference external" href="https://github.com/snuspl/parallax">Parallax</a>,
 <a class="reference external" href="https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute">tf.distribute</a>.</p>
-</div>
 </div>
 
 

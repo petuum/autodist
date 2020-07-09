@@ -39,7 +39,6 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Orchestra Integration" href="../usage/orchestra-integration.html" />
     <link rel="prev" title="Resource Spec" href="autodist.resource_spec.html" /> 
 </head>
 
@@ -54,9 +53,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +88,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +109,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +178,6 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +245,38 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="runner">
-<h1>Runner<a class="headerlink" href="#runner" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.runner">
+<span id="runner"></span><h1>Runner<a class="headerlink" href="#module-autodist.runner" title="Permalink to this headline">¶</a></h1>
+<p>Runner.</p>
+<p>Contains functionality and classes needed for
+running an AutoDist-transformed graph with TensorFlow.</p>
+<dl class="py function">
+<dt id="autodist.runner.get_default_session_config">
+<code class="sig-name descname">get_default_session_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/runner.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.runner.get_default_session_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a default session config.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="autodist.runner.get_default_run_options">
+<code class="sig-name descname">get_default_run_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/runner.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.runner.get_default_run_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a default run option.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.runner.WrappedSession">
+<em class="property">class </em><code class="sig-name descname">WrappedSession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cluster</span></em>, <em class="sig-param"><span class="n">graph_item</span></em>, <em class="sig-param"><span class="n">remapper</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/runner.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.runner.WrappedSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tensorflow.python.client.session.Session</span></code></p>
+<p>Wraps <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/compat/v1/Session">tf.Session</a>.</p>
+<p>This allows us to use our transformed <cite>Graph</cite> and our <cite>Remapper</cite>
+on our cluster.</p>
+<dl class="py method">
+<dt id="autodist.runner.WrappedSession.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fetches</span></em>, <em class="sig-param"><span class="n">feed_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">options</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">run_metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/runner.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.runner.WrappedSession.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapped Session.run.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
@@ -252,8 +286,6 @@
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../usage/orchestra-integration.html" class="btn btn-neutral float-right" title="Orchestra Integration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="autodist.resource_spec.html" class="btn btn-neutral float-left" title="Resource Spec" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -39,7 +39,7 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Autodist" href="../api/autodist.html" />
+    <link rel="next" title="Strategy as ProtoBuf Message" href="../usage/proto_docgen.html" />
     <link rel="prev" title="Architecture" href="architecture.html" /> 
 </head>
 
@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../api/autodist.html">Developer API References</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api/autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../api/autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -242,7 +247,7 @@
   <div class="section" id="graph-transformation-kernels">
 <h1>Graph Transformation Kernels<a class="headerlink" href="#graph-transformation-kernels" title="Permalink to this headline">¶</a></h1>
 <p>AutoDist backend offers a library of primitive graph rewriting <a class="reference internal" href="../api/autodist.kernel.graph_transformer.html"><span class="doc">kernels</span></a>.
-Each sub-expression in the <a class="reference external" href="../usage/proto_docgen">strategy</a> is mapped to a kernel type with specific configurations.
+Each sub-expression in the <a class="reference internal" href="../usage/proto_docgen.html"><span class="doc">strategy</span></a> is mapped to a kernel type with specific configurations.
 Each type of kernel defines how to rewrite the graph from its current state to the next state,
 which manifests the corresponding semantics in the sub-expression.
 By designing each local kernel at the right level of abstraction,
@@ -283,7 +288,7 @@ by allocating new dimensions in the representation and introducing corresponded 
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../api/autodist.html" class="btn btn-neutral float-right" title="Autodist" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../usage/proto_docgen.html" class="btn btn-neutral float-right" title="Strategy as ProtoBuf Message" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="architecture.html" class="btn btn-neutral float-left" title="Architecture" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

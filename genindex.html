@@ -52,9 +52,12 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="index.html">
           
 
+          
+            
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -84,7 +87,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -103,6 +108,7 @@
 <li class="toctree-l1"><a class="reference internal" href="design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/autodist.html">Developer API References</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -171,7 +177,6 @@
 <li class="toctree-l2"><a class="reference internal" href="api/autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -239,8 +244,1778 @@
 <h1 id="index">Index</h1>
 
 <div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#J"><strong>J</strong></a>
+ | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  
 </div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.checkpoint.saved_model_builder.html#autodist.checkpoint.saved_model_builder.SavedModelBuilder.add_meta_graph_and_variables">add_meta_graph_and_variables() (SavedModelBuilder method)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.add_sync_op">add_sync_op() (PSSynchronizer method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.all_update_ops">all_update_ops() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.strategy.all_reduce_strategy.html#autodist.strategy.all_reduce_strategy.AllReduce">AllReduce (class in autodist.strategy.all_reduce_strategy)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#autodist.kernel.synchronization.all_reduce_synchronizer.AllReduceSynchronizer">AllReduceSynchronizer (class in autodist.kernel.synchronization.all_reduce_synchronizer)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer">(class in autodist.proto.synchronizers_pb2)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.AllReduceSynchronizer">(Strategy.Node attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.kernel.kernel.html#autodist.kernel.kernel.Kernel.apply">apply() (Kernel class method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.replicator.html#autodist.kernel.replicator.Replicator.apply">(Replicator class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.VariablePartitioner.apply">(VariablePartitioner class method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.as_default">as_default() (GraphItem method)</a>
+
+      <ul>
+        <li><a href="api/autodist.remapper.html#autodist.remapper.Remapper.as_default">(Remapper method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner.assign">assign() (PSGradientTaskAssigner method)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#autodist.kernel.synchronization.all_reduce_synchronizer.AllReduceSynchronizer.assign_cluster_information">assign_cluster_information() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.assign_cluster_information">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.synchronizer.html#autodist.kernel.synchronization.synchronizer.Synchronizer.assign_cluster_information">(Synchronizer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.AUTO">AUTO (AllReduceSynchronizer attribute)</a>
+</li>
+      <li>
+    autodist
+
+      <ul>
+        <li><a href="api/autodist.html#module-autodist">module</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.AutoDist">AutoDist (class in autodist.autodist)</a>
+</li>
+      <li>
+    autodist.autodist
+
+      <ul>
+        <li><a href="api/autodist.autodist.html#module-autodist.autodist">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.checkpoint
+
+      <ul>
+        <li><a href="api/autodist.checkpoint.html#module-autodist.checkpoint">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.checkpoint.saved_model_builder
+
+      <ul>
+        <li><a href="api/autodist.checkpoint.saved_model_builder.html#module-autodist.checkpoint.saved_model_builder">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.checkpoint.saver
+
+      <ul>
+        <li><a href="api/autodist.checkpoint.saver.html#module-autodist.checkpoint.saver">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.cluster
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#module-autodist.cluster">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.const
+
+      <ul>
+        <li><a href="api/autodist.const.html#module-autodist.const">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.coordinator
+
+      <ul>
+        <li><a href="api/autodist.coordinator.html#module-autodist.coordinator">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.graph_item
+
+      <ul>
+        <li><a href="api/autodist.graph_item.html#module-autodist.graph_item">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel
+
+      <ul>
+        <li><a href="api/autodist.kernel.html#module-autodist.kernel">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.common
+
+      <ul>
+        <li><a href="api/autodist.kernel.common.html#module-autodist.kernel.common">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.common.op_info
+
+      <ul>
+        <li><a href="api/autodist.kernel.common.op_info.html#module-autodist.kernel.common.op_info">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.common.proxy_variable
+
+      <ul>
+        <li><a href="api/autodist.kernel.common.proxy_variable.html#module-autodist.kernel.common.proxy_variable">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.common.utils
+
+      <ul>
+        <li><a href="api/autodist.kernel.common.utils.html#module-autodist.kernel.common.utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.common.variable_utils
+
+      <ul>
+        <li><a href="api/autodist.kernel.common.variable_utils.html#module-autodist.kernel.common.variable_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.device
+
+      <ul>
+        <li><a href="api/autodist.kernel.device.html#module-autodist.kernel.device">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.device.resolver
+
+      <ul>
+        <li><a href="api/autodist.kernel.device.resolver.html#module-autodist.kernel.device.resolver">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.graph_transformer
+
+      <ul>
+        <li><a href="api/autodist.kernel.graph_transformer.html#module-autodist.kernel.graph_transformer">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.kernel
+
+      <ul>
+        <li><a href="api/autodist.kernel.kernel.html#module-autodist.kernel.kernel">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.partitioner
+
+      <ul>
+        <li><a href="api/autodist.kernel.partitioner.html#module-autodist.kernel.partitioner">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.replicator
+
+      <ul>
+        <li><a href="api/autodist.kernel.replicator.html#module-autodist.kernel.replicator">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.synchronization
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.html#module-autodist.kernel.synchronization">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.synchronization.all_reduce_synchronizer
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#module-autodist.kernel.synchronization.all_reduce_synchronizer">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    autodist.kernel.synchronization.collective_key
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.collective_key.html#module-autodist.kernel.synchronization.collective_key">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.synchronization.compressor
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#module-autodist.kernel.synchronization.compressor">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.synchronization.ps_synchronizer
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#module-autodist.kernel.synchronization.ps_synchronizer">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.kernel.synchronization.synchronizer
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.synchronizer.html#module-autodist.kernel.synchronization.synchronizer">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.patch
+
+      <ul>
+        <li><a href="api/autodist.patch.html#module-autodist.patch">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.proto
+
+      <ul>
+        <li><a href="api/autodist.proto.html#module-autodist.proto">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.proto.graphitem_pb2
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#module-autodist.proto.graphitem_pb2">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.proto.strategy_pb2
+
+      <ul>
+        <li><a href="api/autodist.proto.strategy_pb2.html#module-autodist.proto.strategy_pb2">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.proto.synchronizers_pb2
+
+      <ul>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#module-autodist.proto.synchronizers_pb2">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.remapper
+
+      <ul>
+        <li><a href="api/autodist.remapper.html#module-autodist.remapper">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.resource_spec
+
+      <ul>
+        <li><a href="api/autodist.resource_spec.html#module-autodist.resource_spec">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.runner
+
+      <ul>
+        <li><a href="api/autodist.runner.html#module-autodist.runner">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.html#module-autodist.strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.all_reduce_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.all_reduce_strategy.html#module-autodist.strategy.all_reduce_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.base
+
+      <ul>
+        <li><a href="api/autodist.strategy.base.html#module-autodist.strategy.base">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.parallax_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.parallax_strategy.html#module-autodist.strategy.parallax_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.partitioned_all_reduce_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.partitioned_all_reduce_strategy.html#module-autodist.strategy.partitioned_all_reduce_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.partitioned_ps_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.partitioned_ps_strategy.html#module-autodist.strategy.partitioned_ps_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.ps_lb_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.ps_lb_strategy.html#module-autodist.strategy.ps_lb_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.ps_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.ps_strategy.html#module-autodist.strategy.ps_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.random_axis_partition_all_reduce_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html#module-autodist.strategy.random_axis_partition_all_reduce_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.strategy.uneven_partition_ps_strategy
+
+      <ul>
+        <li><a href="api/autodist.strategy.uneven_partition_ps_strategy.html#module-autodist.strategy.uneven_partition_ps_strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.utils
+
+      <ul>
+        <li><a href="api/autodist.utils.html#module-autodist.utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.utils.logging
+
+      <ul>
+        <li><a href="api/autodist.utils.logging.html#module-autodist.utils.logging">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.utils.network
+
+      <ul>
+        <li><a href="api/autodist.utils.network.html#module-autodist.utils.network">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.utils.server_starter
+
+      <ul>
+        <li><a href="api/autodist.utils.server_starter.html#module-autodist.utils.server_starter">module</a>
+</li>
+      </ul></li>
+      <li>
+    autodist.utils.visualization_util
+
+      <ul>
+        <li><a href="api/autodist.utils.visualization_util.html#module-autodist.utils.visualization_util">module</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_DEBUG_REMOTE">AUTODIST_DEBUG_REMOTE (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_INTERNAL_TF">AUTODIST_INTERNAL_TF (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_IS_TESTING">AUTODIST_IS_TESTING (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_MIN_LOG_LEVEL">AUTODIST_MIN_LOG_LEVEL (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_PATCH_TF">AUTODIST_PATCH_TF (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_STRATEGY_ID">AUTODIST_STRATEGY_ID (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.AUTODIST_WORKER">AUTODIST_WORKER (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig.axis">axis() (PartitionerConfig property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#autodist.kernel.synchronization.all_reduce_synchronizer.AllReduceSynchronizer.between_graph_apply">between_graph_apply() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.between_graph_apply">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.synchronizer.html#autodist.kernel.synchronization.synchronizer.Synchronizer.between_graph_apply">(Synchronizer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.strategy.all_reduce_strategy.html#autodist.strategy.all_reduce_strategy.AllReduce.build">build() (AllReduce method)</a>
+
+      <ul>
+        <li><a href="api/autodist.strategy.parallax_strategy.html#autodist.strategy.parallax_strategy.Parallax.build">(Parallax method)</a>
+</li>
+        <li><a href="api/autodist.strategy.partitioned_all_reduce_strategy.html#autodist.strategy.partitioned_all_reduce_strategy.PartitionedAR.build">(PartitionedAR method)</a>
+</li>
+        <li><a href="api/autodist.strategy.partitioned_ps_strategy.html#autodist.strategy.partitioned_ps_strategy.PartitionedPS.build">(PartitionedPS method)</a>
+</li>
+        <li><a href="api/autodist.strategy.ps_strategy.html#autodist.strategy.ps_strategy.PS.build">(PS method)</a>
+</li>
+        <li><a href="api/autodist.strategy.ps_lb_strategy.html#autodist.strategy.ps_lb_strategy.PSLoadBalancing.build">(PSLoadBalancing method)</a>
+</li>
+        <li><a href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html#autodist.strategy.random_axis_partition_all_reduce_strategy.RandomAxisPartitionAR.build">(RandomAxisPartitionAR method)</a>
+</li>
+        <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder.build">(StrategyBuilder method)</a>
+</li>
+        <li><a href="api/autodist.strategy.uneven_partition_ps_strategy.html#autodist.strategy.uneven_partition_ps_strategy.UnevenPartitionedPS.build">(UnevenPartitionedPS method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.AutoDist.build_strategy">build_strategy() (AutoDist method)</a>
+</li>
+      <li><a href="api/autodist.strategy.partitioned_ps_strategy.html#autodist.strategy.partitioned_ps_strategy.byte_size_load_fn">byte_size_load_fn() (in module autodist.strategy.partitioned_ps_strategy)</a>
+
+      <ul>
+        <li><a href="api/autodist.strategy.ps_lb_strategy.html#autodist.strategy.ps_lb_strategy.byte_size_load_fn">(in module autodist.strategy.ps_lb_strategy)</a>
+</li>
+        <li><a href="api/autodist.strategy.uneven_partition_ps_strategy.html#autodist.strategy.uneven_partition_ps_strategy.byte_size_load_fn">(in module autodist.strategy.uneven_partition_ps_strategy)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ByteSize">ByteSize() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.ByteSize">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.ByteSize">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.ByteSize">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.ByteSize">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.ByteSize">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.ByteSize">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.ByteSize">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.cached_property">cached_property() (in module autodist.graph_item)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.chief">chief() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Clear">Clear() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Clear">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.Clear">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.Clear">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.Clear">(PSSynchronizer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.clear">clear() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Clear">Clear() (Strategy method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.Clear">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.Clear">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ClearExtension">ClearExtension() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.ClearExtension">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.ClearExtension">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.ClearExtension">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.ClearExtension">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.ClearExtension">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.ClearExtension">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.ClearExtension">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ClearField">ClearField() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.ClearField">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.ClearField">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.ClearField">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.ClearField">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.ClearField">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.ClearField">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.ClearField">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster">Cluster (class in autodist.cluster)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.collective_key.html#autodist.kernel.synchronization.collective_key.CollectiveKey">CollectiveKey (class in autodist.kernel.synchronization.collective_key)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CollectiveOpsConfig">CollectiveOpsConfig (class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.StrategyCompiler.compile">compile() (StrategyCompiler method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Compressor">Compressor (AllReduceSynchronizer attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.compressor">compressor (AllReduceSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.Compressor">Compressor (class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CompressorEF">CompressorEF (class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.Connectivity">Connectivity (class in autodist.resource_spec)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceSpec.connectivity_with">connectivity_with() (DeviceSpec method)</a>
+</li>
+      <li><a href="api/autodist.coordinator.html#autodist.coordinator.Coordinator">Coordinator (class in autodist.coordinator)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.copy">copy() (Info method)</a>
+
+      <ul>
+        <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.copy">(SSHConfigMap method)</a>
+</li>
+        <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.copy">(Strategy method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.copy_gradient_info_from">copy_gradient_info_from() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.CopyFrom">CopyFrom() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.CopyFrom">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.CopyFrom">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.CopyFrom">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.CopyFrom">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.CopyFrom">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.CopyFrom">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.CopyFrom">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.count">count() (SSHConfig method)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceType.CPU">CPU (DeviceType attribute)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.cpu_devices">cpu_devices() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.Connectivity.CPU_TO_GPU">CPU_TO_GPU (Connectivity attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#autodist.kernel.synchronization.all_reduce_synchronizer.AllReduceSynchronizer.create">create() (AllReduceSynchronizer class method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.Compressor.create">(Compressor class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CompressorEF.create">(CompressorEF class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.HorovodCompressor.create">(HorovodCompressor class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.HorovodCompressorEF.create">(HorovodCompressorEF class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.NoneCompressor.create">(NoneCompressor class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.PowerSGDCompressor.create">(PowerSGDCompressor class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.create">(PSSynchronizer class method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.synchronizer.html#autodist.kernel.synchronization.synchronizer.Synchronizer.create">(Synchronizer class method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.AutoDist.create_distributed_session">create_distributed_session() (AutoDist method)</a>
+</li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.critical">critical() (in module autodist.utils.logging)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.debug">debug() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.DESCRIPTOR">DESCRIPTOR (AllReduceSynchronizer attribute)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.DESCRIPTOR">(GraphItem attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.DESCRIPTOR">(GraphItem.GradTargetPairsEntry attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.DESCRIPTOR">(GraphItem.Info attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.DESCRIPTOR">(PSSynchronizer attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.DESCRIPTOR">(Strategy attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.DESCRIPTOR">(Strategy.GraphConfig attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.DESCRIPTOR">(Strategy.Node attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.deserialize">deserialize() (GraphItem class method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig.deserialize">(PartitionerConfig method)</a>
+</li>
+        <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.deserialize">(Strategy class method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.device.resolver.html#autodist.kernel.device.resolver.DeviceResolver">DeviceResolver (class in autodist.kernel.device.resolver)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.devices">devices() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceSpec">DeviceSpec (class in autodist.resource_spec)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceType">DeviceType (class in autodist.resource_spec)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.DiscardUnknownFields">DiscardUnknownFields() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.DiscardUnknownFields">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.DiscardUnknownFields">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.DiscardUnknownFields">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.DiscardUnknownFields">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.DiscardUnknownFields">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.DiscardUnknownFields">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.DiscardUnknownFields">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.const.html#autodist.const.ENV">ENV (class in autodist.const)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.env">env() (SSHConfig property)</a>
+</li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.error">error() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.Connectivity.ETHERNET">ETHERNET (Connectivity attribute)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.extend_gradient_info">extend_gradient_info() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.extend_gradient_info_by_names">extend_gradient_info_by_names() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.extend_optimizer_info">extend_optimizer_info() (GraphItem method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Extensions">Extensions (AllReduceSynchronizer attribute)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Extensions">(GraphItem attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.Extensions">(GraphItem.GradTargetPairsEntry attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.Extensions">(GraphItem.Info attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.Extensions">(PSSynchronizer attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Extensions">(Strategy attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.Extensions">(Strategy.GraphConfig attribute)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.Extensions">(Strategy.Node attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CollectiveOpsConfig.final_op">final_op (CollectiveOpsConfig attribute)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.FindInitializationErrors">FindInitializationErrors() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.FindInitializationErrors">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.FindInitializationErrors">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.FindInitializationErrors">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.FindInitializationErrors">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.FindInitializationErrors">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.FindInitializationErrors">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.FindInitializationErrors">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceSpec.from_string">from_string() (DeviceSpec class method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.fromkeys">fromkeys() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.FromString">FromString() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.FromString">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.FromString">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.FromString">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.FromString">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.FromString">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.FromString">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.FromString">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.AutoDist.function">function() (AutoDist method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.common.variable_utils.html#autodist.kernel.common.variable_utils.gen_read_var_op">gen_read_var_op() (in module autodist.kernel.common.variable_utils)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.get">get() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.get_address_from_task">get_address_from_task() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.get_address_from_task">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.kernel.common.proxy_variable.html#autodist.kernel.common.proxy_variable.ProxyVariable.get_all_update_ops">get_all_update_ops() (ProxyVariable method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.get_all_variables">get_all_variables() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.get_ancestors">get_ancestors() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.collective_key.html#autodist.kernel.synchronization.collective_key.get_collective_keys">get_collective_keys() (in module autodist.kernel.synchronization.collective_key)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.get_colocation_op">get_colocation_op() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.get_consumers">get_consumers() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.get_control_consumers">get_control_consumers() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.get_default_autodist">get_default_autodist() (in module autodist.autodist)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.get_default_graph_item">get_default_graph_item() (in module autodist.graph_item)</a>
+</li>
+      <li><a href="api/autodist.runner.html#autodist.runner.get_default_run_options">get_default_run_options() (in module autodist.runner)</a>
+</li>
+      <li><a href="api/autodist.runner.html#autodist.runner.get_default_session_config">get_default_session_config() (in module autodist.runner)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.collective_key.html#autodist.kernel.synchronization.collective_key.CollectiveKey.get_group_key">get_group_key() (CollectiveKey method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.get_index_from_tensor_name">get_index_from_tensor_name() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.collective_key.html#autodist.kernel.synchronization.collective_key.CollectiveKey.get_instance_key">get_instance_key() (CollectiveKey method)</a>
+</li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.get_local_address">get_local_address() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.get_local_address">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.get_local_session_target">get_local_session_target() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.get_local_session_target">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.get_local_worker_task_index">get_local_worker_task_index() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.get_local_worker_task_index">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.get_logger">get_logger() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.strategy.partitioned_all_reduce_strategy.html#autodist.strategy.partitioned_all_reduce_strategy.PartitionedAR.get_num_shards">get_num_shards() (PartitionedAR static method)</a>
+
+      <ul>
+        <li><a href="api/autodist.strategy.partitioned_ps_strategy.html#autodist.strategy.partitioned_ps_strategy.PartitionedPS.get_num_shards">(PartitionedPS static method)</a>
+</li>
+        <li><a href="api/autodist.strategy.uneven_partition_ps_strategy.html#autodist.strategy.uneven_partition_ps_strategy.UnevenPartitionedPS.get_num_shards">(UnevenPartitionedPS static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html#autodist.strategy.random_axis_partition_all_reduce_strategy.RandomAxisPartitionAR.get_num_shards_and_axis">get_num_shards_and_axis() (RandomAxisPartitionAR static method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.get_op_name">get_op_name() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.get_ops_in_graph">get_ops_in_graph() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.variable_utils.html#autodist.kernel.common.variable_utils.get_read_var_ops">get_read_var_ops() (in module autodist.kernel.common.variable_utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.variable_utils.html#autodist.kernel.common.variable_utils.get_read_var_tensor">get_read_var_tensor() (in module autodist.kernel.common.variable_utils)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.get_trainable_variables">get_trainable_variables() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.get_verbosity">get_verbosity() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceType.GPU">GPU (DeviceType attribute)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.gpu_devices">gpu_devices() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.Connectivity.GPU_TO_GPU_LOCAL">GPU_TO_GPU_LOCAL (Connectivity attribute)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.Connectivity.GPU_TO_GPU_REMOTE">GPU_TO_GPU_REMOTE (Connectivity attribute)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.grad_list">grad_list() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.grad_target_name_pairs">grad_target_name_pairs() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.grad_target_pairs">grad_target_pairs (GraphItem attribute)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.grad_target_pairs">grad_target_pairs() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.graph">graph() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.graph_config">graph_config (Strategy attribute)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.graph_config">graph_config() (Strategy property)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.graph_def">graph_def (GraphItem attribute)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem">GraphItem (class in autodist.graph_item)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem">(class in autodist.proto.graphitem_pb2)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry">GraphItem.GradTargetPairsEntry (class in autodist.proto.graphitem_pb2)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info">GraphItem.Info (class in autodist.proto.graphitem_pb2)</a>
+</li>
+      <li><a href="api/autodist.kernel.graph_transformer.html#autodist.kernel.graph_transformer.GraphTransformer">GraphTransformer (class in autodist.kernel.graph_transformer)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.group">group (AllReduceSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CollectiveOpsConfig.group_key">group_key (CollectiveOpsConfig attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CollectiveOpsConfig.group_size">group_size (CollectiveOpsConfig attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HasExtension">HasExtension() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.HasExtension">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.HasExtension">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.HasExtension">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.HasExtension">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.HasExtension">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.HasExtension">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.HasExtension">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HasField">HasField() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.HasField">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.HasField">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.HasField">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.HasField">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.HasField">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.HasField">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.HasField">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HorovodCompressor">HorovodCompressor (AllReduceSynchronizer attribute)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.HorovodCompressor">(class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.HorovodCompressorEF">HorovodCompressorEF (AllReduceSynchronizer attribute)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.HorovodCompressorEF">(class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.id">id (Strategy attribute)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.id">id() (Strategy property)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#autodist.kernel.synchronization.all_reduce_synchronizer.AllReduceSynchronizer.in_graph_apply">in_graph_apply() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer.in_graph_apply">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.synchronizer.html#autodist.kernel.synchronization.synchronizer.Synchronizer.in_graph_apply">(Synchronizer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.index">index() (SSHConfig method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info">Info (class in autodist.graph_item)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.info">info (GraphItem attribute)</a>
+</li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.info">info() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.initializers">initializers() (Info property)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CollectiveOpsConfig.instance_key">instance_key (CollectiveOpsConfig attribute)</a>
+</li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.AutoDist.is_built">is_built() (AutoDist method)</a>
+</li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.is_chief">is_chief() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.is_chief">(SSHCluster method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.utils.network.html#autodist.utils.network.is_local_address">is_local_address() (in module autodist.utils.network)</a>
+</li>
+      <li><a href="api/autodist.utils.network.html#autodist.utils.network.is_loopback_address">is_loopback_address() (in module autodist.utils.network)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.variable_utils.html#autodist.kernel.common.variable_utils.is_read_var_op">is_read_var_op() (in module autodist.kernel.common.variable_utils)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.IsInitialized">IsInitialized() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.IsInitialized">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.IsInitialized">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.IsInitialized">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.IsInitialized">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.IsInitialized">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.IsInitialized">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.IsInitialized">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.items">items() (SSHConfigMap method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="J">J</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.coordinator.html#autodist.coordinator.Coordinator.join">join() (Coordinator method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.kernel.html#autodist.kernel.kernel.Kernel">Kernel (class in autodist.kernel.kernel)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.key">key (GraphItem.GradTargetPairsEntry attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.key_file">key_file() (SSHConfig property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.keys">keys() (SSHConfigMap method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.coordinator.html#autodist.coordinator.Coordinator.launch_clients">launch_clients() (Coordinator method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ListFields">ListFields() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.ListFields">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.ListFields">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.ListFields">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.ListFields">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.ListFields">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.ListFields">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.ListFields">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.local_replication">local_replication (PSSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.log">log() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.utils.visualization_util.html#autodist.utils.visualization_util.log_graph">log_graph() (in module autodist.utils.visualization_util)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CollectiveOpsConfig.merge_op">merge_op (CollectiveOpsConfig attribute)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.MergeFrom">MergeFrom() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.MergeFrom">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.MergeFrom">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.MergeFrom">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.MergeFrom">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.MergeFrom">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.MergeFrom">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.MergeFrom">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.MergeFromString">MergeFromString() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.MergeFromString">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.MergeFromString">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.MergeFromString">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.MergeFromString">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.MergeFromString">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.MergeFromString">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.MergeFromString">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="api/autodist.html#module-autodist">autodist</a>
+</li>
+        <li><a href="api/autodist.autodist.html#module-autodist.autodist">autodist.autodist</a>
+</li>
+        <li><a href="api/autodist.checkpoint.html#module-autodist.checkpoint">autodist.checkpoint</a>
+</li>
+        <li><a href="api/autodist.checkpoint.saved_model_builder.html#module-autodist.checkpoint.saved_model_builder">autodist.checkpoint.saved_model_builder</a>
+</li>
+        <li><a href="api/autodist.checkpoint.saver.html#module-autodist.checkpoint.saver">autodist.checkpoint.saver</a>
+</li>
+        <li><a href="api/autodist.cluster.html#module-autodist.cluster">autodist.cluster</a>
+</li>
+        <li><a href="api/autodist.const.html#module-autodist.const">autodist.const</a>
+</li>
+        <li><a href="api/autodist.coordinator.html#module-autodist.coordinator">autodist.coordinator</a>
+</li>
+        <li><a href="api/autodist.graph_item.html#module-autodist.graph_item">autodist.graph_item</a>
+</li>
+        <li><a href="api/autodist.kernel.html#module-autodist.kernel">autodist.kernel</a>
+</li>
+        <li><a href="api/autodist.kernel.common.html#module-autodist.kernel.common">autodist.kernel.common</a>
+</li>
+        <li><a href="api/autodist.kernel.common.op_info.html#module-autodist.kernel.common.op_info">autodist.kernel.common.op_info</a>
+</li>
+        <li><a href="api/autodist.kernel.common.proxy_variable.html#module-autodist.kernel.common.proxy_variable">autodist.kernel.common.proxy_variable</a>
+</li>
+        <li><a href="api/autodist.kernel.common.utils.html#module-autodist.kernel.common.utils">autodist.kernel.common.utils</a>
+</li>
+        <li><a href="api/autodist.kernel.common.variable_utils.html#module-autodist.kernel.common.variable_utils">autodist.kernel.common.variable_utils</a>
+</li>
+        <li><a href="api/autodist.kernel.device.html#module-autodist.kernel.device">autodist.kernel.device</a>
+</li>
+        <li><a href="api/autodist.kernel.device.resolver.html#module-autodist.kernel.device.resolver">autodist.kernel.device.resolver</a>
+</li>
+        <li><a href="api/autodist.kernel.graph_transformer.html#module-autodist.kernel.graph_transformer">autodist.kernel.graph_transformer</a>
+</li>
+        <li><a href="api/autodist.kernel.kernel.html#module-autodist.kernel.kernel">autodist.kernel.kernel</a>
+</li>
+        <li><a href="api/autodist.kernel.partitioner.html#module-autodist.kernel.partitioner">autodist.kernel.partitioner</a>
+</li>
+        <li><a href="api/autodist.kernel.replicator.html#module-autodist.kernel.replicator">autodist.kernel.replicator</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.html#module-autodist.kernel.synchronization">autodist.kernel.synchronization</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.all_reduce_synchronizer.html#module-autodist.kernel.synchronization.all_reduce_synchronizer">autodist.kernel.synchronization.all_reduce_synchronizer</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.collective_key.html#module-autodist.kernel.synchronization.collective_key">autodist.kernel.synchronization.collective_key</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#module-autodist.kernel.synchronization.compressor">autodist.kernel.synchronization.compressor</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#module-autodist.kernel.synchronization.ps_synchronizer">autodist.kernel.synchronization.ps_synchronizer</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.synchronizer.html#module-autodist.kernel.synchronization.synchronizer">autodist.kernel.synchronization.synchronizer</a>
+</li>
+        <li><a href="api/autodist.patch.html#module-autodist.patch">autodist.patch</a>
+</li>
+        <li><a href="api/autodist.proto.html#module-autodist.proto">autodist.proto</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#module-autodist.proto.graphitem_pb2">autodist.proto.graphitem_pb2</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#module-autodist.proto.strategy_pb2">autodist.proto.strategy_pb2</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#module-autodist.proto.synchronizers_pb2">autodist.proto.synchronizers_pb2</a>
+</li>
+        <li><a href="api/autodist.remapper.html#module-autodist.remapper">autodist.remapper</a>
+</li>
+        <li><a href="api/autodist.resource_spec.html#module-autodist.resource_spec">autodist.resource_spec</a>
+</li>
+        <li><a href="api/autodist.runner.html#module-autodist.runner">autodist.runner</a>
+</li>
+        <li><a href="api/autodist.strategy.html#module-autodist.strategy">autodist.strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.all_reduce_strategy.html#module-autodist.strategy.all_reduce_strategy">autodist.strategy.all_reduce_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.base.html#module-autodist.strategy.base">autodist.strategy.base</a>
+</li>
+        <li><a href="api/autodist.strategy.parallax_strategy.html#module-autodist.strategy.parallax_strategy">autodist.strategy.parallax_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.partitioned_all_reduce_strategy.html#module-autodist.strategy.partitioned_all_reduce_strategy">autodist.strategy.partitioned_all_reduce_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.partitioned_ps_strategy.html#module-autodist.strategy.partitioned_ps_strategy">autodist.strategy.partitioned_ps_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.ps_lb_strategy.html#module-autodist.strategy.ps_lb_strategy">autodist.strategy.ps_lb_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.ps_strategy.html#module-autodist.strategy.ps_strategy">autodist.strategy.ps_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html#module-autodist.strategy.random_axis_partition_all_reduce_strategy">autodist.strategy.random_axis_partition_all_reduce_strategy</a>
+</li>
+        <li><a href="api/autodist.strategy.uneven_partition_ps_strategy.html#module-autodist.strategy.uneven_partition_ps_strategy">autodist.strategy.uneven_partition_ps_strategy</a>
+</li>
+        <li><a href="api/autodist.utils.html#module-autodist.utils">autodist.utils</a>
+</li>
+        <li><a href="api/autodist.utils.logging.html#module-autodist.utils.logging">autodist.utils.logging</a>
+</li>
+        <li><a href="api/autodist.utils.network.html#module-autodist.utils.network">autodist.utils.network</a>
+</li>
+        <li><a href="api/autodist.utils.server_starter.html#module-autodist.utils.server_starter">autodist.utils.server_starter</a>
+</li>
+        <li><a href="api/autodist.utils.visualization_util.html#module-autodist.utils.visualization_util">autodist.utils.visualization_util</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.DeviceSpec.name_string">name_string() (DeviceSpec method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.NCCL">NCCL (AllReduceSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.node_config">node_config (Strategy attribute)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.node_config">node_config() (Strategy property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.node_cpu_devices">node_cpu_devices() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.node_gpu_devices">node_gpu_devices() (ResourceSpec property)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.nodes">nodes() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.NoneCompressor">NoneCompressor (AllReduceSynchronizer attribute)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.NoneCompressor">(class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.num_cpus">num_cpus() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.num_gpus">num_gpus() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.kernel.graph_transformer.html#autodist.kernel.graph_transformer.GraphTransformer.num_local_replicas">num_local_replicas() (GraphTransformer property)</a>
+</li>
+      <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig.num_shards">num_shards() (PartitionerConfig property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.strategy.parallax_strategy.html#autodist.strategy.parallax_strategy.Parallax">Parallax (class in autodist.strategy.parallax_strategy)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.parse_name_scope">parse_name_scope() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.parse_optimizer_scope">parse_optimizer_scope() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.ParseFromString">ParseFromString() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.ParseFromString">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.ParseFromString">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.ParseFromString">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.ParseFromString">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.ParseFromString">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.ParseFromString">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.ParseFromString">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.part_config">part_config (Strategy.Node attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig.partition_list">partition_list() (PartitionerConfig property)</a>
+</li>
+      <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig.partition_str">partition_str() (PartitionerConfig property)</a>
+</li>
+      <li><a href="api/autodist.strategy.partitioned_all_reduce_strategy.html#autodist.strategy.partitioned_all_reduce_strategy.PartitionedAR">PartitionedAR (class in autodist.strategy.partitioned_all_reduce_strategy)</a>
+</li>
+      <li><a href="api/autodist.strategy.partitioned_ps_strategy.html#autodist.strategy.partitioned_ps_strategy.PartitionedPS">PartitionedPS (class in autodist.strategy.partitioned_ps_strategy)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.partitioner">partitioner (Strategy.Node attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig">PartitionerConfig (class in autodist.kernel.partitioner)</a>
+</li>
+      <li><a href="api/autodist.patch.html#autodist.patch.PatchTensorFlow.patch_keras">patch_keras() (PatchTensorFlow static method)</a>
+</li>
+      <li><a href="api/autodist.patch.html#autodist.patch.PatchTensorFlow.patch_optimizers">patch_optimizers() (PatchTensorFlow static method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.patch.html#autodist.patch.PatchTensorFlow.patch_var_reading">patch_var_reading() (PatchTensorFlow static method)</a>
+</li>
+      <li><a href="api/autodist.patch.html#autodist.patch.PatchTensorFlow">PatchTensorFlow (class in autodist.patch)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.path">path (Strategy attribute)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.path">path() (Strategy property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.pkey">pkey() (SSHConfig property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.pop">pop() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.pop_gradient_info">pop_gradient_info() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.pop_variable">pop_variable() (Info method)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.popitem">popitem() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.port">port() (SSHConfig property)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.PowerSGDCompressor">PowerSGDCompressor (AllReduceSynchronizer attribute)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.PowerSGDCompressor">(class in autodist.kernel.synchronization.compressor)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.prepare">prepare() (GraphItem method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.proxy_variable.html#autodist.kernel.common.proxy_variable.ProxyVariable">ProxyVariable (class in autodist.kernel.common.proxy_variable)</a>
+</li>
+      <li><a href="api/autodist.strategy.ps_strategy.html#autodist.strategy.ps_strategy.PS">PS (class in autodist.strategy.ps_strategy)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner">PSGradientTaskAssigner (class in autodist.kernel.synchronization.ps_synchronizer)</a>
+</li>
+      <li><a href="api/autodist.strategy.ps_lb_strategy.html#autodist.strategy.ps_lb_strategy.PSLoadBalancing">PSLoadBalancing (class in autodist.strategy.ps_lb_strategy)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSSynchronizer">PSSynchronizer (class in autodist.kernel.synchronization.ps_synchronizer)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer">(class in autodist.proto.synchronizers_pb2)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.PSSynchronizer">(Strategy.Node attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.python_venv">python_venv() (SSHConfig property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.strategy.random_axis_partition_all_reduce_strategy.html#autodist.strategy.random_axis_partition_all_reduce_strategy.RandomAxisPartitionAR">RandomAxisPartitionAR (class in autodist.strategy.random_axis_partition_all_reduce_strategy)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.Compressor.reduce">reduce() (Compressor method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.CompressorEF.reduce">(CompressorEF method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.HorovodCompressor.reduce">(HorovodCompressor method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.HorovodCompressorEF.reduce">(HorovodCompressorEF method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.NoneCompressor.reduce">(NoneCompressor method)</a>
+</li>
+        <li><a href="api/autodist.kernel.synchronization.compressor.html#autodist.kernel.synchronization.compressor.PowerSGDCompressor.reduce">(PowerSGDCompressor method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.reduction_destination">reduction_destination (PSSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.RegisterExtension">RegisterExtension() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.RegisterExtension">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.RegisterExtension">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.RegisterExtension">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.RegisterExtension">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.RegisterExtension">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.RegisterExtension">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.RegisterExtension">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.remapper.html#autodist.remapper.Remapper.remap_callable_options">remap_callable_options() (Remapper method)</a>
+</li>
+      <li><a href="api/autodist.remapper.html#autodist.remapper.Remapper">Remapper (class in autodist.remapper)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.remote_copy">remote_copy() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.remote_copy">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.remote_exec">remote_exec() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.remote_exec">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.remote_file_write">remote_file_write() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.remote_file_write">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.remote_pre_start_tf_server">remote_pre_start_tf_server() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.remote_pre_start_tf_server">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.remove_from_control_consumers">remove_from_control_consumers() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.replica_prefix">replica_prefix() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.replicas">replicas (Strategy.GraphConfig attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.replicator.html#autodist.kernel.replicator.Replicator.replicate">replicate() (Replicator method)</a>
+</li>
+      <li><a href="api/autodist.kernel.replicator.html#autodist.kernel.replicator.Replicator">Replicator (class in autodist.kernel.replicator)</a>
+</li>
+      <li><a href="api/autodist.kernel.device.resolver.html#autodist.kernel.device.resolver.DeviceResolver.resolve_to_device_spec">resolve_to_device_spec() (DeviceResolver method)</a>
+</li>
+      <li><a href="api/autodist.kernel.device.resolver.html#autodist.kernel.device.resolver.DeviceResolver.resolve_to_device_str">resolve_to_device_str() (DeviceResolver method)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec">ResourceSpec (class in autodist.resource_spec)</a>
+</li>
+      <li><a href="api/autodist.checkpoint.saver.html#autodist.checkpoint.saver.Saver.restore">restore() (Saver method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.RING">RING (AllReduceSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.runner.html#autodist.runner.WrappedSession.run">run() (WrappedSession method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.Connectivity.SAME">SAME (Connectivity attribute)</a>
+</li>
+      <li><a href="api/autodist.checkpoint.saver.html#autodist.checkpoint.saver.Saver.save">save() (Saver method)</a>
+</li>
+      <li><a href="api/autodist.checkpoint.saved_model_builder.html#autodist.checkpoint.saved_model_builder.SavedModelBuilder">SavedModelBuilder (class in autodist.checkpoint.saved_model_builder)</a>
+</li>
+      <li><a href="api/autodist.checkpoint.saver.html#autodist.checkpoint.saver.Saver">Saver (class in autodist.checkpoint.saver)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.savers">savers (GraphItem.Info attribute)</a>
+</li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.AutoDist.scope">scope() (AutoDist method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.serialize">serialize() (GraphItem method)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.PartitionerConfig.serialize">(PartitionerConfig method)</a>
+</li>
+        <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy.serialize">(Strategy method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SerializePartialToString">SerializePartialToString() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.SerializePartialToString">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.SerializePartialToString">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.SerializePartialToString">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.SerializePartialToString">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.SerializePartialToString">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.SerializePartialToString">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.SerializePartialToString">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SerializeToString">SerializeToString() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.SerializeToString">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.SerializeToString">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.SerializeToString">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.SerializeToString">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.SerializeToString">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.SerializeToString">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.SerializeToString">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.autodist.html#autodist.autodist.set_default_autodist">set_default_autodist() (in module autodist.autodist)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.StrategyCompiler.set_device_resolver">set_device_resolver() (StrategyCompiler method)</a>
+</li>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.set_verbosity">set_verbosity() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.setdefault">setdefault() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.SetInParent">SetInParent() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.SetInParent">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.SetInParent">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.SetInParent">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.SetInParent">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.SetInParent">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.SetInParent">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.SetInParent">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.kernel.synchronization.ps_synchronizer.html#autodist.kernel.synchronization.ps_synchronizer.PSGradientTaskAssigner.SHARED_TASK_ID">SHARED_TASK_ID (PSGradientTaskAssigner attribute)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.Spec">Spec (AllReduceSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.spec">spec (AllReduceSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.ssh_config_map">ssh_config_map() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.ResourceSpec.ssh_group">ssh_group() (ResourceSpec property)</a>
+</li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster">SSHCluster (class in autodist.cluster)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig">SSHConfig (class in autodist.resource_spec)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap">SSHConfigMap (class in autodist.resource_spec)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.staleness">staleness (PSSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.start">start() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.start">(SSHCluster method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.utils.server_starter.html#autodist.utils.server_starter.start_server">start_server() (in module autodist.utils.server_starter)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy">Strategy (class in autodist.proto.strategy_pb2)</a>
+
+      <ul>
+        <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.Strategy">(class in autodist.strategy.base)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig">Strategy.GraphConfig (class in autodist.proto.strategy_pb2)</a>
+</li>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node">Strategy.Node (class in autodist.proto.strategy_pb2)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder">StrategyBuilder (class in autodist.strategy.base)</a>
+</li>
+      <li><a href="api/autodist.strategy.base.html#autodist.strategy.base.StrategyCompiler">StrategyCompiler (class in autodist.strategy.base)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.strip_replica_prefix">strip_replica_prefix() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.sync">sync (PSSynchronizer attribute)</a>
+</li>
+      <li><a href="api/autodist.kernel.synchronization.synchronizer.html#autodist.kernel.synchronization.synchronizer.Synchronizer">Synchronizer (class in autodist.kernel.synchronization.synchronizer)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.SYS_DATA_PATH">SYS_DATA_PATH (ENV attribute)</a>
+</li>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.SYS_RESOURCE_PATH">SYS_RESOURCE_PATH (ENV attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.table_initializers">table_initializers (GraphItem.Info attribute)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.target_list">target_list() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.cluster.html#autodist.cluster.Cluster.terminate">terminate() (Cluster method)</a>
+
+      <ul>
+        <li><a href="api/autodist.cluster.html#autodist.cluster.SSHCluster.terminate">(SSHCluster method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.trainable_var_op_to_var">trainable_var_op_to_var() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.trainable_variables">trainable_variables() (Info property)</a>
+</li>
+      <li><a href="api/autodist.kernel.graph_transformer.html#autodist.kernel.graph_transformer.GraphTransformer.transform">transform() (GraphTransformer method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.traverse">traverse() (in module autodist.kernel.common.utils)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.strategy.uneven_partition_ps_strategy.html#autodist.strategy.uneven_partition_ps_strategy.UnevenPartitionedPS">UnevenPartitionedPS (class in autodist.strategy.uneven_partition_ps_strategy)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.UnknownFields">UnknownFields() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.UnknownFields">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.UnknownFields">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.UnknownFields">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.UnknownFields">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.UnknownFields">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.UnknownFields">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.UnknownFields">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.patch.html#autodist.patch.PatchTensorFlow.unpatch_keras">unpatch_keras() (PatchTensorFlow static method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.patch.html#autodist.patch.PatchTensorFlow.unpatch_var_reading">unpatch_var_reading() (PatchTensorFlow static method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.untrainable_variables">untrainable_variables() (Info property)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.update">update() (SSHConfigMap method)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.update_colocation_group">update_colocation_group() (in module autodist.kernel.common.utils)</a>
+
+      <ul>
+        <li><a href="api/autodist.kernel.common.proxy_variable.html#autodist.kernel.common.proxy_variable.ProxyVariable.update_colocation_group">(ProxyVariable method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.update_consumers">update_consumers() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.kernel.common.utils.html#autodist.kernel.common.utils.update_control_consumers">update_control_consumers() (in module autodist.kernel.common.utils)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.update_savers">update_savers() (Info method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.update_table_initializers">update_table_initializers() (Info method)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.Info.update_variables">update_variables() (Info method)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfig.username">username() (SSHConfig property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.const.html#autodist.const.ENV.val">val() (ENV property)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.value">value (GraphItem.GradTargetPairsEntry attribute)</a>
+</li>
+      <li><a href="api/autodist.resource_spec.html#autodist.resource_spec.SSHConfigMap.values">values() (SSHConfigMap method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.var_name">var_name (Strategy.Node attribute)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.GraphItem.var_op_name_to_grad_info">var_op_name_to_grad_info() (GraphItem property)</a>
+</li>
+      <li><a href="api/autodist.kernel.partitioner.html#autodist.kernel.partitioner.VariablePartitioner">VariablePartitioner (class in autodist.kernel.partitioner)</a>
+</li>
+      <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.variables">variables (GraphItem.Info attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.utils.logging.html#autodist.utils.logging.warning">warning() (in module autodist.utils.logging)</a>
+</li>
+      <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.AllReduceSynchronizer.WhichOneof">WhichOneof() (AllReduceSynchronizer method)</a>
+
+      <ul>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.WhichOneof">(GraphItem method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.GradTargetPairsEntry.WhichOneof">(GraphItem.GradTargetPairsEntry method)</a>
+</li>
+        <li><a href="api/autodist.proto.graphitem_pb2.html#autodist.proto.graphitem_pb2.GraphItem.Info.WhichOneof">(GraphItem.Info method)</a>
+</li>
+        <li><a href="api/autodist.proto.synchronizers_pb2.html#autodist.proto.synchronizers_pb2.PSSynchronizer.WhichOneof">(PSSynchronizer method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.WhichOneof">(Strategy method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.GraphConfig.WhichOneof">(Strategy.GraphConfig method)</a>
+</li>
+        <li><a href="api/autodist.proto.strategy_pb2.html#autodist.proto.strategy_pb2.Strategy.Node.WhichOneof">(Strategy.Node method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.wrap_optimizer_apply_gradient">wrap_optimizer_apply_gradient() (in module autodist.graph_item)</a>
+</li>
+      <li><a href="api/autodist.graph_item.html#autodist.graph_item.wrap_optimizer_init">wrap_optimizer_init() (in module autodist.graph_item)</a>
+</li>
+      <li><a href="api/autodist.runner.html#autodist.runner.WrappedSession">WrappedSession (class in autodist.runner)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 
 
            </div>

@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -243,8 +248,103 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="base">
-<h1>Base<a class="headerlink" href="#base" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.strategy.base">
+<span id="base"></span><h1>Base<a class="headerlink" href="#module-autodist.strategy.base" title="Permalink to this headline">¶</a></h1>
+<p>Contains Strategy-related definitions.</p>
+<dl class="py class">
+<dt id="autodist.strategy.base.Strategy">
+<em class="property">class </em><code class="sig-name descname">Strategy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">strategy</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A wrapper around a Strategy Protocol Buffer.</p>
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.id">
+<em class="property">property </em><code class="sig-name descname">id</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strategy’s ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.path">
+<em class="property">property </em><code class="sig-name descname">path</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strategy’s Path.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.node_config">
+<em class="property">property </em><code class="sig-name descname">node_config</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.node_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strategy’s Node Config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.graph_config">
+<em class="property">property </em><code class="sig-name descname">graph_config</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.graph_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strategy’s Graph Config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a copy of this strategy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.serialize">
+<code class="sig-name descname">serialize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize this strategy and write it to disk.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.Strategy.deserialize">
+<em class="property">classmethod </em><code class="sig-name descname">deserialize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">strategy_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.Strategy.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deserialize the strategy.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.strategy.base.StrategyBuilder">
+<em class="property">class </em><code class="sig-name descname">StrategyBuilder</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.StrategyBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></a></p>
+<p>A builder interface for strategies.</p>
+<dl class="py method">
+<dt id="autodist.strategy.base.StrategyBuilder.build">
+<em class="property">abstract </em><code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_item</span><span class="p">:</span> <span class="n"><a class="reference internal" href="autodist.graph_item.html#autodist.graph_item.GraphItem" title="autodist.graph_item.GraphItem">autodist.graph_item.GraphItem</a></span></em>, <em class="sig-param"><span class="n">resource_spec</span><span class="p">:</span> <span class="n"><a class="reference internal" href="autodist.resource_spec.html#autodist.resource_spec.ResourceSpec" title="autodist.resource_spec.ResourceSpec">autodist.resource_spec.ResourceSpec</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#autodist.strategy.base.Strategy" title="autodist.strategy.base.Strategy">autodist.strategy.base.Strategy</a><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.StrategyBuilder.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build strategy representation instance with a graph item and a resource spec.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>graph_item</strong> (<a class="reference internal" href="autodist.graph_item.html#autodist.graph_item.GraphItem" title="autodist.graph_item.GraphItem"><em>graph_item.GraphItem</em></a>) – the graph for which to develop a strategy</p></li>
+<li><p><strong>resource_spec</strong> (<a class="reference internal" href="autodist.resource_spec.html#autodist.resource_spec.ResourceSpec" title="autodist.resource_spec.ResourceSpec"><em>ResourceSpec</em></a>) – resource information</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(Strategy) A strategy representation instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="autodist.strategy.base.StrategyCompiler">
+<em class="property">class </em><code class="sig-name descname">StrategyCompiler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_item</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.StrategyCompiler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Strategy Compiler.</p>
+<p>Currently, this just entails resolving device attributes,
+but this can be easily modified to do more in the future.</p>
+<dl class="py method">
+<dt id="autodist.strategy.base.StrategyCompiler.set_device_resolver">
+<code class="sig-name descname">set_device_resolver</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resolver</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.StrategyCompiler.set_device_resolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a device resolver to resolve devices in the strategy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.strategy.base.StrategyCompiler.compile">
+<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">strategy</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/base.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.base.StrategyCompiler.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile the strategy.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -241,8 +246,69 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="remapper">
-<h1>Remapper<a class="headerlink" href="#remapper" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.remapper">
+<span id="remapper"></span><h1>Remapper<a class="headerlink" href="#module-autodist.remapper" title="Permalink to this headline">¶</a></h1>
+<p>Feed and Fetch Remapper.</p>
+<dl class="py class">
+<dt id="autodist.remapper.Remapper">
+<em class="property">class </em><code class="sig-name descname">Remapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_transformer</span></em>, <em class="sig-param"><span class="n">graph_item</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/remapper.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.remapper.Remapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Remaps feeds and fetches for Sessions (and eager mode).</p>
+<p>Sets itself as the default remapper when in its scope
+and remaps graph elements to account for AutoDist’s graph
+transformation.</p>
+<p>Feed Behavior:</p>
+<ul class="simple">
+<li><p>We want to remap feeds to the corresponding element in the
+AutoDist-transformed graph. If the element has a polymorphic
+size (e.g. it has a <cite>None</cite> size for the batch dimension),
+we split the feed up across all replicas of the element.
+Otherwise, we duplicate the feed across all replicas of
+the element.</p></li>
+</ul>
+<p>Fetch Behavior:</p>
+<ul>
+<li><p>We want to remap the potential new shards and replicas of
+a graph element into the original fetch.</p></li>
+<li><p>Cases:</p>
+<blockquote>
+<div><ul>
+<li><p>If original fetch exists (which is not affected by graph transformation), fetch the original.</p></li>
+<li><p>Otherwise, for fetches that are train_ops, fetch them from all replicas;</p></li>
+<li><p>for other fetches, only fetch it from the master replica.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For example, for partitioned vars, it corresponds to the concat one as_tensor on the first replica.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<dl class="py method">
+<dt id="autodist.remapper.Remapper.remap_callable_options">
+<code class="sig-name descname">remap_callable_options</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">callable_options</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/remapper.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.remapper.Remapper.remap_callable_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remap Callable Options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>callable_options</strong> – A <cite>CallableOptions</cite> protocol buffer message describing
+the computation that will be performed by the callable.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new CallableOptions</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.remapper.Remapper.as_default">
+<code class="sig-name descname">as_default</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/remapper.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.remapper.Remapper.as_default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure the current one as the default remapper; otherwise switch to it.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

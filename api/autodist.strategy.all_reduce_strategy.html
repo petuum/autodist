@@ -54,9 +54,12 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+            <a href="../index.html">
           
 
+          
+            
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -86,7 +89,9 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#using-autodist">Using AutoDist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html#references-acknowledgements">References &amp; Acknowledgements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage/performance.html">Performance</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Tutorials</span></p>
@@ -105,6 +110,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../design/rationale.html">Rationale</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/proto_docgen.html">Strategy as ProtoBuf Message</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="autodist.html">Developer API References</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="autodist.checkpoint.html">Checkpoint</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
@@ -173,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.runner.html">Runner</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../usage/orchestra-integration.html">Orchestra Integration</a></li>
 </ul>
 
             
@@ -243,8 +248,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="all-reduce-strategy">
-<h1>All Reduce Strategy<a class="headerlink" href="#all-reduce-strategy" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-autodist.strategy.all_reduce_strategy">
+<span id="all-reduce-strategy"></span><h1>All Reduce Strategy<a class="headerlink" href="#module-autodist.strategy.all_reduce_strategy" title="Permalink to this headline">¶</a></h1>
+<p>AllReduce StrategyBuilder.</p>
+<dl class="py class">
+<dt id="autodist.strategy.all_reduce_strategy.AllReduce">
+<em class="property">class </em><code class="sig-name descname">AllReduce</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk_size</span><span class="o">=</span><span class="default_value">128</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/all_reduce_strategy.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.all_reduce_strategy.AllReduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder" title="autodist.strategy.base.StrategyBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.strategy.base.StrategyBuilder</span></code></a></p>
+<p>AllReduce StrategyBuilder.</p>
+<p>This StrategyBuilder generates a strategy that synchronizes every dense variable using AllReduce.
+It will sequentially merge collective ops into a single collective group based on chunk_size.</p>
+<p>This strategy does not support synchronizing sparse updates with &gt;1 nodes due to the TF AllGather bug.</p>
+<dl class="py method">
+<dt id="autodist.strategy.all_reduce_strategy.AllReduce.build">
+<code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph_item</span></em>, <em class="sig-param"><span class="n">resource_spec</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/strategy/all_reduce_strategy.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.strategy.all_reduce_strategy.AllReduce.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the strategy.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
