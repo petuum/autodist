@@ -53,5 +53,5 @@ ENTRYPOINT mv /protoc-3.11.0-linux-x86_64.zip . && unzip protoc-3.11.0-linux-x86
     PROTOC=/autodist/bin/protoc HOME=/autodist python setup.py build && \
     rm protoc-3.11.0-linux-x86_64.zip && rm -fr /autodist/bin /autodist/include /autodist/readme.txt && \
     pip install -e . && \
-    cd docs && cp ../README.md README.md && sed -i.bak 's+docs/++g' README.md && sed -i.bak "1 i\# Overview" README.md &&\
+    cd docs && cp ../README.md README.md && sed -i.bak '/<img/d' README.md && sed -i.bak "1 i\# Overview" README.md &&\
     make clean && make apidoc && make html

@@ -16,6 +16,7 @@ across many GPUs with scalability and minimal code change.
 
    Overview<README.md>
    Performance<usage/performance.md>
+   design/rationale.md
 
 .. toctree::
    :titlesonly:
@@ -36,7 +37,6 @@ across many GPUs with scalability and minimal code change.
    :caption: Developer Reference
    :maxdepth: 1
 
-   design/rationale.md
    design/architecture.rst
    design/kernels.md
    usage/proto_docgen.md

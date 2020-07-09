@@ -48,7 +48,7 @@ jobs:
     - name: Build
       run: | 
         cd docs && cp ../README.md README.md
-        sed -i.bak 's+docs/++g' README.md
+        sed -i.bak '/<img/d' README.md
         sed -i.bak "1 i\# Overview" README.md
         make clean
         make apidoc
