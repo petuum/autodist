@@ -6,7 +6,7 @@ name: Docs via Github Pages
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches: [ doc-review ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -26,26 +26,27 @@ jobs:
         go-version: ^1.14
       id: go
     
-    - name: Set up Python 3.8
+    - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.7
 
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y git wget unzip make rsync
         python -m pip install --upgrade pip
-        pip install -r docs/requirements-docgen.txt wheel
+        pip install -r docs/requirements-docgen.txt wheel tensorflow==2.0.0
         go get -u -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
         wget https://github.com/protocolbuffers/protobuf/releases/download/v3.11.0/protoc-3.11.0-linux-x86_64.zip
         unzip protoc-3.11.0-linux-x86_64.zip
-        PROTOC=$(pwd)/bin/protoc HOME=$(pwd) python setup.py build
+        export PROTOC_PLUGINS=/home/runner/go/bin/protoc-gen-doc
+        export PROTOC=$(pwd)/bin/protoc
+        HOME=$(pwd) python setup.py build
         pip install -e .
 
     - name: Build
       run: | 
-        export PROTOC_PLUGINS=/home/runner/go/bin/protoc-gen-doc
         cd docs && cp ../README.md README.md
         sed -i.bak 's+docs/++g' README.md
         make clean
