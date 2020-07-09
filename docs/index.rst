@@ -41,4 +41,3 @@ across many GPUs with scalability and minimal code change.
    design/kernels.md
    usage/proto_docgen.md
    Developer API References<api/autodist.rst>
-   usage/orchestra-integration.md
