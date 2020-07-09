@@ -1,0 +1,7 @@
+Random Axis Partition All Reduce Strategy
+=========================================
+
+.. automodule:: autodist.strategy.random_axis_partition_all_reduce_strategy
+    :members:
+    :undoc-members:
+    :show-inheritance:

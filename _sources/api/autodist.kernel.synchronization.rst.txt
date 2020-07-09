@@ -1,0 +1,17 @@
+Synchronization
+===============
+.. automodule:: autodist.kernel.synchronization
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.kernel.synchronization.all_reduce_synchronizer
+    autodist.kernel.synchronization.collective_key
+    autodist.kernel.synchronization.compressor
+    autodist.kernel.synchronization.ps_synchronizer
+    autodist.kernel.synchronization.synchronizer

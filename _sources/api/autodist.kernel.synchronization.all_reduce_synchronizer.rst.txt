@@ -1,0 +1,7 @@
+All Reduce Synchronizer
+=======================
+
+.. automodule:: autodist.kernel.synchronization.all_reduce_synchronizer
+    :members:
+    :undoc-members:
+    :show-inheritance:

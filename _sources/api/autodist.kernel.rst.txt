@@ -1,0 +1,25 @@
+Kernel
+======
+.. automodule:: autodist.kernel
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    autodist.kernel.common
+    autodist.kernel.device
+    autodist.kernel.synchronization
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.kernel.graph_transformer
+    autodist.kernel.kernel
+    autodist.kernel.partitioner
+    autodist.kernel.replicator

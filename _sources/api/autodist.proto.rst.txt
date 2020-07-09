@@ -1,0 +1,15 @@
+Proto
+=====
+.. automodule:: autodist.proto
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.proto.graphitem_pb2
+    autodist.proto.strategy_pb2
+    autodist.proto.synchronizers_pb2

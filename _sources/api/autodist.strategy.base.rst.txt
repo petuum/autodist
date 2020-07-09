@@ -1,0 +1,7 @@
+Base
+====
+
+.. automodule:: autodist.strategy.base
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,7 @@
+Proxy Variable
+==============
+
+.. automodule:: autodist.kernel.common.proxy_variable
+    :members:
+    :undoc-members:
+    :show-inheritance:

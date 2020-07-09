@@ -1,0 +1,7 @@
+Partitioned All Reduce Strategy
+===============================
+
+.. automodule:: autodist.strategy.partitioned_all_reduce_strategy
+    :members:
+    :undoc-members:
+    :show-inheritance:

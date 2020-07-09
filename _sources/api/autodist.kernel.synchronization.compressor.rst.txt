@@ -1,0 +1,7 @@
+Compressor
+==========
+
+.. automodule:: autodist.kernel.synchronization.compressor
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,7 @@
+Logging
+=======
+
+.. automodule:: autodist.utils.logging
+    :members:
+    :undoc-members:
+    :show-inheritance:

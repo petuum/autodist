@@ -1,0 +1,7 @@
+Replicator
+==========
+
+.. automodule:: autodist.kernel.replicator
+    :members:
+    :undoc-members:
+    :show-inheritance:

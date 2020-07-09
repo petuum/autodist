@@ -1,0 +1,7 @@
+Kernel
+======
+
+.. automodule:: autodist.kernel.kernel
+    :members:
+    :undoc-members:
+    :show-inheritance:

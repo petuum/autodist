@@ -1,0 +1,7 @@
+Graph Item
+==========
+
+.. automodule:: autodist.graph_item
+    :members:
+    :undoc-members:
+    :show-inheritance:

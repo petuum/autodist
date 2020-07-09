@@ -1,0 +1,7 @@
+Synchronizers Pb2
+=================
+
+.. automodule:: autodist.proto.synchronizers_pb2
+    :members:
+    :undoc-members:
+    :show-inheritance:

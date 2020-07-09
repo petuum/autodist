@@ -1,0 +1,14 @@
+Checkpoint
+==========
+.. automodule:: autodist.checkpoint
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.checkpoint.saved_model_builder
+    autodist.checkpoint.saver

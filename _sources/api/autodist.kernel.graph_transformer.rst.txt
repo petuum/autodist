@@ -1,0 +1,7 @@
+Graph Transformer
+=================
+
+.. automodule:: autodist.kernel.graph_transformer
+    :members:
+    :undoc-members:
+    :show-inheritance:

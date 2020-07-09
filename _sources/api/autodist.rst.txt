@@ -1,0 +1,32 @@
+Autodist
+========
+.. automodule:: autodist
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    autodist.checkpoint
+    autodist.kernel
+    autodist.proto
+    autodist.strategy
+    autodist.utils
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.autodist
+    autodist.cluster
+    autodist.const
+    autodist.coordinator
+    autodist.graph_item
+    autodist.patch
+    autodist.remapper
+    autodist.resource_spec
+    autodist.runner

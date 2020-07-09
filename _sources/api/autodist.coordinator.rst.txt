@@ -1,0 +1,7 @@
+Coordinator
+===========
+
+.. automodule:: autodist.coordinator
+    :members:
+    :undoc-members:
+    :show-inheritance:

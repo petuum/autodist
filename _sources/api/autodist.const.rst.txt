@@ -1,0 +1,7 @@
+Const
+=====
+
+.. automodule:: autodist.const
+    :members:
+    :undoc-members:
+    :show-inheritance:

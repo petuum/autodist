@@ -1,0 +1,427 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting Started &mdash; AutoDist  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/customized.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Train on Multiple Nodes" href="multi-node.html" />
+    <link rel="prev" title="Performance Analysis of AutoDist" href="../performance.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../performance.html">Performance</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-node.html">Train on Multiple Nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="save-restore.html">Save and Restore Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Train with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="choose-strategy.html">Choose Strategy Builders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customize-strategy.html">Customize a Strategy Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../design/rationale.html">Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/autodist.html">Developer API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.checkpoint.html">Checkpoint</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.checkpoint.saver.html">Saver</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.kernel.html">Kernel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.common.html">Common</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.op_info.html">Op Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.proxy_variable.html">Proxy Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.utils.html">Utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.variable_utils.html">Variable Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.device.html">Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.device.resolver.html">Resolver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.synchronization.html">Synchronization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.all_reduce_synchronizer.html">All Reduce Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.collective_key.html">Collective Key</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.compressor.html">Compressor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.ps_synchronizer.html">Ps Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.synchronizer.html">Synchronizer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.graph_transformer.html">Graph Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.kernel.html">Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.partitioner.html">Partitioner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.replicator.html">Replicator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.proto.html">Proto</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.graphitem_pb2.html">Graphitem Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.strategy_pb2.html">Strategy Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.synchronizers_pb2.html">Synchronizers Pb2</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.strategy.html">Strategy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.all_reduce_strategy.html">All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.base.html">Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.parallax_strategy.html">Parallax Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.partitioned_all_reduce_strategy.html">Partitioned All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.partitioned_ps_strategy.html">Partitioned Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.ps_lb_strategy.html">Ps Lb Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.ps_strategy.html">Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.random_axis_partition_all_reduce_strategy.html">Random Axis Partition All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.uneven_partition_ps_strategy.html">Uneven Partition Ps Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.logging.html">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.network.html">Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.server_starter.html">Server Starter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.visualization_util.html">Visualization Util</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.autodist.html">Autodist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.cluster.html">Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.const.html">Const</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.coordinator.html">Coordinator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.graph_item.html">Graph Item</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.patch.html">Patch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.remapper.html">Remapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.resource_spec.html">Resource Spec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.runner.html">Runner</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../orchestra-integration.html">Orchestra Integration</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AutoDist</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Getting Started</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/usage/tutorials/getting-started.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>Thanks for choosing to use AutoDist!</p>
+<p>Before reading the following tutorial, it is highly recommended to get familiar with the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">TensorFlow Quickstart Guide</a> first,
+and especially understand the difference between eager and graph mode. If you can run the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">Quickstart</a> properly, you can use the same environment to follow this tutorial.</p>
+<p>AutoDist currently supports <code class="docutils literal notranslate"><span class="pre">Python&gt;=3.6</span></code> with <code class="docutils literal notranslate"><span class="pre">tensorflow&gt;=1.15,</span> <span class="pre">&lt;=2.1</span></code>. Install the downloaded wheel file by</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install autodist*.whl
+</pre></div>
+</div>
+<p>The following model is based on the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">Quickstart</a>. Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs with AutoDist, we could follow these next 3 steps:</p>
+<div class="section" id="step-1-ensure-model-built-under-graph-mode">
+<h2>Step 1: Ensure Model Built under Graph Mode<a class="headerlink" href="#step-1-ensure-model-built-under-graph-mode" title="Permalink to this headline">¶</a></h2>
+<p>AutoDist currently is only expected to work with TensorFlow graph mode, instead of eager.
+It is natural for TensorFlow 1.x; while with TensorFlow 2.x,
+one needs to put their code under <code class="docutils literal notranslate"><span class="pre">tf.Graph().as_default()</span></code> to ensure the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/Graph">graph mode</a>.
+For example,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">g</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">g</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
+  <span class="c1"># Define operations and tensors in `g`.</span>
+  <span class="n">c</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">30.0</span><span class="p">)</span>
+  <span class="k">assert</span> <span class="n">c</span><span class="o">.</span><span class="n">graph</span> <span class="ow">is</span> <span class="n">g</span>
+</pre></div>
+</div>
+<p>Before using AutoDist, the model built without AutoDist should be able to train with graph mode successfully.
+Then one can move to the following steps in the same environment.</p>
+</div>
+<div class="section" id="step-2-prepare-resource-specification-file">
+<h2>Step 2: Prepare Resource Specification File<a class="headerlink" href="#step-2-prepare-resource-specification-file" title="Permalink to this headline">¶</a></h2>
+<p>AutoDist needs to know what devices are available in order to distribute the computational graph on them.
+Currently the supported devices can be <code class="docutils literal notranslate"><span class="pre">cpus</span></code> or <code class="docutils literal notranslate"><span class="pre">gpus</span></code>.
+Let’s create a file called <code class="docutils literal notranslate"><span class="pre">resource_spec.yml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nodes</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">address</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">localhost</span>
+    <span class="nt">gpus</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="nv">1</span><span class="p p-Indicator">]</span>  <span class="c1"># List the GPU (CUDA_DEVICE) ids</span>
+</pre></div>
+</div>
+<p>For other resource cases (e.g., multiple nodes), please refer to the <a class="reference internal" href="multi-node.html"><span class="doc">next tutorial</span></a>.</p>
+</div>
+<div class="section" id="step-3-add-autodist-apis">
+<h2>Step 3: Add AutoDist APIs<a class="headerlink" href="#step-3-add-autodist-apis" title="Permalink to this headline">¶</a></h2>
+<p>Given TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode,
+we can easily modify it to train in a distributed fashion.
+Based on the <code><a class="reference internal" href="../../api/autodist.autodist.html"><span class="doc">AutoDist</span></a></code> interfaces,
+all we have to do is make the following 3 changes (marked by inline comments):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="c1">#########################################################################</span>
+<span class="c1"># Change 1: Construct AutoDist with ResourceSpec.</span>
+<span class="c1">#   Pass the absolute path of the file created in Step 1 above to AutoDist.</span>
+<span class="c1">#</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">autodist</span> <span class="kn">import</span> <span class="n">AutoDist</span>
+<span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;resource_spec.yml&#39;</span><span class="p">)</span>
+<span class="n">autodist</span> <span class="o">=</span> <span class="n">AutoDist</span><span class="p">(</span><span class="n">resource_spec_file</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span>
+<span class="c1">#########################################################################</span>
+
+<span class="n">fashion_mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">fashion_mnist</span>
+<span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">),</span> <span class="p">(</span><span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span> <span class="o">=</span> <span class="n">fashion_mnist</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span>
+<span class="n">train_images</span> <span class="o">=</span> <span class="n">train_images</span><span class="p">[:</span><span class="mi">512</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">test_images</span> <span class="o">=</span> <span class="n">test_images</span><span class="p">[:</span><span class="mi">512</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">train_labels</span> <span class="o">=</span> <span class="n">train_labels</span><span class="p">[:</span><span class="mi">512</span><span class="p">]</span>
+<span class="n">test_labels</span> <span class="o">=</span> <span class="n">test_labels</span><span class="p">[:</span><span class="mi">512</span><span class="p">]</span>
+<span class="n">train_images</span> <span class="o">=</span> <span class="n">train_images</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span>
+<span class="n">test_images</span> <span class="o">=</span> <span class="n">test_images</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span>
+
+<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">EPOCHS</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1">##########################################################################</span>
+<span class="c1"># Change 2: Build with Graph mode, and put it under AutoDist scope.</span>
+<span class="c1">#   Note that, for both TensorFlow v1 and v2,</span>
+<span class="c1">#   AutoDist currently is only expected to work with graph mode, not eager.</span>
+<span class="c1">#</span>
+<span class="c1"># [original line]</span>
+<span class="c1"># &gt;&gt;&gt; with tf.Graph().as_default():</span>
+<span class="c1">#</span>
+<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">(),</span> <span class="n">autodist</span><span class="o">.</span><span class="n">scope</span><span class="p">():</span>
+<span class="c1">##########################################################################</span>
+
+    <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">))</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">)</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_images</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">BATCH_SIZE</span><span class="p">)</span>
+
+    <span class="n">train_iterator</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">make_one_shot_iterator</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span><span class="o">.</span><span class="n">get_next</span><span class="p">()</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">([</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2D</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">MaxPooling2D</span><span class="p">(),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.1</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax&#39;</span><span class="p">)</span>
+    <span class="p">])</span>
+    <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">SparseCategoricalCrossentropy</span><span class="p">()</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">SGD</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="n">inputs</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">inputs</span>
+        <span class="n">y_hat</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">)</span>
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">trainable_variables</span><span class="p">:</span>
+            <span class="n">all_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">grads</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">)</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">apply_gradients</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">all_vars</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">update</span>
+
+    <span class="n">fetches</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="n">train_iterator</span><span class="p">)</span>
+    <span class="c1">#####################################################################</span>
+    <span class="c1"># Change 3: Create distributed session.</span>
+    <span class="c1">#   Instead of using the original TensorFlow session for graph execution,</span>
+    <span class="c1">#   let&#39;s use AutoDist&#39;s distributed session, in which a computational</span>
+    <span class="c1">#   graph for distributed training is constructed.</span>
+    <span class="c1">#</span>
+    <span class="c1"># [original line]</span>
+    <span class="c1"># &gt;&gt;&gt; sess = tf.compat.v1.Session()</span>
+    <span class="c1">#</span>
+    <span class="n">sess</span> <span class="o">=</span> <span class="n">autodist</span><span class="o">.</span><span class="n">create_distributed_session</span><span class="p">()</span>
+    <span class="c1">#####################################################################</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_images</span><span class="p">)</span> <span class="o">//</span> <span class="n">BATCH_SIZE</span> <span class="o">*</span> <span class="n">EPOCHS</span><span class="p">)):</span>
+        <span class="n">loss</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fetches</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;train_loss: </span><span class="si">{</span><span class="n">loss</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And just like that, our single-GPU code can run on multiple GPUs.</p>
+<p>Thanks for reading, and have fun with AutoDist!</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="multi-node.html" class="btn btn-neutral float-right" title="Train on Multiple Nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../performance.html" class="btn btn-neutral float-left" title="Performance Analysis of AutoDist" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Petuum
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+Synchronizer
+============
+
+.. automodule:: autodist.kernel.synchronization.synchronizer
+    :members:
+    :undoc-members:
+    :show-inheritance:

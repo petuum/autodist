@@ -1,0 +1,7 @@
+Saver
+=====
+
+.. automodule:: autodist.checkpoint.saver
+    :members:
+    :undoc-members:
+    :show-inheritance:

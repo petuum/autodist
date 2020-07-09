@@ -1,0 +1,7 @@
+Ps Synchronizer
+===============
+
+.. automodule:: autodist.kernel.synchronization.ps_synchronizer
+    :members:
+    :undoc-members:
+    :show-inheritance:

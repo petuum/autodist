@@ -1,0 +1,7 @@
+Strategy Pb2
+============
+
+.. automodule:: autodist.proto.strategy_pb2
+    :members:
+    :undoc-members:
+    :show-inheritance:

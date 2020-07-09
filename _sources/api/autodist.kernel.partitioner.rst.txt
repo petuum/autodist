@@ -1,0 +1,7 @@
+Partitioner
+===========
+
+.. automodule:: autodist.kernel.partitioner
+    :members:
+    :undoc-members:
+    :show-inheritance:

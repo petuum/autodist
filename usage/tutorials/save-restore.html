@@ -1,0 +1,392 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Save and Restore Training &mdash; AutoDist  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/customized.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="Train on Multiple Nodes" href="multi-node.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../performance.html">Performance</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-node.html">Train on Multiple Nodes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Save and Restore Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Train with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="choose-strategy.html">Choose Strategy Builders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customize-strategy.html">Customize a Strategy Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../design/rationale.html">Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/autodist.html">Developer API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.checkpoint.html">Checkpoint</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.checkpoint.saver.html">Saver</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.kernel.html">Kernel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.common.html">Common</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.op_info.html">Op Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.proxy_variable.html">Proxy Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.utils.html">Utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.variable_utils.html">Variable Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.device.html">Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.device.resolver.html">Resolver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.synchronization.html">Synchronization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.all_reduce_synchronizer.html">All Reduce Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.collective_key.html">Collective Key</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.compressor.html">Compressor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.ps_synchronizer.html">Ps Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.synchronizer.html">Synchronizer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.graph_transformer.html">Graph Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.kernel.html">Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.partitioner.html">Partitioner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.replicator.html">Replicator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.proto.html">Proto</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.graphitem_pb2.html">Graphitem Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.strategy_pb2.html">Strategy Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.synchronizers_pb2.html">Synchronizers Pb2</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.strategy.html">Strategy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.all_reduce_strategy.html">All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.base.html">Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.parallax_strategy.html">Parallax Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.partitioned_all_reduce_strategy.html">Partitioned All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.partitioned_ps_strategy.html">Partitioned Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.ps_lb_strategy.html">Ps Lb Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.ps_strategy.html">Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.random_axis_partition_all_reduce_strategy.html">Random Axis Partition All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.uneven_partition_ps_strategy.html">Uneven Partition Ps Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.logging.html">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.network.html">Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.server_starter.html">Server Starter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.visualization_util.html">Visualization Util</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.autodist.html">Autodist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.cluster.html">Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.const.html">Const</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.coordinator.html">Coordinator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.graph_item.html">Graph Item</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.patch.html">Patch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.remapper.html">Remapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.resource_spec.html">Resource Spec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.runner.html">Runner</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../orchestra-integration.html">Orchestra Integration</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AutoDist</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Save and Restore Training</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/usage/tutorials/save-restore.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="save-and-restore-training">
+<h1>Save and Restore Training<a class="headerlink" href="#save-and-restore-training" title="Permalink to this headline">¶</a></h1>
+<p>Users need to use the AutoDist internal wrappers for saving. These wrappers will save the <strong>original graph</strong> instead of the transformed distributed graph executed during the training. In this case, users can further fine-tune the model without AutoDist or under other distributed settings.</p>
+<p>There are 2 AutoDist saving APIs, which are very similar to the native TensorFlow saving interface. One is <code class="docutils literal notranslate"><span class="pre">saver</span></code> another is <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code>.</p>
+<div class="section" id="saver">
+<h2>saver<a class="headerlink" href="#saver" title="Permalink to this headline">¶</a></h2>
+<p>AutoDist provides a <code class="docutils literal notranslate"><span class="pre">saver</span></code>, which is a wrapper of the original Tensorflow Saver. It has the exactly same interface as the one in Tensorflow. <strong>Notice, this saver should be created before the <code class="docutils literal notranslate"><span class="pre">create_distributed_session</span></code> function.</strong> Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autodist.checkpoint.saver</span> <span class="kn">import</span> <span class="n">Saver</span> <span class="k">as</span> <span class="n">autodist_saver</span>
+<span class="o">...</span>
+
+<span class="c1"># Build your model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">get_your_model</span><span class="p">()</span>
+
+<span class="c1"># Create the AutoDist Saver</span>
+<span class="n">saver</span> <span class="o">=</span> <span class="n">autodist_saver</span><span class="p">()</span>
+
+<span class="c1"># Create the AutoDist session</span>
+<span class="n">sess</span> <span class="o">=</span> <span class="n">autodist</span><span class="o">.</span><span class="n">create_distributed_session</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">steps</span> <span class="ow">in</span> <span class="n">steps_to_train</span><span class="p">:</span>
+    <span class="c1"># some training steps</span>
+    <span class="o">...</span>
+
+<span class="c1"># Save the training result</span>
+<span class="n">saver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">checkpoint_name</span><span class="p">,</span> <span class="n">global_step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The saved checkpoint can be loaded without AutoDist, just like normal TensorFlow Model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+    <span class="c1"># Build your model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">get_your_model</span><span class="p">()</span>
+
+    <span class="c1"># Create the saver</span>
+    <span class="n">tf_saver</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Saver</span><span class="p">()</span>
+
+    <span class="c1"># Restore the variables</span>
+    <span class="n">tf_saver</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">latest_checkpoint</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">))</span>
+
+<span class="c1"># Fine-tuning</span>
+<span class="k">for</span> <span class="n">steps</span> <span class="ow">in</span> <span class="n">steps_to_train</span><span class="p">:</span>
+    <span class="c1"># some training steps</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>More detailed usage can be found <a class="reference external" href="../../../tests/checkpoint/test_keras_saver.py">here</a>.</p>
+</div>
+<div class="section" id="savedmodelbuilder">
+<h2>SavedModelBuilder<a class="headerlink" href="#savedmodelbuilder" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> API will not only save the trainable variables, but also some other training metadata, such as the Tensorflow MetaGraph and training operations. Like the <code class="docutils literal notranslate"><span class="pre">saver</span></code>, <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> also has the same interface as the original one in the Tensorflow. However, instead of using the default saver, users needs use the AutoDist saver to initialize it. Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the AutoDist Saver</span>
+<span class="n">saver</span> <span class="o">=</span> <span class="n">autodist_saver</span><span class="p">()</span>
+
+<span class="c1"># create the AudoDist session</span>
+<span class="n">sess</span> <span class="o">=</span> <span class="n">autodist</span><span class="o">.</span><span class="n">create_distributed_session</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">steps</span> <span class="ow">in</span> <span class="n">steps_to_train</span><span class="p">:</span>
+    <span class="c1"># some training steps</span>
+    <span class="o">...</span>
+
+<span class="n">builder</span> <span class="o">=</span> <span class="n">SavedModelBuilder</span><span class="p">(</span><span class="n">EXPORT_DIR</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">add_meta_graph_and_variables</span><span class="p">(</span>
+    <span class="n">sess</span><span class="o">=</span><span class="n">sess</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="n">TAG_NAME</span><span class="p">],</span>
+    <span class="n">saver</span><span class="o">=</span><span class="n">saver</span><span class="p">,</span>
+    <span class="n">signature_def_map</span><span class="o">=</span><span class="n">signature_map</span><span class="p">)</span>
+<span class="n">builder</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The output of <em>SavedModelBuilder</em> is a serialized data, including model weights, model graph and some other training information. However, as the same as the saver, user still can load the saved model without Autodist for fine-tuning or serving on a single node.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
+    <span class="c1"># Load the model</span>
+    <span class="n">loaded</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">saved_model</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="p">[</span><span class="n">TAG_NAME</span><span class="p">],</span> <span class="n">EXPORT_DIR</span><span class="p">)</span>
+
+    <span class="c1"># Get training operation</span>
+    <span class="n">train_op</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="n">TRAIN_OP_KEY</span><span class="p">)</span>
+
+    <span class="c1"># Retrieve model feed and fetch</span>
+    <span class="n">serving_signature</span> <span class="o">=</span> <span class="n">loaded</span><span class="o">.</span><span class="n">signature_def</span><span class="p">[</span><span class="s2">&quot;serving_default&quot;</span><span class="p">]</span>
+    <span class="n">input_op_names</span><span class="p">,</span> <span class="n">input_tensor_names</span> <span class="o">=</span> <span class="n">_get_input_tensor_and_op</span><span class="p">(</span>
+        <span class="n">serving_signature</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">output_op_names</span><span class="p">,</span> <span class="n">output_tensor_names</span> <span class="o">=</span> <span class="n">_get_output_tensor_and_op</span><span class="p">(</span>
+        <span class="n">serving_signature</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span>
+    <span class="n">input_table</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">input_op_names</span><span class="p">,</span> <span class="n">input_tensor_names</span><span class="p">))</span>
+    <span class="n">output_table</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">output_op_names</span><span class="p">,</span> <span class="n">output_tensor_names</span><span class="p">))</span>
+
+    <span class="c1"># Fine-tuning</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">):</span>
+        <span class="n">l</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">output_table</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">],</span> <span class="n">train_op</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">input_table</span><span class="p">[</span><span class="s2">&quot;input_data&quot;</span><span class="p">]:</span><span class="n">inputs</span><span class="p">})</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loss: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>We don’t need to build our model in this case, because the model graph is loaded from the serialized data.</p>
+<p>More detailed usage, can be found <a class="reference external" href="../../../tests/checkpoint/test_saved_model.py">here</a>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="multi-node.html" class="btn btn-neutral float-left" title="Train on Multiple Nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Petuum
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

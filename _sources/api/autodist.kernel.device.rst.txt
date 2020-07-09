@@ -1,0 +1,13 @@
+Device
+======
+.. automodule:: autodist.kernel.device
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.kernel.device.resolver

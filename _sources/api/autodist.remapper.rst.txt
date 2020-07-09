@@ -1,0 +1,7 @@
+Remapper
+========
+
+.. automodule:: autodist.remapper
+    :members:
+    :undoc-members:
+    :show-inheritance:

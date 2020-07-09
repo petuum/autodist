@@ -1,0 +1,7 @@
+Saved Model Builder
+===================
+
+.. automodule:: autodist.checkpoint.saved_model_builder
+    :members:
+    :undoc-members:
+    :show-inheritance:

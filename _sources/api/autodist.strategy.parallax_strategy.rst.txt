@@ -1,0 +1,7 @@
+Parallax Strategy
+=================
+
+.. automodule:: autodist.strategy.parallax_strategy
+    :members:
+    :undoc-members:
+    :show-inheritance:

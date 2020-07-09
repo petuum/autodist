@@ -1,0 +1,21 @@
+Strategy
+========
+.. automodule:: autodist.strategy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+    autodist.strategy.all_reduce_strategy
+    autodist.strategy.base
+    autodist.strategy.parallax_strategy
+    autodist.strategy.partitioned_all_reduce_strategy
+    autodist.strategy.partitioned_ps_strategy
+    autodist.strategy.ps_lb_strategy
+    autodist.strategy.ps_strategy
+    autodist.strategy.random_axis_partition_all_reduce_strategy
+    autodist.strategy.uneven_partition_ps_strategy

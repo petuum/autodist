@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Customize a Strategy Builder &mdash; AutoDist  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/customized.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="FAQ" href="../faq.html" />
+    <link rel="prev" title="Choose Strategy Builders" href="choose-strategy.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> AutoDist
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../performance.html">Performance</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-node.html">Train on Multiple Nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="save-restore.html">Save and Restore Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Train with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="choose-strategy.html">Choose Strategy Builders</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Customize a Strategy Builder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../design/rationale.html">Rationale</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design/kernels.html">Graph Transformation Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/autodist.html">Developer API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.checkpoint.html">Checkpoint</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.checkpoint.saved_model_builder.html">Saved Model Builder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.checkpoint.saver.html">Saver</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.kernel.html">Kernel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.common.html">Common</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.op_info.html">Op Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.proxy_variable.html">Proxy Variable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.utils.html">Utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.common.variable_utils.html">Variable Utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.device.html">Device</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.device.resolver.html">Resolver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.synchronization.html">Synchronization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.all_reduce_synchronizer.html">All Reduce Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.collective_key.html">Collective Key</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.compressor.html">Compressor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.ps_synchronizer.html">Ps Synchronizer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api/autodist.kernel.synchronization.synchronizer.html">Synchronizer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.graph_transformer.html">Graph Transformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.kernel.html">Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.partitioner.html">Partitioner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.kernel.replicator.html">Replicator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.proto.html">Proto</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.graphitem_pb2.html">Graphitem Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.strategy_pb2.html">Strategy Pb2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.proto.synchronizers_pb2.html">Synchronizers Pb2</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.strategy.html">Strategy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.all_reduce_strategy.html">All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.base.html">Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.parallax_strategy.html">Parallax Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.partitioned_all_reduce_strategy.html">Partitioned All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.partitioned_ps_strategy.html">Partitioned Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.ps_lb_strategy.html">Ps Lb Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.ps_strategy.html">Ps Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.random_axis_partition_all_reduce_strategy.html">Random Axis Partition All Reduce Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.strategy.uneven_partition_ps_strategy.html">Uneven Partition Ps Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.utils.html">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.logging.html">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.network.html">Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.server_starter.html">Server Starter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/autodist.utils.visualization_util.html">Visualization Util</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.autodist.html">Autodist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.cluster.html">Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.const.html">Const</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.coordinator.html">Coordinator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.graph_item.html">Graph Item</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.patch.html">Patch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.remapper.html">Remapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.resource_spec.html">Resource Spec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/autodist.runner.html">Runner</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../orchestra-integration.html">Orchestra Integration</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AutoDist</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Customize a Strategy Builder</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/usage/tutorials/customize-strategy.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="customize-a-strategy-builder">
+<h1>Customize a Strategy Builder<a class="headerlink" href="#customize-a-strategy-builder" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="closer-look-on-strategy">
+<h2>Closer Look on Strategy<a class="headerlink" href="#closer-look-on-strategy" title="Permalink to this headline">¶</a></h2>
+<p>In AutoDist, a strategy is a representation
+to instruct AutoDist to transform a single-node computational graph to
+be a distributed one.</p>
+<p>For more technical details,
+one can refer to the <a class="reference external" href="../proto_docgen">definition page</a>
+of strategy Protocol Buffer message.</p>
+<p>Below is an intuitive example of a strategy for a computational graph
+with two variables <code class="docutils literal notranslate"><span class="pre">W:0</span></code> and <code class="docutils literal notranslate"><span class="pre">b:0</span></code>.  Each variable is assigned
+with a corresponding configured synchronizer with in the
+<code><a class="reference external" href="../proto_docgen.html#autodist.proto.Strategy.Node">node_config</a></code> section;
+while the <code><a class="reference external" href="../proto_docgen.html#autodist.proto.Strategy.GraphConfig">graph_config</a></code>
+in the below example is configured to instructs the data-parallel <code class="docutils literal notranslate"><span class="pre">replicas</span></code> of the whole graph.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node_config</span> <span class="p">{</span>
+  <span class="n">var_name</span><span class="p">:</span> <span class="s2">&quot;W:0&quot;</span>
+  <span class="n">PSSynchronizer</span> <span class="p">{</span>
+    <span class="n">reduction_destinations</span><span class="p">:</span> <span class="s2">&quot;localhost:CPU:0&quot;</span>
+    <span class="n">sync</span><span class="p">:</span> <span class="n">true</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">node_config</span> <span class="p">{</span>
+  <span class="n">var_name</span><span class="p">:</span> <span class="s2">&quot;b:0&quot;</span>
+  <span class="n">AllReduceSynchronizer</span> <span class="p">{</span>
+    <span class="n">chunk_size</span><span class="p">:</span> <span class="mi">128</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">graph_config</span> <span class="p">{</span>
+  <span class="n">replicas</span><span class="p">:</span> 
+    <span class="p">[</span>
+        <span class="s2">&quot;10.21.1.24:GPU:0&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;10.21.1.24:GPU:1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;10.21.1.25:GPU:0&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;10.21.1.25:GPU:1&quot;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="build-a-strategy">
+<h2>Build a Strategy<a class="headerlink" href="#build-a-strategy" title="Permalink to this headline">¶</a></h2>
+<p>With the understanding of the strategy representation above,
+you can create your own customized strategy builder
+just like the <a class="reference internal" href="choose-strategy.html"><span class="doc">built-in ones</span></a>.
+The customized strategy builder needs to follow the
+<code><a class="reference external" href="../../api/api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder">StrategyBuilder</a></code> abstraction,
+with a required interface <code class="docutils literal notranslate"><span class="pre">build</span></code>,
+which takes a <code><a class="reference internal" href="../../api/autodist.graph_item.html"><span class="doc">GraphItem</span></a></code> a
+<code><a class="reference internal" href="../../api/autodist.resource_spec.html"><span class="doc">ResourceSpec</span></a></code> and returns a
+<code><a class="reference external" href="../../api/api/autodist.strategy.base.html#autodist.strategy.base.Strategy">Strategy</a></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">graph_item</span><span class="p">:</span> <span class="n">GraphItem</span><span class="p">,</span> <span class="n">resource_spec</span><span class="p">:</span> <span class="n">ResourceSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Strategy</span><span class="p">:</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Create a strategy representation wrapper object.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autodist.strategy.base</span> <span class="kn">import</span> <span class="n">Strategy</span>
+<span class="n">strategy</span> <span class="o">=</span> <span class="n">Strategy</span><span class="p">()</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Set configurations for the whole graph. For example you can utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to list
+all GPU devices for your data parallelism.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">strategy</span><span class="o">.</span><span class="n">graph_config</span><span class="o">.</span><span class="n">replicas</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">resource_spec</span><span class="o">.</span><span class="n">gpu_devices</span><span class="p">])</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Before configuring nodes, for example, you can utilize the <code class="docutils literal notranslate"><span class="pre">graph_item</span></code> methods to list
+all variables that you want to configure; while utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to
+prepare for where to put the variable states.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">graph_item</span><span class="o">.</span><span class="n">get_trainable_variables</span><span class="p">()</span>
+<span class="n">reduction_devices</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">resource_spec</span><span class="o">.</span><span class="n">cpu_devices</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Set configurations for variable nodes. Besides the below example,
+there are various choices of configurations listed here
+<code><a class="reference external" href="../proto_docgen.html#autodist.proto.Strategy.Node">strategy_pb2.Strategy.Node</a></code> section.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autodist.proto</span> <span class="kn">import</span> <span class="n">strategy_pb2</span>
+<span class="n">node_config</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">strategy_pb2</span><span class="o">.</span><span class="n">Strategy</span><span class="o">.</span><span class="n">Node</span><span class="p">()</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">var_name</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">PSSynchronizer</span><span class="o">.</span><span class="n">reduction_destinations</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reduction_devices</span><span class="p">)</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">PSSynchronizer</span><span class="o">.</span><span class="n">local_replication</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">PSSynchronizer</span><span class="o">.</span><span class="n">sync</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">PSSynchronizer</span><span class="o">.</span><span class="n">staleness</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">node_config</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+<span class="n">strategy</span><span class="o">.</span><span class="n">node_config</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">node_config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Congratulations! You have successfully created your first strategy builder. AutoDist is flexible for developers
+to create different types of strategies based on the configuration spaces, and also possible for auto-learning a strategy.
+For more developments on strategies, you could refer to other <a class="reference internal" href="../../api/autodist.strategy.html"><span class="doc">built-in strategy builders</span></a>
+or our development reference to invent your own <a class="reference internal" href="../../api/autodist.kernel.html"><span class="doc">kernels</span></a>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../faq.html" class="btn btn-neutral float-right" title="FAQ" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="choose-strategy.html" class="btn btn-neutral float-left" title="Choose Strategy Builders" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Petuum
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

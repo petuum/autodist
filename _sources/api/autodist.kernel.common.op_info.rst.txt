@@ -1,0 +1,7 @@
+Op Info
+=======
+
+.. automodule:: autodist.kernel.common.op_info
+    :members:
+    :undoc-members:
+    :show-inheritance:

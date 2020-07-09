@@ -1,0 +1,7 @@
+Variable Utils
+==============
+
+.. automodule:: autodist.kernel.common.variable_utils
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,7 @@
+Ps Strategy
+===========
+
+.. automodule:: autodist.strategy.ps_strategy
+    :members:
+    :undoc-members:
+    :show-inheritance:
