@@ -1,8 +1,8 @@
 # This is a Docker Image recommended for AutoDist users.
 # For more usage instructions, please refer to docs/usage/tutorials/docker.md
 
-ARG  TF_VERSION=2.0.1
-FROM tensorflow/tensorflow:${TF_VERSION}-gpu-py3
+ARG  TF_IMAGE_TAG=2.2.0-gpu
+FROM tensorflow/tensorflow:${TF_IMAGE_TAG}
 
 # Set default shell to /bin/bash
 SHELL ["/bin/bash", "-cu"]
