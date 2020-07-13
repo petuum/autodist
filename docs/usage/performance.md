@@ -8,7 +8,7 @@ We benchmark AutoDist with Horovod on the dataset of ImageNet across ResNet101, 
 
 ### Strategy Configuration
 In AutoDist, we adopt five distributed 
-strategies: PS, PartitionedPS, PSLoadBalancing, AllReduce and Parallax. For AllReduce and Parallax, we use Ring-based AllReduce algorithm with PowerSGD compressor and chunk size set to 512 for DenseNet121 and 256 for ResNet101. The code we use for running autodist on these experiments can be checked out following [this link](https://github.com/petuum/autodist/tree/master/examples/benchmark).
+strategies: PS, PartitionedPS, PSLoadBalancing, AllReduce and Parallax. For AllReduce and Parallax, we use Ring-based AllReduce algorithm with PowerSGD compressor and chunk size set to 512 for DenseNet121 and 256 for ResNet101. The code we use for running autodist on these experiments can be checked out by following [this link](https://github.com/petuum/autodist/tree/master/examples/benchmark).
 
 ## Performance Comparison
 The performance comparison is summarized in the figure below. It shows that different models achieve the best performance with different AutoDist strategies. The performance per GPU is stable with different numbers of GPUs used, which suggests AutoDist has a good scalability with increased GPUs.
