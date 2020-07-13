@@ -55,7 +55,7 @@ More detailed usage with Keras can be found [here](https://github.com/petuum/aut
 ## SavedModelBuilder
 
 The `SavedModelBuilder` API will not only save the trainable variables, but also some other training metadata, such as the Tensorflow MetaGraph and training operations. Like the `saver`, `SavedModelBuilder` also has the same interface as Tensorflow. 
-However, instead of using the default saver, AutoDist saver is required to initialize it. Here is an example:
+However, like the saver, a user still can load the saved model without Autodist for fine-tuning or serving on a single node.
 
 ```
 # create the AutoDist Saver

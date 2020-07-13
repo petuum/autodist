@@ -1,6 +1,6 @@
 # Train with Docker 
 
-To facilitate the installation process on GPU machines, the AutoDist team has published the reference Dockerfile so you can get started with AutoDist in minutes.
+To facilitate the installation process on GPU machines and get started with AutoDist in minutes, the AutoDist team has published the reference [Dockerfile](https://github.com/petuum/autodist/blob/master/docker/Dockerfile.gpu). 
 
 ## Building
 

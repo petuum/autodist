@@ -258,14 +258,14 @@ across many GPUs with scalability and minimal code change.</p>
 AutoDist achieves this goal by:</p>
 <ul class="simple">
 <li><p><strong>Compilation</strong>: AutoDist expresses the parallelization of DL models as a standardized compilation process, optimizing multiple dimensions of ML
-parallelization ranging from synchronization, model partitioning, placement to consistency.</p></li>
-<li><p><strong>Composable architecture</strong>: AutoDist designs a flexible backend that encapsulates various different ML parallelization techniques, and
-allows for composing distribution strategies that interpolates different distributed ML system architectures.</p></li>
+parallelization including synchronization, partitioning, placement etc.</p></li>
+<li><p><strong>Composable architecture</strong>: AutoDist designs a flexible backend that encapsulates various different ML parallelization techniques and
+allows for composing distribution strategies that interpolate different distributed ML system architectures.</p></li>
 <li><p><strong>Model and resource awareness</strong>: Based on the compilation process, AutoDist analyzes the model and generates more optimal distribution strategies that
 adapt to both the ML properties and the cluster specification.</p></li>
 </ul>
 <p>Besides all these advanced features, AutoDist is designed to isolate the sophistication of distributed systems
-from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques
+from ML prototyping and exposes a simple API that makes it easy to use and switch between different distributed ML techniques
 for all-level users.</p>
 </div>
 <div class="section" id="using-autodist">

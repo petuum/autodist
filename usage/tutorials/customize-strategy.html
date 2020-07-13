@@ -285,8 +285,8 @@ in the below example is configured to instructs the data-parallel <code class="d
 </div>
 <div class="section" id="build-a-strategy">
 <h2>Build a Strategy<a class="headerlink" href="#build-a-strategy" title="Permalink to this headline">¶</a></h2>
-<p>With the understanding of the strategy representation above,
-you can create your own customized strategy builder
+<p>If you understand the strategy representation above, you can create your own
+customized strategy builder
 just like the <a class="reference internal" href="choose-strategy.html"><span class="doc">built-in ones</span></a>.
 The customized strategy builder needs to follow the
 <code><a class="reference external" href="../../api/api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder">StrategyBuilder</a></code> abstraction,
@@ -305,7 +305,7 @@ which takes a <code><a class="reference internal" href="../../api/autodist.graph
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Set configurations for the whole graph. For example you can utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to list
+<li><p>Set configurations for the whole graph. For example, you can utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to list
 all GPU devices for your data parallelism.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">strategy</span><span class="o">.</span><span class="n">graph_config</span><span class="o">.</span><span class="n">replicas</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">resource_spec</span><span class="o">.</span><span class="n">gpu_devices</span><span class="p">])</span>
@@ -339,8 +339,8 @@ there are various choices of configurations listed here
 <span class="n">strategy</span><span class="o">.</span><span class="n">node_config</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">node_config</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Congratulations! You have successfully created your first strategy builder. AutoDist is flexible for developers
-to create different types of strategies based on the configuration spaces, and also possible for auto-learning a strategy.
+<p>Congratulations! You have successfully created your first strategy builder. AutoDist is flexible, allowing developers
+to create different types of strategies based on the configuration spaces, and also for auto-learning a strategy.
 For more developments on strategies, you could refer to other <a class="reference internal" href="../../api/autodist.strategy.html"><span class="doc">built-in strategy builders</span></a>
 or our development reference to invent your own <a class="reference internal" href="../../api/autodist.kernel.html"><span class="doc">kernels</span></a>.</p>
 </div>

@@ -246,17 +246,17 @@
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
 <p>Thanks for choosing AutoDist!</p>
 <p>We recommended reviewing the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">TensorFlow Quickstart Guide</a>
-to be sure you understand the difference between eager and graph mode before beginning this tutorial.</p>
+particularly the difference between eager and graph mode.
+If you can run the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">Quickstart</a> properly, you can use the same environment to follow this tutorial.</p>
 <p>AutoDist currently supports <code class="docutils literal notranslate"><span class="pre">Python&gt;=3.6</span></code> with <code class="docutils literal notranslate"><span class="pre">tensorflow&gt;=1.15,</span> <span class="pre">&lt;=2.1</span></code>. Install the downloaded wheel file by</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install autodist
 </pre></div>
 </div>
-<p>The following model is based on the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">Quickstart</a>. Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs with AutoDist, we could follow these next 3 steps:</p>
+<p>The following model is based on the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">Quickstart</a>.
+Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs with AutoDist, follow these 3 steps:</p>
 <div class="section" id="step-1-ensure-model-built-under-graph-mode">
 <h2>Step 1: Ensure Model Built under Graph Mode<a class="headerlink" href="#step-1-ensure-model-built-under-graph-mode" title="Permalink to this headline">¶</a></h2>
-<p>AutoDist currently is only expected to work with TensorFlow graph mode, instead of eager.
-It is natural for TensorFlow 1.x; while with TensorFlow 2.x,
-one needs to put their code under <code class="docutils literal notranslate"><span class="pre">tf.Graph().as_default()</span></code> to ensure the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/Graph">graph mode</a>.
+<p>AutoDist is designed for TensorFlow graph mode. Graph mode is native to TensorFlow 1.x; while with TensorFlow 2.x,<br />one needs to put their code under <code class="docutils literal notranslate"><span class="pre">tf.Graph().as_default()</span></code> to ensure the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/Graph">graph mode</a>.
 For example,</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">g</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
 <span class="k">with</span> <span class="n">g</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
@@ -265,8 +265,7 @@ For example,</p>
   <span class="k">assert</span> <span class="n">c</span><span class="o">.</span><span class="n">graph</span> <span class="ow">is</span> <span class="n">g</span>
 </pre></div>
 </div>
-<p>Before using AutoDist, the model built without AutoDist should be able to train with graph mode successfully.
-Then continue to the following steps in the same environment.</p>
+<p>Before using AutoDist, confirm the model built without AutoDist is able to train with graph mode successfully. Then continue to the next steps in the same environment.</p>
 </div>
 <div class="section" id="step-2-prepare-resource-specification-file">
 <h2>Step 2: Prepare Resource Specification File<a class="headerlink" href="#step-2-prepare-resource-specification-file" title="Permalink to this headline">¶</a></h2>
@@ -282,8 +281,8 @@ Let’s create a file called <code class="docutils literal notranslate"><span cl
 </div>
 <div class="section" id="step-3-add-autodist-apis">
 <h2>Step 3: Add AutoDist APIs<a class="headerlink" href="#step-3-add-autodist-apis" title="Permalink to this headline">¶</a></h2>
-<p>The TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode,
-can be easily modified to train in a distributed fashion. Based on the <code><a class="reference internal" href="../../api/autodist.autodist.html"><span class="doc">AutoDist</span></a></code> interfaces,
+<p>The TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, can be easily modified  to train in a distributed fashion.
+Based on the <code><a class="reference internal" href="../../api/autodist.autodist.html"><span class="doc">AutoDist</span></a></code> interfaces,
 simply make the following 3 changes (marked by inline comments):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
@@ -366,7 +365,7 @@ simply make the following 3 changes (marked by inline comments):</p>
 </pre></div>
 </div>
 <p>And just like that, our single-GPU code can run on multiple GPUs.</p>
-<p>Thanks for reading, and have fun with AutoDist!</p>
+<p>Thanks for reading and have fun with AutoDist!</p>
 </div>
 </div>
 

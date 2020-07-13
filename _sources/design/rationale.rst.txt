@@ -7,7 +7,7 @@ Motivation
 As machine learning models become more structurally complex, existing distributed ML systems have struggled to provide 
 excellent *all-round* performance on a wide variety of models, since most of them are specialized upon one monolithic system architecture or technology.
 For examples, Horovod is built upon MPI and AllReduce, and believed to work well with dense parameter variables like those found in CNNs, but exhibits limitations on 
-synchronizing sparse parameter variables like those embedding layers found in many NLP models. In contrast, many parameter server based systems are reported to be better-suited with NLP models than on CNNs. 
+synchronizing sparse parameter variables like the embedding layers found in many NLP models. In contrast, many parameter server based systems are reported to be better-suited to NLP models than on CNNs.
 
 
 Unlike existing systems, AutoDist is motivated by the fact that different ML models (or different components in a complex model) exhibit different runtime characteristics, and different learning algorithms demonstrate distinct computational patterns, which demand model and algorithm-aware system or parallelization treatments for distributed execution performance, illustrated below.
@@ -24,7 +24,7 @@ AutoDist distributes an incoming model by first analyzing the computational grap
 Rationale and Features
 -----------------------
 
-In designing AutoDist, we focus on *composability* and *resuability* of individual ML parallelization building block, and *extensibility* to future emerging distributed ML techniques. 
+In designing AutoDist, we focus on *composability* and *reusability* of individual ML parallelization building blocks, and extensibility to future emerging distributed ML techniques.
 
 The figure below contrasts AutoDist (lower) with most existing distributed ML systems (upper).
 

@@ -292,7 +292,7 @@ Users can further fine-tune the model without AutoDist or under other distribute
 <div class="section" id="savedmodelbuilder">
 <h2>SavedModelBuilder<a class="headerlink" href="#savedmodelbuilder" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> API will not only save the trainable variables, but also some other training metadata, such as the Tensorflow MetaGraph and training operations. Like the <code class="docutils literal notranslate"><span class="pre">saver</span></code>, <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> also has the same interface as Tensorflow.
-However, instead of using the default saver, AutoDist saver is required to initialize it. Here is an example:</p>
+However, like the saver, a user still can load the saved model without Autodist for fine-tuning or serving on a single node.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the AutoDist Saver</span>
 <span class="n">saver</span> <span class="o">=</span> <span class="n">autodist_saver</span><span class="p">()</span>
 

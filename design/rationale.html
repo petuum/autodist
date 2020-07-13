@@ -249,14 +249,14 @@
 <p>As machine learning models become more structurally complex, existing distributed ML systems have struggled to provide
 excellent <em>all-round</em> performance on a wide variety of models, since most of them are specialized upon one monolithic system architecture or technology.
 For examples, Horovod is built upon MPI and AllReduce, and believed to work well with dense parameter variables like those found in CNNs, but exhibits limitations on
-synchronizing sparse parameter variables like those embedding layers found in many NLP models. In contrast, many parameter server based systems are reported to be better-suited with NLP models than on CNNs.</p>
+synchronizing sparse parameter variables like the embedding layers found in many NLP models. In contrast, many parameter server based systems are reported to be better-suited to NLP models than on CNNs.</p>
 <p>Unlike existing systems, AutoDist is motivated by the fact that different ML models (or different components in a complex model) exhibit different runtime characteristics, and different learning algorithms demonstrate distinct computational patterns, which demand model and algorithm-aware system or parallelization treatments for distributed execution performance, illustrated below.</p>
 <a class="reference internal image-reference" href="../_images/motivation.png"><img alt="Motivation Example" class="align-center" src="../_images/motivation.png" style="width: 450px;" /></a>
 <p>AutoDist distributes an incoming model by first analyzing the computational graph of an incoming model. Depending on the detailed characteristics of model building blocks and resource specifications, AutoDist achieves adaptiveness by composing various, seemingly different, atomic distributed ML techniques together as a <em>distribution strategy</em>, a unified model- and resource-dependent representation which instructs how the model should be parallelized on the target cluster. It then transforms the original single-node computational graph based on the generated strategy to a distributed one, running on distributed clusters.</p>
 </div>
 <div class="section" id="rationale-and-features">
 <h2>Rationale and Features<a class="headerlink" href="#rationale-and-features" title="Permalink to this headline">¶</a></h2>
-<p>In designing AutoDist, we focus on <em>composability</em> and <em>resuability</em> of individual ML parallelization building block, and <em>extensibility</em> to future emerging distributed ML techniques.</p>
+<p>In designing AutoDist, we focus on <em>composability</em> and <em>reusability</em> of individual ML parallelization building blocks, and extensibility to future emerging distributed ML techniques.</p>
 <p>The figure below contrasts AutoDist (lower) with most existing distributed ML systems (upper).</p>
 <a class="reference internal image-reference" href="../_images/others.png"><img alt="Others" class="align-center" src="../_images/others.png" style="width: 450px;" /></a>
 <a class="reference internal image-reference" href="../_images/autodist-arch.png"><img alt="Ours" class="align-center" src="../_images/autodist-arch.png" style="width: 450px;" /></a>
