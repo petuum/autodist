@@ -57,10 +57,13 @@ class clean(_clean):
 setup(
     name="autodist",
     version=os.environ.get('VERSION'),
+    author="Petuum Inc. & The AutoDist Authors",
+    author_email="",
     description="AutoDist is a distributed deep-learning training engine.",
     long_description="""AutoDist provides a user-friendly interface to distribute 
                         the training of a wide variety of deep learning models
                         across many GPUs with scalability and minimal code change.""",
+    url="https://github.com/petuum/autodist",
     classifiers=[
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Artificial Intelligence'
