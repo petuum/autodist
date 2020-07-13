@@ -17,14 +17,14 @@ AutoDist has been tested with TensorFlow versions 1.15 through 2.1.
 Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
 AutoDist achieves this goal by:
 - **Compilation**: AutoDist expresses the parallelization of DL models as a standardized compilation process, optimizing multiple dimensions of ML 
-parallelization ranging from synchronization, model partitioning, placement to consistency. 
-- **Composable architecture**: AutoDist designs a flexible backend that encapsulates various different ML parallelization techniques, and 
-allows for composing distribution strategies that interpolates different distributed ML system architectures.     
+parallelization including synchronization, partitioning, placement etc. 
+- **Composable architecture**: AutoDist designs a flexible backend that encapsulates various different ML parallelization techniques and 
+allows for composing distribution strategies that interpolate different distributed ML system architectures.     
 - **Model and resource awareness**: Based on the compilation process, AutoDist analyzes the model and generates more optimal distribution strategies that 
 adapt to both the ML properties and the cluster specification.
 
 Besides all these advanced features, AutoDist is designed to isolate the sophistication of distributed systems 
-from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
+from ML prototyping and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
 for all-level users.
 
 <p float="left"><img src="docs/_static/img/Figure1.png" width=400 /><img src="docs/_static/img/Figure2.png" width=400 /></p>

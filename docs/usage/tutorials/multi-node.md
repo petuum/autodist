@@ -76,9 +76,8 @@ please refer to the [docker setup](docker.md).
 
 ### Environment Preparation
 
-To set up environments for multi-node training follow the steps below. 
-If you are familiar with Docker, use these simple [instructions](docker.md) 
-to launch directly from Docker.
+Follow the steps below to set up environments for multi-node training. 
+If you are familiar with Docker, use these simple [instructions](docker.md)  to launch directly from Docker.
 
 Before running your program distributed with AutoDist on multiple nodes,
 1. The model should be able to train on each node successfully with AutoDist, as in
