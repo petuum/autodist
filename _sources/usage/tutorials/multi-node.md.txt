@@ -69,17 +69,16 @@ They must be named; this allows for having different ssh configs if, for example
     If not provided, it will use the default system default `python`.
     * `shared_envs` *pair* (optional): the key-value environment variable pairs for a remote (non-chief) node to use
 
-> In the current release, the multi-node coordination is based on SSH and Python virtual environments;
-while other types of coordination are being actively developed.
-For example to support for docker container instead of Python virtual environment, or
-for K8 launching instead of SSH, etc.
+> Multi-node coordination is currently limited to SSH and Python virtual environments. 
+Other types are under development. For coordination on container level, 
+please refer to the [docker setup](docker.md).
 
 
 ### Environment Preparation
 
-Below are the steps of setting up environments for multi-node training.
-If you are familiar with Docker, you could skip the following and 
-follow this straight-forward [instruction](docker.md) to directly launch with Docker.
+To set up environments for multi-node training follow the steps below. 
+If you are familiar with Docker, use these simple [instructions](docker.md) 
+to launch directly from Docker.
 
 Before running your program distributed with AutoDist on multiple nodes,
 1. The model should be able to train on each node successfully with AutoDist, as in

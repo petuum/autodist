@@ -244,7 +244,7 @@
             
   <div class="section" id="performance-analysis-of-autodist">
 <h1>Performance Analysis of AutoDist<a class="headerlink" href="#performance-analysis-of-autodist" title="Permalink to this headline">¶</a></h1>
-<p>The primary motivation of AutoDist is to build a scalable ML engine for distributed TensorFlow model training. AutoDist provides different distributed training strategies that also inlcude some latest distributed strategies. In order to report the performance of AutoDist for different strategies across different deep learning models, we benchmark its performance with Tensorflow and a state-of-the-art distributed training framework.</p>
+<p>The primary motivation of AutoDist is to build a scalable ML engine for distributed TensorFlow model training. AutoDist provides different distributed training strategies that include some latest distributed strategies. In order to report the performance of AutoDist for different strategies across different deep learning models, we benchmark its performance with Tensorflow and a state-of-the-art distributed training framework.</p>
 <div class="section" id="experiment-setup">
 <h2>Experiment Setup<a class="headerlink" href="#experiment-setup" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="dataset-and-model">
@@ -253,12 +253,13 @@
 </div>
 <div class="section" id="strategy-configuration">
 <h3>Strategy Configuration<a class="headerlink" href="#strategy-configuration" title="Permalink to this headline">¶</a></h3>
-<p>In AutoDist, we adopt five distributed strategies: PS, PartitionedPS, PSLoadBalancing, AllReduce and Parallax. In the strategy of AllReduce and Parallax, we use Ring-based AllReduce algorithm with PowerSGD compressor and chunk size set to 512 for DenseNet121 and 256 for ResNet101. The code we use for running autodist on these experiments can be checked out following <a class="reference external" href="https://github.com/petuum/autodist/tree/master/examples/benchmark">this link</a>.</p>
+<p>In AutoDist, we adopt five distributed
+strategies: PS, PartitionedPS, PSLoadBalancing, AllReduce and Parallax. In the strategy of AllReduce and Parallax, we use Ring-based AllReduce algorithm with PowerSGD compressor and chunk size set to 512 for DenseNet121 and 256 for ResNet101. The code we use for running autodist on these experiments can be checked out following <a class="reference external" href="https://github.com/petuum/autodist/tree/master/examples/benchmark">this link</a>.</p>
 </div>
 </div>
 <div class="section" id="performance-comparison">
 <h2>Performance Comparison<a class="headerlink" href="#performance-comparison" title="Permalink to this headline">¶</a></h2>
-<p>We summarize the performance in a figure below. We can find different models achieve the best performance with different AutoDist strategy. The performance per GPU is stable with different number of used GPUs, which suggests AutoDist has a good scalability with increased GPUs.</p>
+<p>The performance comparison is summarized in the figure below. It shows that different models achieve the best performance with different AutoDist strategy. The performance per GPU is stable with different number of used GPUs, which suggests AutoDist has a good scalability with increased GPUs.</p>
 <p><img alt="per gpu performance" src="../_images/figure1.png" /></p>
 <p><img alt="overall performance" src="../_images/figure2.png" /></p>
 </div>

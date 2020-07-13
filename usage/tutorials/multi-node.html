@@ -313,17 +313,16 @@ If not provided, it will use the default system default <code class="docutils li
 </li>
 </ul>
 <blockquote>
-<div><p>In the current release, the multi-node coordination is based on SSH and Python virtual environments;
-while other types of coordination are being actively developed.
-For example to support for docker container instead of Python virtual environment, or
-for K8 launching instead of SSH, etc.</p>
+<div><p>Multi-node coordination is currently limited to SSH and Python virtual environments.
+Other types are under development. For coordination on container level,
+please refer to the <a class="reference internal" href="docker.html"><span class="doc">docker setup</span></a>.</p>
 </div></blockquote>
 </div>
 <div class="section" id="environment-preparation">
 <h2>Environment Preparation<a class="headerlink" href="#environment-preparation" title="Permalink to this headline">¶</a></h2>
-<p>Below are the steps of setting up environments for multi-node training.
-If you are familiar with Docker, you could skip the following and
-follow this straight-forward <a class="reference internal" href="docker.html"><span class="doc">instruction</span></a> to directly launch with Docker.</p>
+<p>To set up environments for multi-node training follow the steps below.
+If you are familiar with Docker, use these simple <a class="reference internal" href="docker.html"><span class="doc">instructions</span></a>
+to launch directly from Docker.</p>
 <p>Before running your program distributed with AutoDist on multiple nodes,</p>
 <ol class="simple">
 <li><p>The model should be able to train on each node successfully with AutoDist, as in

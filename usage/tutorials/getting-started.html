@@ -244,9 +244,9 @@
             
   <div class="section" id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<p>Thanks for choosing to use AutoDist!</p>
-<p>Before reading the following tutorial, it is highly recommended to get familiar with the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">TensorFlow Quickstart Guide</a> first,
-and especially understand the difference between eager and graph mode. If you can run the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">Quickstart</a> properly, you can use the same environment to follow this tutorial.</p>
+<p>Thanks for choosing AutoDist!</p>
+<p>We recommended reviewing the <a class="reference external" href="https://www.tensorflow.org/tutorials/quickstart/advanced">TensorFlow Quickstart Guide</a>
+to be sure you understand the difference between eager and graph mode before beginning this tutorial.</p>
 <p>AutoDist currently supports <code class="docutils literal notranslate"><span class="pre">Python&gt;=3.6</span></code> with <code class="docutils literal notranslate"><span class="pre">tensorflow&gt;=1.15,</span> <span class="pre">&lt;=2.1</span></code>. Install the downloaded wheel file by</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install autodist
 </pre></div>
@@ -266,7 +266,7 @@ For example,</p>
 </pre></div>
 </div>
 <p>Before using AutoDist, the model built without AutoDist should be able to train with graph mode successfully.
-Then one can move to the following steps in the same environment.</p>
+Then continue to the following steps in the same environment.</p>
 </div>
 <div class="section" id="step-2-prepare-resource-specification-file">
 <h2>Step 2: Prepare Resource Specification File<a class="headerlink" href="#step-2-prepare-resource-specification-file" title="Permalink to this headline">¶</a></h2>
@@ -282,10 +282,9 @@ Let’s create a file called <code class="docutils literal notranslate"><span cl
 </div>
 <div class="section" id="step-3-add-autodist-apis">
 <h2>Step 3: Add AutoDist APIs<a class="headerlink" href="#step-3-add-autodist-apis" title="Permalink to this headline">¶</a></h2>
-<p>Given TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode,
-we can easily modify it to train in a distributed fashion.
-Based on the <code><a class="reference internal" href="../../api/autodist.autodist.html"><span class="doc">AutoDist</span></a></code> interfaces,
-all we have to do is make the following 3 changes (marked by inline comments):</p>
+<p>The TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode,
+can be easily modified to train in a distributed fashion. Based on the <code><a class="reference internal" href="../../api/autodist.autodist.html"><span class="doc">AutoDist</span></a></code> interfaces,
+simply make the following 3 changes (marked by inline comments):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 

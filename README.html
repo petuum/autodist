@@ -264,7 +264,7 @@ allows for composing distribution strategies that interpolates different distrib
 <li><p><strong>Model and resource awareness</strong>: Based on the compilation process, AutoDist analyzes the model and generates more optimal distribution strategies that
 adapt to both the ML properties and the cluster specification.</p></li>
 </ul>
-<p>Besides all these advanced features, AutoDist is cautiously designed to isolate the sophistication of distributed systems
+<p>Besides all these advanced features, AutoDist is designed to isolate the sophistication of distributed systems
 from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques
 for all-level users.</p>
 </div>
@@ -274,7 +274,7 @@ for all-level users.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install autodist
 </pre></div>
 </div>
-<p>It should be incredibly easy to modify existing TensorFlow code to use AutoDist.</p>
+<p>Modifying existing TensorFlow code to use AutoDist is easy.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">autodist</span> <span class="kn">import</span> <span class="n">AutoDist</span>
 
@@ -282,7 +282,8 @@ for all-level users.</p>
 
 <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">(),</span> <span class="n">ad</span><span class="o">.</span><span class="n">scope</span><span class="p">():</span>
     <span class="c1">########################################################</span>
-    <span class="c1"># Build Your Model Here and Train it Distributedly</span>
+    <span class="c1"># Build your (single-device) model here, </span>
+    <span class="c1">#   and train it distributedly.</span>
     <span class="c1">########################################################</span>
     <span class="n">sess</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">create_distributed_session</span><span class="p">()</span>
     <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>

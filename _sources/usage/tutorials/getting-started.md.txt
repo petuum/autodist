@@ -1,10 +1,10 @@
 
 # Getting Started
 
-Thanks for choosing to use AutoDist!
+Thanks for choosing AutoDist!
 
-Before reading the following tutorial, it is highly recommended to get familiar with the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) first, 
-and especially understand the difference between eager and graph mode. If you can run the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced) properly, you can use the same environment to follow this tutorial.
+We recommended reviewing the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) 
+to be sure you understand the difference between eager and graph mode before beginning this tutorial.
 
 AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`. Install the downloaded wheel file by
 
@@ -30,7 +30,7 @@ with g.as_default():
 ```
 
 Before using AutoDist, the model built without AutoDist should be able to train with graph mode successfully.
-Then one can move to the following steps in the same environment. 
+Then continue to the following steps in the same environment. 
 
 ### Step 2: Prepare Resource Specification File
 
@@ -48,10 +48,10 @@ For other resource cases (e.g., multiple nodes), please refer to the [next tutor
 
 ### Step 3: Add AutoDist APIs
 
-Given TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, 
-we can easily modify it to train in a distributed fashion. 
-Based on the <code>[AutoDist](../../api/autodist.autodist)</code> interfaces, 
-all we have to do is make the following 3 changes (marked by inline comments):
+The TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, 
+can be easily modified to train in a distributed fashion. Based on the <code>[AutoDist](../../api/autodist.autodist)</code> interfaces, 
+simply make the following 3 changes (marked by inline comments):
+
 
 ```python
 import numpy as np

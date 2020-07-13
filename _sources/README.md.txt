@@ -23,7 +23,7 @@ allows for composing distribution strategies that interpolates different distrib
 - **Model and resource awareness**: Based on the compilation process, AutoDist analyzes the model and generates more optimal distribution strategies that 
 adapt to both the ML properties and the cluster specification.
 
-Besides all these advanced features, AutoDist is cautiously designed to isolate the sophistication of distributed systems 
+Besides all these advanced features, AutoDist is designed to isolate the sophistication of distributed systems 
 from ML prototyping, and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
 for all-level users.
 
@@ -36,7 +36,7 @@ Installation:
 pip install autodist
 ```
 
-It should be incredibly easy to modify existing TensorFlow code to use AutoDist.
+Modifying existing TensorFlow code to use AutoDist is easy.
 
 ```python
 import tensorflow as tf
@@ -46,7 +46,8 @@ ad = AutoDist(resource_spec_file="resource_spec.yml")
 
 with tf.Graph().as_default(), ad.scope():
     ########################################################
-    # Build Your Model Here and Train it Distributedly
+    # Build your (single-device) model here, 
+    #   and train it distributedly.
     ########################################################
     sess = ad.create_distributed_session()
     sess.run(...)
