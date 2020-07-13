@@ -64,5 +64,3 @@ jobs:
         destination_branch: "master"
         pr_title: "Bumping VERSION file due to recent release"
         pr_body: "*Automated PR*: This should update the candidate version. Please delete source branch upon merge"
-        pr_reviewer: "pw2393"
-        pr_assignee: "pw2393"
