@@ -1,6 +1,8 @@
 # Save and Restore Training
 
-Users need to use the AutoDist internal wrappers for saving. These wrappers will save the **original graph** instead of the transformed distributed graph executed during the training. In this case, users can further fine-tune the model without AutoDist or under other distributed settings.
+AutoDist savers (as wrapped of TF savers) are required for saving.
+These wrapped savers will save the **original graph** instead of the transformed distributed graph executed during the training.
+Users can further fine-tune the model without AutoDist or under other distributed settings.
 
 There are 2 AutoDist saving APIs, which are very similar to the native TensorFlow saving interface. One is `saver` another is `SavedModelBuilder`.
 
@@ -48,11 +50,12 @@ for steps in steps_to_train:
     ...
 ```
 
-More detailed usage can be found [here](../../../tests/checkpoint/test_keras_saver.py).
+More detailed usage with Keras can be found [here](https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_keras_saver.py).
 
 ## SavedModelBuilder
 
-The `SavedModelBuilder` API will not only save the trainable variables, but also some other training metadata, such as the Tensorflow MetaGraph and training operations. Like the `saver`, `SavedModelBuilder` also has the same interface as the original one in the Tensorflow. However, instead of using the default saver, users needs use the AutoDist saver to initialize it. Here is an example:
+The `SavedModelBuilder` API will not only save the trainable variables, but also some other training metadata, such as the Tensorflow MetaGraph and training operations. Like the `saver`, `SavedModelBuilder` also has the same interface as Tensorflow. 
+However, like the saver, a user still can load the saved model without Autodist for fine-tuning or serving on a single node.
 
 ```
 # create the AutoDist Saver
@@ -73,7 +76,8 @@ builder.add_meta_graph_and_variables(
 builder.save()
 ```
 
-The output of *SavedModelBuilder* is a serialized data, including model weights, model graph and some other training information. However, as the same as the saver, user still can load the saved model without Autodist for fine-tuning or serving on a single node.
+The output of *SavedModelBuilder* is a serialized data, including model weights, model graph and some other training information. 
+Just like the saver, a user can load the saved model without Autodist for fine-tuning or serving on a single node.
 
 ```
 with tf.compat.v1.Session() as sess:
@@ -101,4 +105,4 @@ with tf.compat.v1.Session() as sess:
 We don't need to build our model in this case, because the model graph is loaded from the serialized data.
 
 
-More detailed usage, can be found [here](../../../tests/checkpoint/test_saved_model.py).
+More detailed usage, can be found [here](https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_saved_model.py).

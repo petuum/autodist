@@ -44,8 +44,8 @@ graph_config {
 
 ## Build a Strategy
 
-With the understanding of the strategy representation above,
-you can create your own customized strategy builder 
+If you understand the strategy representation above, you can create your own
+customized strategy builder 
 just like the [built-in ones](choose-strategy.md).
 The customized strategy builder needs to follow the 
 <code>[StrategyBuilder](../../api/api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder)</code> abstraction,
@@ -63,7 +63,7 @@ def build(self, graph_item: GraphItem, resource_spec: ResourceSpec) -> Strategy:
 from autodist.strategy.base import Strategy
 strategy = Strategy()
 ```
-* Set configurations for the whole graph. For example you can utilize the `resource_spec` properties to list 
+* Set configurations for the whole graph. For example, you can utilize the `resource_spec` properties to list 
 all GPU devices for your data parallelism.
 ```python
 strategy.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
@@ -93,7 +93,7 @@ for var in variables:
 strategy.node_config.extend(node_config)
 ```
 
-Congratulations! You have successfully created your first strategy builder. AutoDist is flexible for developers
-to create different types of strategies based on the configuration spaces, and also possible for auto-learning a strategy.
+Congratulations! You have successfully created your first strategy builder. AutoDist is flexible, allowing developers
+to create different types of strategies based on the configuration spaces, and also for auto-learning a strategy.
 For more developments on strategies, you could refer to other [built-in strategy builders](../../api/autodist.strategy)
 or our development reference to invent your own [kernels](../../api/autodist.kernel).

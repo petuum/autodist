@@ -16,6 +16,7 @@ across many GPUs with scalability and minimal code change.
 
    Overview<README.md>
    Performance<usage/performance.md>
+   design/rationale.md
 
 .. toctree::
    :titlesonly:
@@ -36,18 +37,7 @@ across many GPUs with scalability and minimal code change.
    :caption: Developer Reference
    :maxdepth: 1
 
-   design/rationale.md
    design/architecture.rst
    design/kernels.md
    usage/proto_docgen.md
    Developer API References<api/autodist.rst>
-   usage/orchestra-integration.md
-
-Useful Links
-------------
-
-- `Source Code`_
-- `Development Notes on Confluence`_
-
-.. _`Source Code`: https://gitlab.int.petuum.com/internal/scalable-ml/autodist
-.. _`Development Notes on Confluence`: https://petuum.atlassian.net/wiki/spaces/SYM/pages/166363204/AutoDist%3A+Goal+and+a+Proposal+of+Architecture?atlOrigin=eyJpIjoiOWU1Y2Q4YzNmMDg2NDkyZTk0Njg1ZTYwNmM3YWI1MDciLCJwIjoiYyJ9

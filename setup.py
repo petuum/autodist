@@ -78,7 +78,7 @@ setup(
         "gast==0.2.2",
     ],
     extras_require={
-        'test': [
+        'dev': [
             'pytest',
             'pytest-cov',
             'pydocstyle',

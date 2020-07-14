@@ -123,7 +123,7 @@ html_theme = 'sphinx_rtd_theme'
 # Register the theme as an extension to generate a sitemap.xml
 extensions.append("sphinx_rtd_theme")
 # logo
-html_logo = '_static/img/autodist.png'
+html_logo = '_static/img/logo.png'
 html_favicon = '_static/img/favicon.ico'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -236,7 +236,7 @@ def linkcode_resolve(domain, info):
     if info['module'].endswith('_pb2'):
         return None
     path = info['module'].replace('.', '/')
-    return "https://gitlab.int.petuum.com/internal/scalable-ml/autodist/tree/master/" + path + '.py'
+    return "https://github.com/petuum/autodist/blob/master/" + path + '.py'
 
 # -- Options for intersphinx and extlinks extension --------------------------
 
