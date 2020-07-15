@@ -28,6 +28,7 @@ pylint:
     # Libraries aren't installed during linting
     - import-error
     - wrong-import-error
+    - cyclic-import
     - invalid-name  # e.g. o and df are not allowed
     # Most of our logs don't need lazy interpolation
     - logging-format-interpolation
