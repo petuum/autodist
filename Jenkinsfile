@@ -120,6 +120,7 @@ pipeline {
                     }
                     post {
                         always {
+                            sh 'docker rm -f worker || true'
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_worker'
                         }
                     }

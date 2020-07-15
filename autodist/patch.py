@@ -120,7 +120,7 @@ class _KerasPatch:
     @staticmethod
     def get_session(op_input_list=()):
         """Returns the session object for the current thread."""
-        _SESSION = keras.backend._SESSION
+        _SESSION = keras.backend._SESSION # noqa:N806
         default_session = ops.get_default_session()
         if default_session is not None:
             session = default_session
