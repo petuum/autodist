@@ -87,7 +87,9 @@ class PartitionedAR(StrategyBuilder):
         if num_shards <= 1:
             node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
             node.AllReduceSynchronizer.compressor = \
-                synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")
+                synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("NoneCompressor")
+            # node.AllReduceSynchronizer.compressor = \
+            #     synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")                
             node.AllReduceSynchronizer.group = var_counter // self.chunk_size
             return node, num_shards
 
@@ -108,7 +110,9 @@ class PartitionedAR(StrategyBuilder):
             part.var_name = '{}/part_{}:0'.format(get_op_name(var.name), i)
             part.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
             part.AllReduceSynchronizer.compressor = \
-                synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")
+                synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("NoneCompressor")
+            # part.AllReduceSynchronizer.compressor = \
+            #     synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")                
             part.AllReduceSynchronizer.group = (var_counter + i) // self.chunk_size
             node.part_config.extend([part])
         return node, num_shards

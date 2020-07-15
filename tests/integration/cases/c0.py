@@ -68,7 +68,10 @@ def main(autodist):
         saver = Saver([W, b])
         session = autodist.create_distributed_session()
         for epoch in range(EPOCHS):
-            l_val, _, _ = session.run(fetches=fetches, feed_dict={x: inputs_iterator.get_next(), y: outputs})
+
+            l_val, _, _ = session.run(fetches=fetches, 
+                                      options=tf.compat.v1.RunOptions(trace_level=tf.compat.v1.RunOptions.FULL_TRACE),
+                                      feed_dict={x: inputs_iterator.get_next(), y: outputs})
             print('loss:', l_val)
             # Seperate the fetches of var to guarantee the state
             W_val, b_val = session.run([W, b])
