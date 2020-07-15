@@ -32,13 +32,13 @@ jobs:
     - name: Build and publish
       env:
         TWINE_USERNAME: "__token__"
-        TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
         export PROTOC=$(pwd)/bin/protoc
         export VERSION=$(./GENVER --pep440)
         HOME=$(pwd) python setup.py sdist bdist_wheel
         ls -ltr dist/
-        python -m twine upload --repository-url=https://test.pypi.org/legacy/ dist/*
+        python -m twine upload dist/*
 
     - name: Bump VERSION file and commit 
       run: |

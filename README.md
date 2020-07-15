@@ -1,8 +1,8 @@
 
 <p align="center"><img src="docs/_static/img/logo.png" width=400 /></p>
 
-[![pipeline status](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/pipeline.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
-[![coverage report](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/badges/master/coverage.svg)](https://gitlab.int.petuum.com/internal/scalable-ml/autodist/commits/master)
+[![pipeline status](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastBuild/api/json&label=build&query=$.result&color=important)](https://github.com/petuum/autodist/commits/master)
+[![coverage report](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&label=coverage&query=$.total_coverage_pct&color=important)](https://github.com/petuum/autodist/commits/master)
 
 [Documentation](http://10.20.41.55:8080) |
 [Examples](https://github.com/petuum/autodist/tree/master/examples/benchmark)
