@@ -1,7 +1,5 @@
 def myflag = false
 
-def workerlaunched = false
-
 pipeline {
     options {
         timeout(time: 2, unit: 'HOURS')
