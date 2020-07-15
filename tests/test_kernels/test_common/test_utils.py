@@ -35,8 +35,8 @@ def test_strip_replica_prefix():
 
 def test_server_starter():
     cluster = tf.train.ClusterSpec({
-        'ps': ['localhost:15001'],
-        'worker': ['localhost: 15002']
+        'worker1': ['localhost:15001'],
+        'worker2': ['localhost:15002']
     })
 
     def start(job_name, task_index):
@@ -46,26 +46,26 @@ def test_server_starter():
                      cpu_device_num=1)
 
         with tf.Graph().as_default():
-            if job_name == 'ps':
-                with tf.device('/job:ps/task:%d' % task_index):
-                    queue = tf.compat.v1.FIFOQueue(cluster.num_tasks('worker'), tf.int32, shared_name='queue%d' % task_index)
+            if job_name == 'worker1':
+                with tf.device('/job:worker1/task:%d' % task_index):
+                    queue = tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue%d' % task_index)
                 with tf.compat.v1.Session(server.target) as sess:
-                    for i in range(cluster.num_tasks('worker')):
+                    for i in range(cluster.num_tasks('worker2')):
                         sess.run(queue.dequeue())
 
-            elif job_name == 'worker':
+            elif job_name == 'worker2':
                 queues = []
-                for i in range(cluster.num_tasks('ps')):
-                    with tf.device('/job:ps/task:%d' % i):
-                        queues.append(tf.compat.v1.FIFOQueue(cluster.num_tasks('worker'), tf.int32, shared_name='queue%d' % i))
+                for i in range(cluster.num_tasks('worker1')):
+                    with tf.device('/job:worker1/task:%d' % i):
+                        queues.append(tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue%d' % i))
                 with tf.compat.v1.Session(server.target) as sess:
-                    for i in range(cluster.num_tasks('ps')):
+                    for i in range(cluster.num_tasks('worker1')):
                         _, size = sess.run([queues[i].enqueue(task_index), queues[i].size()])
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
     threads = [
-        threading.Thread(target=start, args=('ps', 0)),
-        threading.Thread(target=start, args=('worker', 0))
+        threading.Thread(target=start, args=('worker1', 0)),
+        threading.Thread(target=start, args=('worker2', 0))
         ]
     for thread in threads:
         thread.start()
