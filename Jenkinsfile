@@ -1,14 +1,22 @@
 def myflag = false
 
 pipeline {
-  options {
-    timeout(time: 2, unit: 'HOURS')
-  }
-  environment {
-    DOCKER_REGISTRY='registry.petuum.com/internal/scalable-ml/autodist/toolchain'
-  }
-    agent none
+    options {
+        timeout(time: 2, unit: 'HOURS')
+    }
+
+    environment {
+        DOCKER_REGISTRY='registry.petuum.com/internal/scalable-ml/autodist/toolchain'
+    }
+
+    agent { label 'petuum-jenkins-slave' }
+
     stages {
+        stage('begin') {
+            steps {
+                setBuildStatus("Build in progress", "pending", "${env.GIT_COMMIT}", "${env.BUILD_URL}");
+            }
+        }
         stage('build-image') {
             agent {
                 label 'GPU1'
@@ -20,9 +28,10 @@ pipeline {
                 sh "docker push ${DOCKER_REGISTRY}:tf2"
             }
         }
+
         stage('lint') {
             agent {
-                docker { 
+                docker {
                     label 'GPU1'
                     image "${DOCKER_REGISTRY}:tf2"
                 }
@@ -31,6 +40,7 @@ pipeline {
                 sh 'prospector autodist'
             }
         }
+
         stage('test-local') {
             parallel {
                 stage('tf1') {
@@ -137,11 +147,66 @@ pipeline {
                     sh "tar -zcvf htmlcov.tar.gz htmlcov"
                 }
             }
-             post {
+            post {
                 success {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage-report/htmlcov.tar.gz', fingerprint: true
                 }
             }
         }
     }
+
+    post {
+        success {
+            setBuildStatus("Build succeeded", "success", "${env.GIT_COMMIT}", "${env.BUILD_URL}");
+        }
+        failure {
+            setBuildStatus("Build failed", "failure", "${env.GIT_COMMIT}", "${env.BUILD_URL}");
+        }
+    }
+}
+
+/*
+ * We've disabled the github commit notification from plugin because it doesn't
+ * allow us to overwrite the target URL (it takes raw hostname of jenkins server,
+ * which we dont want, as we're pointing to public hostname instead).
+ *
+ * In future, we can use setBuildStatusViaPlugin() instead, but until those plugins
+ * become more stable, can use this.
+ */
+void setBuildStatus(String message, String state, String gitCommit, String buildUrl) {
+    withCredentials([string(credentialsId: 'petuumops-github-service-token', variable: 'TOKEN')]) {
+        String statusUrl = "https://api.github.com/repos/petuum/autodist/statuses/$gitCommit"
+        String targetUrl = buildUrl.replaceAll(/http.*\.(com|io)\//,"https://jenkins.petuum.io/")
+
+        // Can enable 'set -x' for debugging. TOKEN is not logged
+        sh """
+            # set -x
+            curl -H \"Authorization: token $TOKEN\" \
+                 -X POST \
+                 -d '{\"description\": \"$message\", \
+                      \"state\": \"$state\", \
+                      \"context\": "ci/jenkins", \
+                      \"target_url\" : \"$targetUrl\" }' \
+                 ${statusUrl}
+        """
+    }
+}
+
+/*
+ * Don't use this until plugins become more stable, for example:
+ * https://issues.jenkins-ci.org/browse/JENKINS-54249.
+ *
+ * Instead, opt for setBuildStatus() and disable from job (we need to send
+ * our own notification because auto won't allow us to set the public revere proxy URL)
+ */
+void setBuildStatusViaPlugin(String message, String state, String gitCommit, String repoSource, String buildUrl) {
+    String targetUrl = buildUrl.replaceAll(/http.*\.(com|io)\//,"https://jenkins.petuum.io/")
+    step([
+        $class: "GitHubCommitStatusSetter",
+        contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/branch"],
+        reposSource: [$class: "ManuallyEnteredRepositorySource", url: repoSource],
+        errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "error"]],
+        statusBackrefSource: [$class: "ManuallyEnteredBackrefSource", backref: targetUrl],
+        statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
+    ]);
 }
