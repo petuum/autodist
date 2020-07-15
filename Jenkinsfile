@@ -95,7 +95,7 @@ pipeline {
                     }
                     steps {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
-                        waitUntil {script {return workerlaunched}}
+                        sh 'sleep 5'
                         sh 'docker run --gpus all --network=host -v /shared/.ssh:/root/.ssh:ro -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "python3 -m pytest -s --junitxml=test_dist.xml integration/test_dist.py"'
                         echo "${myflag}"
                         script {myflag = true}
