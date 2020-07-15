@@ -47,8 +47,8 @@ def test_server_starter():
 
         with tf.Graph().as_default():
             if job_name == 'worker1':
-                with tf.device('/job:worker1/task:%d' % task_index):
-                    queue = tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue%d' % task_index)
+                with tf.device('/job:worker1/task:{}'.format(task_index)):
+                    queue = tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue{}'.format(task_index))
                 with tf.compat.v1.Session(server.target) as sess:
                     for i in range(cluster.num_tasks('worker2')):
                         sess.run(queue.dequeue())
@@ -56,19 +56,19 @@ def test_server_starter():
             elif job_name == 'worker2':
                 queues = []
                 for i in range(cluster.num_tasks('worker1')):
-                    with tf.device('/job:worker1/task:%d' % i):
-                        queues.append(tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue%d' % i))
+                    with tf.device('/job:worker1/task:{}'.format(i)):
+                        queues.append(tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue{}'.format(i)))
                 with tf.compat.v1.Session(server.target) as sess:
                     for i in range(cluster.num_tasks('worker1')):
                         sess.run(queues[i].enqueue(task_index))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
-    threads = [
+    thread_pool = [
         threading.Thread(target=start, args=('worker1', 0)),
         threading.Thread(target=start, args=('worker2', 0))
         ]
-    for thread in threads:
+    for thread in thread_pool:
         thread.start()
-    for thread in threads:
+    for thread in thread_pool:
         thread.join()
 
