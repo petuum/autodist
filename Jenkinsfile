@@ -116,7 +116,6 @@ pipeline {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
                         sh 'docker rm -f worker || true'
                         sh 'docker run --gpus all --name worker -d --privileged --network=host -v /shared/.ssh:/root/.ssh -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "env | grep COVERAGE >> /etc/environment && /usr/sbin/sshd -p 12345; sleep infinity"'
-                        script {workerlaunched = true}
                         echo "${myflag}"
                         waitUntil {script {return myflag}}
                         echo "${myflag}"
