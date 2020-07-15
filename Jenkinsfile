@@ -1,4 +1,5 @@
 def myflag = false
+
 def workerlaunched = false
 
 pipeline {
@@ -102,8 +103,6 @@ pipeline {
                     }
                     post {
                         always {
-                            script {myflag = true}
-                            echo "${myflag}"
                             junit allowEmptyResults: true, testResults: 'tests/test_dist.xml'
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_chief'
                         }
