@@ -60,7 +60,7 @@ def test_server_starter():
                         queues.append(tf.compat.v1.FIFOQueue(cluster.num_tasks('worker2'), tf.int32, shared_name='queue%d' % i))
                 with tf.compat.v1.Session(server.target) as sess:
                     for i in range(cluster.num_tasks('worker1')):
-                        _, size = sess.run([queues[i].enqueue(task_index), queues[i].size()])
+                        sess.run(queues[i].enqueue(task_index))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
     threads = [
