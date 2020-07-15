@@ -248,8 +248,7 @@
 <li><p><strong>Does AutoDist support heterogeneous clusters?</strong></p>
 <blockquote>
 <div><p>Yes, it’s as straight-forward as the setup on homogeneous cluster.
-You could refer to <a class="reference internal" href="tutorials/multi-node.html"><span class="doc">Train on Multiple Nodes</span></a>
-or <a class="reference internal" href="tutorials/docker.html"><span class="doc">Train with Docker</span></a> to get started.</p>
+You could refer to <a class="reference internal" href="tutorials/multi-node.html"><span class="doc">Train on Multiple Nodes</span></a>.</p>
 </div></blockquote>
 </li>
 <li><p><strong>What device types does AutoDist support?</strong></p>
@@ -267,9 +266,18 @@ eager mode to fit in the AutoDist stack, so we de-prioritized it
 but maybe support it in the future.</p>
 </div></blockquote>
 </li>
+<li><p><strong>Will AutoDist support PyTorch?</strong></p>
+<blockquote>
+<div><p>Since the architecture of AutoDist is based on graph transforming, while PyTorch does not offer
+static computational graph directly except TorchScript which is still in an early stage,
+AutoDist thus does not have plan to integrate the stack with PyTorch in the near future.</p>
+</div></blockquote>
+</li>
 <li><p><strong>Will there be Kubernetes integration?</strong></p>
 <blockquote>
-<div><p>AutoDist is integrated with Kubernetes internally in a Petuum closed-source product Orchestra.</p>
+<div><p>AutoDist is integrated with Kubernetes internally in a Petuum closed-source product.
+Even so, one can still start with our <a class="reference internal" href="tutorials/docker.html"><span class="doc">running on docker</span></a>
+instructions for containerization and orchestration.</p>
 </div></blockquote>
 </li>
 <li><p><strong>Does AutoDist support model parallelism?</strong></p>
@@ -278,13 +286,6 @@ but maybe support it in the future.</p>
 support defining the configuration of how to partition an operation on non-batch dimension
 as part of the distributed <a class="reference internal" href="proto_docgen.html"><span class="doc">strategy</span></a>,
 together with proper graph-transformation <a class="reference internal" href="../api/autodist.kernel.graph_transformer.html"><span class="doc">kernels</span></a>.</p>
-</div></blockquote>
-</li>
-<li><p><strong>Will AutoDist support PyTorch?</strong></p>
-<blockquote>
-<div><p>Since the architecture of AutoDist is based on graph transforming, while PyTorch does not offer
-static computational graph directly except TorchScript which is still in an early stage,
-AutoDist thus does not have plan to integrate the stack with PyTorch in the near future.</p>
 </div></blockquote>
 </li>
 </ol>
