@@ -10,7 +10,7 @@ The instruction for generating the tfrecord data for ImageNet can be found follo
 # You can set cnn models from vgg16, resnet101, densenet121, inceptionv3
 export CNN_MODEL=resnet101
 python ${REAL_SCRIPT_PATH}/imagenet.py --data_dir=${REAL_DATA_PATH}/train --train_epochs=10 --cnn_model=$CNN_MODEL --autodist_strategy=$AUTODIST_STRATEGY
-# ${REAL_SCRIPT_PATH} and ${REAL_DATA_PATH} is the real path you place the code and dataset
+# ${REAL_SCRIPT_PATH} and ${REAL_DATA_PATH} are the real paths you place the code and dataset
 ```
 
 #### Bidirectional Encoder Representations from Transformers (BERT)
