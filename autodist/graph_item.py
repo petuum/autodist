@@ -347,26 +347,7 @@ class GraphItem:
         return False
 
     @property
-    def grad_list(self):
-        """
-        List of target gradients that will be updated.
 
-        Returns:
-            List
-        """
-        return list(self.grad_target_pairs.keys())
-
-    @property
-    def target_list(self):
-        """
-        List of target variables that will be updated.
-
-        Returns:
-            List
-        """
-        return list(self.grad_target_pairs.values())
-
-    @property
     def grad_target_name_pairs(self):
         """
         List of names of grad and target variable pairs.

@@ -79,6 +79,7 @@ def train_and_save():
         checkpoint_suffix = 'mnist'
         checkpoint_name = checkpoint_dir + checkpoint_suffix
         saver.save(sess, checkpoint_name, global_step=step)
+        saver.restore(sess, tf.train.latest_checkpoint(checkpoint_dir))
         print('Checkpoint saved at {%s}' % checkpoint_name)
 
 

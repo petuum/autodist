@@ -45,7 +45,7 @@ def _clean_stale_servers():
             raise
 
 
-def start_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: int):
+def gen_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: int):
     """
     Start a TensorFlow server.
 
@@ -72,6 +72,20 @@ def start_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: i
             intra_op_parallelism_threads=0
         )
     )
+    return s
+
+
+def start_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: int):
+    """
+    Start a TensorFlow server.
+
+    Args:
+        cluster_spec (dict): TensorFlow ClusterSpec dict
+        job_name: TensorFlow job name
+        task_index: TensorFlow task index
+        cpu_device_num: The number of CPU devices
+    """
+    s = gen_server(cluster_spec, job_name, task_index, cpu_device_num)
     s.join()
 
 
