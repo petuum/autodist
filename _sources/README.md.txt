@@ -51,7 +51,7 @@ with tf.Graph().as_default(), ad.scope():
     sess = ad.create_distributed_session()
     sess.run(...)
 ```
-Ready to try? Please refer to an intuitive example in our doc to [get started].(https://petuum.github.io/autodist/usage/tutorials/getting-started.html).
+Ready to try? Please refer to an intuitive example in our doc to [get started](https://petuum.github.io/autodist/usage/tutorials/getting-started.html).
 ## References & Acknowledgements
 
 We learned and borrowed insights from a few open source projects 
