@@ -7,17 +7,17 @@ from .single_run import STRATEGIES_FOR_DISTRIBUTED_TESTS
 
 cases = [
     "c0",  # TensorFlow 2.0 basics
-    "c1",  # Keras basics
-    "c2",  # Sparse basics
-    "c3",  # Numpy basics
-    "c4",  # Control flow while_loop
-    "c9",  # Staleness
+    # "c1",  # Keras basics
+    # "c2",  # Sparse basics
+    # "c3",  # Numpy basics
+    # "c4",  # Control flow while_loop
+    # "c9",  # Staleness
 ]
 
 resource_specs = [
     os.path.join(os.path.dirname(__file__), 'resource_specs/r1.yml'),
-    os.path.join(os.path.dirname(__file__), 'resource_specs/r3.yml'),
-    os.path.join(os.path.dirname(__file__), 'resource_specs/r4.yml')
+    # os.path.join(os.path.dirname(__file__), 'resource_specs/r3.yml'),
+    # os.path.join(os.path.dirname(__file__), 'resource_specs/r4.yml')
 ]
 
 

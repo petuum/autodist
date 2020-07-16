@@ -13,17 +13,17 @@ from autodist.strategy.random_axis_partition_all_reduce_strategy import RandomAx
 
 STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'PS': PS(sync=True),
-    'PS_stale_3': PS(sync=True, staleness=3),
-    'PartitionedPS': PartitionedPS(),
-    'PartitionedPS_stale_3': PartitionedPS(staleness=3),
-    'AllReduce': AllReduce(chunk_size=1),
-    'AllReduce_2': AllReduce(chunk_size=2),
-    'Parallax': Parallax(),
-    'PSLoadBalancingProxy_stale_3': PSLoadBalancing(local_proxy_variable=True, staleness=3),
-    'ParallaxProxy': Parallax(local_proxy_variable=True),
-    'PartitionedAR': PartitionedAR(),
-    'RandomAxisPartitionAR': RandomAxisPartitionAR(chunk_size=4),
-    'UnevenPartitionedPS': UnevenPartitionedPS(local_proxy_variable=True)
+    # 'PS_stale_3': PS(sync=True, staleness=3),
+    # 'PartitionedPS': PartitionedPS(),
+    # 'PartitionedPS_stale_3': PartitionedPS(staleness=3),
+    # 'AllReduce': AllReduce(chunk_size=1),
+    # 'AllReduce_2': AllReduce(chunk_size=2),
+    # 'Parallax': Parallax(),
+    # 'PSLoadBalancingProxy_stale_3': PSLoadBalancing(local_proxy_variable=True, staleness=3),
+    # 'ParallaxProxy': Parallax(local_proxy_variable=True),
+    # 'PartitionedAR': PartitionedAR(),
+    # 'RandomAxisPartitionAR': RandomAxisPartitionAR(chunk_size=4),
+    # 'UnevenPartitionedPS': UnevenPartitionedPS(local_proxy_variable=True)
 }
 
 

@@ -57,7 +57,7 @@ pipeline {
                     }
                     steps{
                         // .. remove "--run-integration" to have a mini test ..
-                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf1"
+                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py test_device_spec.py && mv .coverage .coverage.local.tf1"
                     }
                     post {
                         always {
@@ -77,7 +77,7 @@ pipeline {
                     }
                     steps{
                         // .. remove "--run-integration" to have a mini test ..
-                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf2"
+                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py test_device_spec.py && mv .coverage .coverage.local.tf2"
                     }
                     post {
                         always {
@@ -96,7 +96,6 @@ pipeline {
                     }
                     steps {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
-                        sh 'sleep 5'
                         waitUntil {script {return workerflag}}
                         sh 'docker run --gpus all --network=host -v /shared/.ssh:/root/.ssh:ro -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "python3 -m pytest -s --junitxml=test_dist.xml integration/test_dist.py"'
                         echo "${myflag}"
