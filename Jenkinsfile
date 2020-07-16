@@ -53,7 +53,7 @@ pipeline {
                         }
                     }
                     steps{
-                        /* .. remove "--run-integration" to have a mini test ..*/
+                        // .. remove "--run-integration" to have a mini test ..
                         sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf1"
                     }
                     post {
@@ -73,7 +73,7 @@ pipeline {
                         }
                     }
                     steps{
-                        /* .. remove "--run-integration" to have a mini test ..*/
+                        // .. remove "--run-integration" to have a mini test ..
                         sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf2"
                     }
                     post {
@@ -141,15 +141,28 @@ pipeline {
                     unstash 'testcov_local_tf2'
                     unstash 'testcov_distributed_chief'
                     unstash 'testcov_distributed_worker'
-                    sh 'coverage combine tests/'
-                    sh 'coverage report'
-                    sh 'coverage html -d htmlcov'
-                    sh "tar -zcvf htmlcov.tar.gz htmlcov"
+
+                    sh """#!/bin/bash
+                          coverage combine tests/
+                          coverage report
+                          coverage html -d htmlcov
+                          tar -zcvf htmlcov.tar.gz htmlcov
+
+                          # Create JSON to dynamically get total coverage percentage
+                          total_coverage_line=\$(grep '<span class="pc_cov">.*%</span>' htmlcov/index.html | head -n 1)
+                          capture_regex='<span class="pc_cov">(.*)?</span>'
+
+                          if [[ \${total_coverage_line} =~ \${capture_regex} ]]; then
+                              pct="\${BASH_REMATCH[@]:1}"
+                              echo '{"total_coverage_pct":"'\${pct}'"}' > jenkinscovdata.json 
+                          fi
+                    """
                 }
             }
             post {
                 success {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage-report/htmlcov.tar.gz', fingerprint: true
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage-report/jenkinscovdata.json', fingerprint: true
                 }
             }
         }
