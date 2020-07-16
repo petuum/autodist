@@ -495,48 +495,6 @@ synchronized variables, not PS ops or other ops like network reads.</p>
 
 </dd></dl>
 
-<dl class="py class">
-<dt id="autodist.kernel.synchronization.compressor.PowerSGDCompressor">
-<em class="property">class </em><code class="sig-name descname">PowerSGDCompressor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_op_name</span></em>, <em class="sig-param"><span class="n">rank</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/compressor.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.compressor.PowerSGDCompressor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#autodist.kernel.synchronization.compressor.CompressorEF" title="autodist.kernel.synchronization.compressor.CompressorEF"><code class="xref py py-class docutils literal notranslate"><span class="pre">autodist.kernel.synchronization.compressor.CompressorEF</span></code></a></p>
-<p>An implementation of the PowerSGD compression algorithm (arxiv.org/abs/1905.13727).</p>
-<dl class="py method">
-<dt id="autodist.kernel.synchronization.compressor.PowerSGDCompressor.reduce">
-<code class="sig-name descname">reduce</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tensor</span><span class="p">:</span> <span class="n">tensorflow.python.framework.ops.Tensor</span></em>, <em class="sig-param"><span class="n">conf</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#autodist.kernel.synchronization.compressor.CollectiveOpsConfig" title="autodist.kernel.synchronization.compressor.CollectiveOpsConfig">autodist.kernel.synchronization.compressor.CollectiveOpsConfig</a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/compressor.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.compressor.PowerSGDCompressor.reduce" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compress, reduce, and decompress a given tensor.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>tensor</strong> (<em>Tensor</em>) – the Tensor to reduce.</p></li>
-<li><p><strong>conf</strong> (<a class="reference internal" href="#autodist.kernel.synchronization.compressor.CollectiveOpsConfig" title="autodist.kernel.synchronization.compressor.CollectiveOpsConfig"><em>CollectiveOpsConfig</em></a>) – the config for Collective Ops.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Reduced Tensor</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="autodist.kernel.synchronization.compressor.PowerSGDCompressor.create">
-<em class="property">classmethod </em><code class="sig-name descname">create</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/kernel/synchronization/compressor.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.kernel.synchronization.compressor.PowerSGDCompressor.create" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create new Compressor instance given subclass name.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – Name of the Compressor subclass (e.g. NoneCompressor).</p></li>
-<li><p><strong>*args</strong> – Any args for the subclass constructor.</p></li>
-<li><p><strong>**kwargs</strong> – Any kwargs for the subclass constructor.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Compressor</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
