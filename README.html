@@ -244,14 +244,14 @@
             
   <div class="section" id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="https://github.com/petuum/autodist/commits/master"><img alt="pipeline status" src="https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastCompletedBuild/api/json&amp;label=build&amp;query=%24.result&amp;color=informational" /></a>
-<a class="reference external" href="https://github.com/petuum/autodist/commits/master"><img alt="coverage report" src="https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&amp;label=coverage&amp;query=%24.total_coverage_pct&amp;color=9cf" /></a></p>
+<p><a class="reference external" href="https://jenkins.petuum.io/job/AutoDist/job/master/"><img alt="pipeline status" src="https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastCompletedBuild/api/json&amp;label=build&amp;query=%24.result&amp;color=informational" /></a>
+<a class="reference external" href="https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/"><img alt="coverage report" src="https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&amp;label=coverage&amp;query=%24.total_coverage_pct&amp;color=green" /></a>
+<a class="reference external" href="https://pypi.org/project/autodist/"><img alt="pypi version" src="https://img.shields.io/pypi/v/autodist?color=9cf" /></a></p>
 <p><a class="reference external" href="https://petuum.github.io/autodist">Documentation</a> |
 <a class="reference external" href="https://github.com/petuum/autodist/tree/master/examples/benchmark">Examples</a></p>
 <p><strong>AutoDist</strong> is a distributed deep-learning training engine.
 AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models
 across many GPUs with scalability and minimal code change.</p>
-<p>AutoDist has been tested with TensorFlow versions 1.15 through 2.1.</p>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
@@ -267,6 +267,7 @@ adapt to both the ML properties and the cluster specification.</p></li>
 <p>Besides all these advanced features, AutoDist is designed to isolate the sophistication of distributed systems
 from ML prototyping and exposes a simple API that makes it easy to use and switch between different distributed ML techniques
 for all-level users.</p>
+<p>For a closer look at the performance, please refer to our <a class="reference external" href="https://petuum.github.io/autodist/usage/performance.html">doc</a>.</p>
 </div>
 <div class="section" id="using-autodist">
 <h2>Using AutoDist<a class="headerlink" href="#using-autodist" title="Permalink to this headline">¶</a></h2>
