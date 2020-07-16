@@ -1,5 +1,7 @@
 def myflag = false
 
+def workerflag = false
+
 pipeline {
     options {
         disableConcurrentBuilds()
