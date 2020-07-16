@@ -1,4 +1,6 @@
-def myflag = false
+def flagChiefDone = false
+
+def flagWorkerLaunched = false
 
 pipeline {
     options {
@@ -94,14 +96,14 @@ pipeline {
                     }
                     steps {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
-                        sh 'sleep 5'
+                        waitUntil {script {return flagWorkerLaunched}}
                         sh 'docker run --gpus all --network=host -v /shared/.ssh:/root/.ssh:ro -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "python3 -m pytest -s --junitxml=test_dist.xml integration/test_dist.py"'
-                        echo "${myflag}"
-                        script {myflag = true}
-                        echo "${myflag}"
+                        echo "${flagChiefDone}"
                     }
                     post {
                         always {
+                            script {flagChiefDone = true}
+                            echo "${flagChiefDone}"
                             junit allowEmptyResults: true, testResults: 'tests/test_dist.xml'
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_chief'
                         }
@@ -115,9 +117,9 @@ pipeline {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
                         sh 'docker rm -f worker || true'
                         sh 'docker run --gpus all --name worker -d --privileged --network=host -v /shared/.ssh:/root/.ssh -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "env | grep COVERAGE >> /etc/environment && /usr/sbin/sshd -p 12345; sleep infinity"'
-                        echo "${myflag}"
-                        waitUntil {script {return myflag}}
-                        echo "${myflag}"
+                        script {flagWorkerLaunched = true}
+                        echo "${flagChiefDone}"
+                        waitUntil {script {return flagChiefDone}}
                     }
                     post {
                         always {
