@@ -4,7 +4,7 @@
 
 ### Resource Specification
 
-In tutorial [Getting Started](getting-started.md),
+In the [Getting Started](getting-started.md) tutorial,
 there is an example using the minimal resource specification in `yaml` format:
 
 ```yaml
@@ -15,7 +15,7 @@ nodes:
 
 However, we often need to train a large model with multiple nodes / virtual machines / pods etc.,
 and at the same time with multiple accelerators.
-Here is an example to define a resource specification for multi-node training:  
+Here is an example to define a resource specification for multi-node training:
 
 
 ```yaml
@@ -69,14 +69,14 @@ They must be named; this allows for having different ssh configs if, for example
     If not provided, it will use the default system default `python`.
     * `shared_envs` *pair* (optional): the key-value environment variable pairs for a remote (non-chief) node to use
 
-> Multi-node coordination is currently limited to SSH and Python virtual environments. 
-Other types are under development. For coordination on container level, 
+> Multi-node coordination is currently limited to SSH and Python virtual environments.
+Other types are under development. For coordination on container level,
 please refer to the [docker setup](docker.md).
 
 
 ### Environment Preparation
 
-Follow the steps below to set up environments for multi-node training. 
+Follow the steps below to set up environments for multi-node training.
 If you are familiar with Docker, use these simple [instructions](docker.md)  to launch directly from Docker.
 
 Before running your program distributed with AutoDist on multiple nodes,
@@ -88,4 +88,4 @@ it is also required that your project files are placed under the same absolute p
 for all the other nodes. Symbolic link is also allowed.
 3. Note that the field `python_venv` requires the command to source remote env, *without* sourcing `~/.bash_rc` unless specified; while `shared_envs` is for passing the environment vars to the remote. For conda environments, `conda.sh` must be sourced before conda environment can be activated.
 
-Then one can launch the script from the chief machine. 
+Then one can launch the script from the chief machine.

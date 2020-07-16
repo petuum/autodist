@@ -3,23 +3,23 @@
 
 Thanks for choosing AutoDist!
 
-We recommended reviewing the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) 
-particularly the difference between eager and graph mode. 
-If you can run the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced) properly, you can use the same environment to follow this tutorial.
+We recommended reviewing the [TensorFlow Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced),
+particularly the difference between eager and graph mode.
+If you can run the [Quickstart Guide](https://www.tensorflow.org/tutorials/quickstart/advanced) properly, you can use the same environment to follow this tutorial.
 
-AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.2`. Install the downloaded wheel file by
+AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.2`. Install the package by running
 
 ```bash
 pip install autodist
-``` 
+```
 
-The following model is based on the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced). 
+The following model is based on the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced).
 Note that it is a model written for one node and one GPU. If we want to train it on multiple GPUs with AutoDist, follow these 3 steps:
 
 ### Step 1: Ensure Model Built under Graph Mode
 
-AutoDist is designed for TensorFlow graph mode. Graph mode is native to TensorFlow 1.x; while with TensorFlow 2.x,  
-one needs to put their code under `tf.Graph().as_default()` to ensure the [graph mode](https://www.tensorflow.org/api_docs/python/tf/Graph).
+AutoDist is designed for TensorFlow graph mode. Graph mode is native to TensorFlow 1.x; while with TensorFlow 2.x,
+one needs to put their code under `tf.Graph().as_default()` to ensure the enabling of [graph mode](https://www.tensorflow.org/api_docs/python/tf/Graph).
 For example,
 
 ```python
@@ -34,7 +34,7 @@ Before using AutoDist, confirm the model built without AutoDist is able to train
 
 ### Step 2: Prepare Resource Specification File
 
-AutoDist needs to know what devices are available in order to distribute the computational graph on them. 
+AutoDist needs to know what devices are available in order to distribute the computational graph on them.
 Currently the supported devices can be `cpus` or `gpus`.
 Let's create a file called `resource_spec.yml`:
 
@@ -48,8 +48,8 @@ For other resource cases (e.g., multiple nodes), please refer to the [next tutor
 
 ### Step 3: Add AutoDist APIs
 
-The TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode, can be easily modified  to train in a distributed fashion.
-Based on the <code>[AutoDist](../../api/autodist.autodist)</code> interfaces, 
+The TensorFlow code (either TF1.x or TF2.x) for training a model in graph mode can be easily modified to train in a distributed fashion.
+Based on the <code>[AutoDist](../../api/autodist.autodist)</code> interfaces,
 simply make the following 3 changes (marked by inline comments):
 
 

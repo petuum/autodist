@@ -244,13 +244,13 @@
             
   <div class="section" id="save-and-restore-training">
 <h1>Save and Restore Training<a class="headerlink" href="#save-and-restore-training" title="Permalink to this headline">¶</a></h1>
-<p>AutoDist savers (as wrapped of TF savers) are required for saving.
+<p>AutoDist savers (wrappers around TF savers) are required for saving.
 These wrapped savers will save the <strong>original graph</strong> instead of the transformed distributed graph executed during the training.
-Users can further fine-tune the model without AutoDist or under other distributed settings.</p>
+Users can then further fine-tune the model without AutoDist or under other distributed settings.</p>
 <p>There are 2 AutoDist saving APIs, which are very similar to the native TensorFlow saving interface. One is <code class="docutils literal notranslate"><span class="pre">saver</span></code> another is <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code>.</p>
 <div class="section" id="saver">
 <h2>saver<a class="headerlink" href="#saver" title="Permalink to this headline">¶</a></h2>
-<p>AutoDist provides a <code class="docutils literal notranslate"><span class="pre">saver</span></code>, which is a wrapper of the original Tensorflow Saver. It has the exactly same interface as the one in Tensorflow. <strong>Notice, this saver should be created before the <code class="docutils literal notranslate"><span class="pre">create_distributed_session</span></code> function.</strong> Here is an example:</p>
+<p>AutoDist provides a <code class="docutils literal notranslate"><span class="pre">saver</span></code>, which is a wrapper of the original Tensorflow Saver. It has the exactly same interface as the one in Tensorflow. <strong>Note that this saver should be created before the <code class="docutils literal notranslate"><span class="pre">create_distributed_session</span></code> function.</strong> Here is an example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autodist.checkpoint.saver</span> <span class="kn">import</span> <span class="n">Saver</span> <span class="k">as</span> <span class="n">autodist_saver</span>
 <span class="o">...</span>
 
@@ -270,7 +270,7 @@ Users can further fine-tune the model without AutoDist or under other distribute
 <span class="n">saver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="n">checkpoint_name</span><span class="p">,</span> <span class="n">global_step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The saved checkpoint can be loaded without AutoDist, just like normal TensorFlow Model.</p>
+<p>The saved checkpoint can be loaded without AutoDist, just like a normal TensorFlow Model.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
     <span class="c1"># Build your model</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">get_your_model</span><span class="p">()</span>
@@ -292,7 +292,7 @@ Users can further fine-tune the model without AutoDist or under other distribute
 <div class="section" id="savedmodelbuilder">
 <h2>SavedModelBuilder<a class="headerlink" href="#savedmodelbuilder" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> API will not only save the trainable variables, but also some other training metadata, such as the Tensorflow MetaGraph and training operations. Like the <code class="docutils literal notranslate"><span class="pre">saver</span></code>, <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> also has the same interface as Tensorflow.
-However, like the saver, a user still can load the saved model without Autodist for fine-tuning or serving on a single node.</p>
+Also like the <code class="docutils literal notranslate"><span class="pre">saver</span></code>, a user still can load the saved model without AutoDist for fine-tuning or serving on a single node.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the AutoDist Saver</span>
 <span class="n">saver</span> <span class="o">=</span> <span class="n">autodist_saver</span><span class="p">()</span>
 
@@ -311,8 +311,8 @@ However, like the saver, a user still can load the saved model without Autodist 
 <span class="n">builder</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The output of <em>SavedModelBuilder</em> is a serialized data, including model weights, model graph and some other training information.
-Just like the saver, a user can load the saved model without Autodist for fine-tuning or serving on a single node.</p>
+<p>The output of <em>SavedModelBuilder</em> is a binary including model weights, model graph, and some other training information.
+Just like the <code class="docutils literal notranslate"><span class="pre">saver</span></code>, a user can load the saved model without AutoDist for fine-tuning or serving on a single node.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
     <span class="c1"># Load the model</span>
     <span class="n">loaded</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">saved_model</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">sess</span><span class="p">,</span> <span class="p">[</span><span class="n">TAG_NAME</span><span class="p">],</span> <span class="n">EXPORT_DIR</span><span class="p">)</span>

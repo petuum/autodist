@@ -244,14 +244,14 @@
             
   <div class="section" id="train-with-docker">
 <h1>Train with Docker<a class="headerlink" href="#train-with-docker" title="Permalink to this headline">¶</a></h1>
-<p>To facilitate the installation process on GPU machines and get started with AutoDist in minutes, the AutoDist team has published the reference <a class="reference external" href="https://github.com/petuum/autodist/blob/master/docker/Dockerfile.gpu">Dockerfile</a>.</p>
+<p>To facilitate the installation process on GPU machines and get started with AutoDist in minutes, the AutoDist team has published a reference <a class="reference external" href="https://github.com/petuum/autodist/blob/master/docker/Dockerfile.gpu">Dockerfile</a>.</p>
 <div class="section" id="building">
 <h2>Building<a class="headerlink" href="#building" title="Permalink to this headline">¶</a></h2>
 <p>First clone the AutoDist repository.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/petuum/autodist.git
 </pre></div>
 </div>
-<p>Once we cloned the repository successfully we can build the Docker image with the provided Dockerfile.</p>
+<p>Once we have cloned the repository successfully we can build the Docker image with the provided Dockerfile.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> autodist
 docker build -t autodist:latest -f docker/Dockerfile.gpu .
 </pre></div>
@@ -259,12 +259,12 @@ docker build -t autodist:latest -f docker/Dockerfile.gpu .
 </div>
 <div class="section" id="running-on-a-single-machine">
 <h2>Running on a single machine<a class="headerlink" href="#running-on-a-single-machine" title="Permalink to this headline">¶</a></h2>
-<p>Install <a class="reference external" href="https://github.com/NVIDIA/nvidia-docker">nvidia-docker</a> to run the built container with GPU access. <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code> is the directory where your python script is located. In this example, we are using <code class="docutils literal notranslate"><span class="pre">autodist/examples/</span></code> as our <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code>.</p>
+<p>Install <a class="reference external" href="https://github.com/NVIDIA/nvidia-docker">nvidia-docker</a> to run the built container with GPU access. <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code> is the directory where your Python script is located. In this example, we are using <code class="docutils literal notranslate"><span class="pre">autodist/examples/</span></code> as our <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run --gpus all -it -v &lt;WORK_DIR&gt;:/mnt autodist:latest
 </pre></div>
 </div>
-<p>Inside the docker environment, you will be able to run the examples using the machine’s GPUs. Remember to follow the “<a class="reference internal" href="getting-started.html"><span class="doc">Getting Started</span></a>” tutorial to
-properly set up your <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;/resource_spec.yml</span></code></p>
+<p>Inside the Docker environment, you will be able to run the examples using the machine’s GPUs. Remember to follow the “<a class="reference internal" href="getting-started.html"><span class="doc">Getting Started</span></a>” tutorial to
+properly set up your <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;/resource_spec.yml</span></code>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python /mnt/linear_regression.py
 </pre></div>
 </div>
@@ -272,7 +272,7 @@ properly set up your <code class="docutils literal notranslate"><span class="pre
 <div class="section" id="multiple-machine-setup">
 <h2>Multiple Machine Setup<a class="headerlink" href="#multiple-machine-setup" title="Permalink to this headline">¶</a></h2>
 <p>In this section, we will describe a way to set up passwordless SSH between docker containers in different machines. If your machines are already set up, you can go directly to the <a class="reference external" href="#Running-on-multiple-machines">Running on multiple machines</a> section.</p>
-<p>This section describes a way to enable passwordless authentification between multiple docker environments in different machines. The idea is to create a shared private key across all containers and to allow this shared private key to access all machines.</p>
+<p>For passwordless authentication, the idea is to create a shared private key across all containers and to allow this shared private key to access all machines.</p>
 <p>Create the <code class="docutils literal notranslate"><span class="pre">SHARE_DIR</span></code> to hold the shared credentials</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir &lt;SHARE_DIR&gt; <span class="o">&amp;&amp;</span> mkdir &lt;SHARE_DIR&gt;/.ssh
 </pre></div>
@@ -300,7 +300,7 @@ chmod <span class="m">600</span> &lt;SHARE_DIR&gt;/.ssh/authorized_keys
 <div class="section" id="running-on-multiple-machines">
 <h2>Running on multiple machines<a class="headerlink" href="#running-on-multiple-machines" title="Permalink to this headline">¶</a></h2>
 <p>Once you have set up the passwordless SSH, you need to configure the <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;/resource_spec.yml</span></code> using the “<a class="reference internal" href="getting-started.html"><span class="doc">Getting Started</span></a>” and “<a class="reference internal" href="multi-node.html"><span class="doc">Train on Multiple Nodes</span></a>” with all worker machine’s port set to the number <code class="docutils literal notranslate"><span class="pre">&lt;PORT_NUM&gt;</span></code>.</p>
-<p>This is an example of <code class="docutils literal notranslate"><span class="pre">resource_spec.yml</span></code> file for multiple machine setup with <code class="docutils literal notranslate"><span class="pre">12345</span></code> as the <code class="docutils literal notranslate"><span class="pre">&lt;PORT_NUM&gt;</span></code></p>
+<p>This is an example of a <code class="docutils literal notranslate"><span class="pre">resource_spec.yml</span></code> file for multiple machine setup with <code class="docutils literal notranslate"><span class="pre">12345</span></code> as the <code class="docutils literal notranslate"><span class="pre">&lt;PORT_NUM&gt;</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nodes</span><span class="p">:</span>
   <span class="c1"># multi-nodes docker experiment</span>
   <span class="p p-Indicator">-</span> <span class="nt">address</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10.20.41.126</span>
@@ -321,15 +321,15 @@ chmod <span class="m">600</span> &lt;SHARE_DIR&gt;/.ssh/authorized_keys
 </div>
 <p><strong>Note</strong>: the <code class="docutils literal notranslate"><span class="pre">resource_spec.yml</span></code> file must be inside the <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code> directory as it is the directory that will be mounted inside the docker image.</p>
 <p>Before running the multi-machine training job, you must make sure all contents in <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code> in all node machines are the same. In this example, we are using <code class="docutils literal notranslate"><span class="pre">autodist/examples/</span></code> as our <code class="docutils literal notranslate"><span class="pre">&lt;WORK_DIR&gt;</span></code>.</p>
-<p>Then on every single autodist worker machine run</p>
+<p>Then on every single AutoDist worker machine run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run --gpus all -it --privileged -v &lt;SHARE_DIR&gt;/.ssh:/root/.ssh -v &lt;WORK_DIR&gt;:/mnt --network<span class="o">=</span>host autodist:latest bash -c <span class="s2">&quot;/usr/sbin/sshd -p 12345; sleep infinity&quot;</span>
 </pre></div>
 </div>
-<p>And on the autodist chief machine run</p>
+<p>And on the AutoDist chief machine run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run -it --gpus all --network<span class="o">=</span>host -v &lt;SHARE_DIR&gt;/.ssh:/root/.ssh:ro -v &lt;WORK_DIR&gt;:/mnt autodist:latest
 </pre></div>
 </div>
-<p>And inside the autodist chief’s docker environment run</p>
+<p>And inside the AutoDist chief’s Docker environment run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python /mnt/linear_regression.py
 </pre></div>
 </div>

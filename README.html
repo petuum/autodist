@@ -252,19 +252,19 @@
 <p><strong>AutoDist</strong> is a distributed deep learning training engine for TensorFlow. AutoDist provides a user-friendly interface to distribute the training of a wide variety deep learning models across many GPUs with scalability and minimal code change.</p>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
+<p>Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-round performance.
 AutoDist achieves this goal by:</p>
 <ul class="simple">
 <li><p><strong>Compilation</strong>: AutoDist expresses the parallelization of DL models as a standardized compilation process, optimizing multiple dimensions of ML
 parallelization including synchronization, partitioning, placement etc.</p></li>
-<li><p><strong>Composable architecture</strong>: AutoDist designs a flexible backend that encapsulates various different ML parallelization techniques and
-allows for composing distribution strategies that interpolate different distributed ML system architectures.</p></li>
+<li><p><strong>Composable architecture</strong>: AutoDist contains a flexible backend that can express various different ML parallelization techniques and
+allows for composing distribution strategies that blend different distributed ML system architectures.</p></li>
 <li><p><strong>Model and resource awareness</strong>: Based on the compilation process, AutoDist analyzes the model and generates more optimal distribution strategies that
-adapt to both the ML properties and the cluster specification.</p></li>
+adapt to both the model properties and the cluster specification.</p></li>
 </ul>
 <p>Besides all these advanced features, AutoDist is designed to isolate the sophistication of distributed systems
 from ML prototyping and exposes a simple API that makes it easy to use and switch between different distributed ML techniques
-for all-level users.</p>
+for users of all levels.</p>
 <p>For a closer look at the performance, please refer to our <a class="reference external" href="https://petuum.github.io/autodist/usage/performance.html">doc</a>.</p>
 </div>
 <div class="section" id="using-autodist">
@@ -273,7 +273,7 @@ for all-level users.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install autodist
 </pre></div>
 </div>
-<p>Modifying existing TensorFlow code to use AutoDist is easy.</p>
+<p>Modifying existing TensorFlow code to use AutoDist is easy:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">from</span> <span class="nn">autodist</span> <span class="kn">import</span> <span class="n">AutoDist</span>
 
@@ -281,14 +281,14 @@ for all-level users.</p>
 
 <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span><span class="o">.</span><span class="n">as_default</span><span class="p">(),</span> <span class="n">ad</span><span class="o">.</span><span class="n">scope</span><span class="p">():</span>
     <span class="c1">########################################################</span>
-    <span class="c1"># Build your (single-device) model here, </span>
+    <span class="c1"># Build your (single-device) model here,</span>
     <span class="c1">#   and train it distributedly.</span>
     <span class="c1">########################################################</span>
     <span class="n">sess</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">create_distributed_session</span><span class="p">()</span>
     <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Ready to try? Please refer to an intuitive example in our doc to <a class="reference external" href="https://petuum.github.io/autodist/usage/tutorials/getting-started.html">get started</a>.</p>
+<p>Ready to try? Please refer to the examples in our <a class="reference external" href="https://petuum.github.io/autodist/usage/tutorials/getting-started.html">Getting Started page</a>.</p>
 </div>
 <div class="section" id="references-acknowledgements">
 <h2>References &amp; Acknowledgements<a class="headerlink" href="#references-acknowledgements" title="Permalink to this headline">¶</a></h2>
@@ -296,7 +296,7 @@ for all-level users.</p>
 including
 <a class="reference external" href="https://github.com/horovod/horovod">Horovod</a>,
 <a class="reference external" href="https://github.com/snuspl/parallax">Parallax</a>,
-<a class="reference external" href="https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute">tf.distribute</a>.</p>
+and <a class="reference external" href="https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/distribute">tf.distribute</a>.</p>
 </div>
 </div>
 

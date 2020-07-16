@@ -244,20 +244,20 @@
             
   <div class="section" id="customize-a-strategy-builder">
 <h1>Customize a Strategy Builder<a class="headerlink" href="#customize-a-strategy-builder" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="closer-look-on-strategy">
-<h2>Closer Look on Strategy<a class="headerlink" href="#closer-look-on-strategy" title="Permalink to this headline">¶</a></h2>
-<p>In AutoDist, a strategy is a representation
-to instruct AutoDist to transform a single-node computational graph to
-be a distributed one.</p>
+<div class="section" id="a-closer-look-into-strategy">
+<h2>A Closer Look into Strategy<a class="headerlink" href="#a-closer-look-into-strategy" title="Permalink to this headline">¶</a></h2>
+<p>In AutoDist, a <code class="docutils literal notranslate"><span class="pre">Strategy</span></code> is a representation
+instructing AutoDist to transform a single-node computational graph into
+a distributed one.</p>
 <p>For more technical details,
 one can refer to the <a class="reference internal" href="../proto_docgen.html"><span class="doc">definition page</span></a>
-of strategy Protocol Buffer message.</p>
+of the <code class="docutils literal notranslate"><span class="pre">Strategy</span></code> Protocol Buffer message.</p>
 <p>Below is an intuitive example of a strategy for a computational graph
 with two variables <code class="docutils literal notranslate"><span class="pre">W:0</span></code> and <code class="docutils literal notranslate"><span class="pre">b:0</span></code>.  Each variable is assigned
-with a corresponding configured synchronizer with in the
+with a corresponding configured synchronizer within the
 <code><a class="reference external" href="../proto_docgen.html#autodist.proto.Strategy.Node">node_config</a></code> section;
 while the <code><a class="reference external" href="../proto_docgen.html#autodist.proto.Strategy.GraphConfig">graph_config</a></code>
-in the below example is configured to instructs the data-parallel <code class="docutils literal notranslate"><span class="pre">replicas</span></code> of the whole graph.</p>
+in the below example configures the data-parallel <code class="docutils literal notranslate"><span class="pre">replicas</span></code> of the whole graph.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node_config</span> <span class="p">{</span>
   <span class="n">var_name</span><span class="p">:</span> <span class="s2">&quot;W:0&quot;</span>
   <span class="n">PSSynchronizer</span> <span class="p">{</span>
@@ -272,7 +272,7 @@ in the below example is configured to instructs the data-parallel <code class="d
   <span class="p">}</span>
 <span class="p">}</span>
 <span class="n">graph_config</span> <span class="p">{</span>
-  <span class="n">replicas</span><span class="p">:</span> 
+  <span class="n">replicas</span><span class="p">:</span>
     <span class="p">[</span>
         <span class="s2">&quot;10.21.1.24:GPU:0&quot;</span><span class="p">,</span>
         <span class="s2">&quot;10.21.1.24:GPU:1&quot;</span><span class="p">,</span>
@@ -286,12 +286,12 @@ in the below example is configured to instructs the data-parallel <code class="d
 <div class="section" id="build-a-strategy">
 <h2>Build a Strategy<a class="headerlink" href="#build-a-strategy" title="Permalink to this headline">¶</a></h2>
 <p>If you understand the strategy representation above, you can create your own
-customized strategy builder
+customized <code class="docutils literal notranslate"><span class="pre">StrategyBuilder</span></code>
 just like the <a class="reference internal" href="choose-strategy.html"><span class="doc">built-in ones</span></a>.
 The customized strategy builder needs to follow the
 <code><a class="reference external" href="../../api/api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder">StrategyBuilder</a></code> abstraction,
 with a required interface <code class="docutils literal notranslate"><span class="pre">build</span></code>,
-which takes a <code><a class="reference internal" href="../../api/autodist.graph_item.html"><span class="doc">GraphItem</span></a></code> a
+which takes a <code><a class="reference internal" href="../../api/autodist.graph_item.html"><span class="doc">GraphItem</span></a></code> and a
 <code><a class="reference internal" href="../../api/autodist.resource_spec.html"><span class="doc">ResourceSpec</span></a></code> and returns a
 <code><a class="reference external" href="../../api/api/autodist.strategy.base.html#autodist.strategy.base.Strategy">Strategy</a></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">graph_item</span><span class="p">:</span> <span class="n">GraphItem</span><span class="p">,</span> <span class="n">resource_spec</span><span class="p">:</span> <span class="n">ResourceSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Strategy</span><span class="p">:</span>
@@ -313,7 +313,7 @@ all GPU devices for your data parallelism.</p></li>
 </div>
 <ul class="simple">
 <li><p>Before configuring nodes, for example, you can utilize the <code class="docutils literal notranslate"><span class="pre">graph_item</span></code> methods to list
-all variables that you want to configure; while utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to
+all variables that you want to configure or utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to
 prepare for where to put the variable states.</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">graph_item</span><span class="o">.</span><span class="n">get_trainable_variables</span><span class="p">()</span>
@@ -339,7 +339,7 @@ there are various choices of configurations listed here
 <span class="n">strategy</span><span class="o">.</span><span class="n">node_config</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">node_config</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Congratulations! You have successfully created your first strategy builder. AutoDist is flexible, allowing developers
+<p>Congratulations! You have successfully created your first <code class="docutils literal notranslate"><span class="pre">StrategyBuilder</span></code>. AutoDist is flexible, allowing developers
 to create different types of strategies based on the configuration spaces, and also for auto-learning a strategy.
 For more developments on strategies, you could refer to other <a class="reference internal" href="../../api/autodist.strategy.html"><span class="doc">built-in strategy builders</span></a>
 or our development reference to invent your own <a class="reference internal" href="../../api/autodist.kernel.html"><span class="doc">kernels</span></a>.</p>

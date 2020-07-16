@@ -247,36 +247,37 @@
 <ol>
 <li><p><strong>Does AutoDist support heterogeneous clusters?</strong></p>
 <blockquote>
-<div><p>Yes, it’s as straight-forward as the setup on homogeneous cluster.
-You could refer to <a class="reference internal" href="tutorials/multi-node.html"><span class="doc">Train on Multiple Nodes</span></a>.</p>
+<div><p>Yes, it’s as straight-forward as the setup on a homogeneous cluster.
+You can refer to <a class="reference internal" href="tutorials/multi-node.html"><span class="doc">Train on Multiple Nodes</span></a>.</p>
 </div></blockquote>
 </li>
 <li><p><strong>What device types does AutoDist support?</strong></p>
 <blockquote>
 <div><p>Currently AutoDist only supports strategies on <code class="docutils literal notranslate"><span class="pre">CPU</span></code> and <code class="docutils literal notranslate"><span class="pre">GPU</span></code> to be configured in
-the [resource specification]. But AutoDist is still actively improving this.</p>
+the [resource specification]. But we are still actively improving this.</p>
 </div></blockquote>
 </li>
-<li><p><strong>Why not support Eager mode?</strong></p>
+<li><p><strong>Why doesn’t AutoDist support Eager mode?</strong></p>
 <blockquote>
-<div><p>AutoDist design is based on transforming / compiling computation graph.
+<div><p>AutoDist’s design is based on transforming / compiling the computation graph.
 Although eager mode can still utilize <code class="docutils literal notranslate"><span class="pre">tf.function</span></code> for graph execution,
-it still requires more efforts to deal with variable states under
-eager mode to fit in the AutoDist stack, so we de-prioritized it
-but maybe support it in the future.</p>
+it requires more effort to deal with variable states under
+eager mode to fit in the AutoDist stack, so we de-prioritized it.
+We might support it in the future, though!</p>
 </div></blockquote>
 </li>
 <li><p><strong>Will AutoDist support PyTorch?</strong></p>
 <blockquote>
-<div><p>Since the architecture of AutoDist is based on graph transforming, while PyTorch does not offer
-static computational graph directly except TorchScript which is still in an early stage,
-AutoDist thus does not have plan to integrate the stack with PyTorch in the near future.</p>
+<div><p>The current architecture of AutoDist is based on graph transformations.
+At this time, PyTorch does not offer a good way to get a static computational graph directly
+(except TorchScript, which is still in an early stage),
+so we thus do not have plan to integrate the stack with PyTorch in the near future.</p>
 </div></blockquote>
 </li>
 <li><p><strong>Will there be Kubernetes integration?</strong></p>
 <blockquote>
 <div><p>AutoDist is integrated with Kubernetes internally in a Petuum closed-source product.
-Even so, one can still start with our <a class="reference internal" href="tutorials/docker.html"><span class="doc">running on docker</span></a>
+Even so, one can still start with our <a class="reference internal" href="tutorials/docker.html"><span class="doc">Running on Docker</span></a>
 instructions for containerization and orchestration.</p>
 </div></blockquote>
 </li>

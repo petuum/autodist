@@ -1,21 +1,21 @@
 # Customize a Strategy Builder
 
-## Closer Look on Strategy 
+## A Closer Look into Strategy
 
-In AutoDist, a strategy is a representation 
-to instruct AutoDist to transform a single-node computational graph to
-be a distributed one. 
+In AutoDist, a `Strategy` is a representation
+instructing AutoDist to transform a single-node computational graph into
+a distributed one.
 
 For more technical details,
-one can refer to the [definition page](../proto_docgen.md) 
-of strategy Protocol Buffer message.
+one can refer to the [definition page](../proto_docgen.md)
+of the `Strategy` Protocol Buffer message.
 
 Below is an intuitive example of a strategy for a computational graph
 with two variables `W:0` and `b:0`.  Each variable is assigned
-with a corresponding configured synchronizer with in the 
-<code>[node_config](../proto_docgen.html#autodist.proto.Strategy.Node)</code> section; 
+with a corresponding configured synchronizer within the
+<code>[node_config](../proto_docgen.html#autodist.proto.Strategy.Node)</code> section;
 while the <code>[graph_config](../proto_docgen.html#autodist.proto.Strategy.GraphConfig)</code>
-in the below example is configured to instructs the data-parallel `replicas` of the whole graph.
+in the below example configures the data-parallel `replicas` of the whole graph.
 
 ```
 node_config {
@@ -32,7 +32,7 @@ node_config {
   }
 }
 graph_config {
-  replicas: 
+  replicas:
     [
         "10.21.1.24:GPU:0",
         "10.21.1.24:GPU:1",
@@ -45,12 +45,12 @@ graph_config {
 ## Build a Strategy
 
 If you understand the strategy representation above, you can create your own
-customized strategy builder 
+customized `StrategyBuilder`
 just like the [built-in ones](choose-strategy.md).
-The customized strategy builder needs to follow the 
+The customized strategy builder needs to follow the
 <code>[StrategyBuilder](../../api/api/autodist.strategy.base.html#autodist.strategy.base.StrategyBuilder)</code> abstraction,
 with a required interface `build`,
-which takes a <code>[GraphItem](../../api/autodist.graph_item)</code> a
+which takes a <code>[GraphItem](../../api/autodist.graph_item)</code> and a
 <code>[ResourceSpec](../../api/autodist.resource_spec)</code> and returns a
 <code>[Strategy](../../api/api/autodist.strategy.base.html#autodist.strategy.base.Strategy)</code>.
 
@@ -63,21 +63,21 @@ def build(self, graph_item: GraphItem, resource_spec: ResourceSpec) -> Strategy:
 from autodist.strategy.base import Strategy
 strategy = Strategy()
 ```
-* Set configurations for the whole graph. For example, you can utilize the `resource_spec` properties to list 
+* Set configurations for the whole graph. For example, you can utilize the `resource_spec` properties to list
 all GPU devices for your data parallelism.
 ```python
 strategy.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
 ```
-* Before configuring nodes, for example, you can utilize the `graph_item` methods to list 
-all variables that you want to configure; while utilize the `resource_spec` properties to
+* Before configuring nodes, for example, you can utilize the `graph_item` methods to list
+all variables that you want to configure or utilize the `resource_spec` properties to
 prepare for where to put the variable states.
 ```python
 variables = graph_item.get_trainable_variables()
 reduction_devices = [k for k, _ in resource_spec.cpu_devices][0:1]
 ```
 * Set configurations for variable nodes. Besides the below example,
-there are various choices of configurations listed here 
-<code>[strategy_pb2.Strategy.Node](../proto_docgen.html#autodist.proto.Strategy.Node)</code> section.  
+there are various choices of configurations listed here
+<code>[strategy_pb2.Strategy.Node](../proto_docgen.html#autodist.proto.Strategy.Node)</code> section.
 ```python
 from autodist.proto import strategy_pb2
 node_config = []
@@ -93,7 +93,7 @@ for var in variables:
 strategy.node_config.extend(node_config)
 ```
 
-Congratulations! You have successfully created your first strategy builder. AutoDist is flexible, allowing developers
+Congratulations! You have successfully created your first `StrategyBuilder`. AutoDist is flexible, allowing developers
 to create different types of strategies based on the configuration spaces, and also for auto-learning a strategy.
 For more developments on strategies, you could refer to other [built-in strategy builders](../../api/autodist.strategy)
 or our development reference to invent your own [kernels](../../api/autodist.kernel).
