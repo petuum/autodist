@@ -24,7 +24,7 @@ Besides all these advanced features, AutoDist is designed to isolate the sophist
 from ML prototyping and exposes a simple API that makes it easy to use and switch between different distributed ML techniques 
 for all-level users.
 
-<p float="left"><img src="docs/_static/img/Figure1.png" width=400 /><img src="docs/_static/img/Figure2.png" width=400 /></p>
+<p align="center"><img src="docs/_static/img/Figure1.png" width=400 /><img src="docs/_static/img/Figure2.png" width=400 /></p>
 
 For a closer look at the performance, please refer to our [doc](https://petuum.github.io/autodist/usage/performance.html).
 
@@ -52,7 +52,7 @@ with tf.Graph().as_default(), ad.scope():
     sess = ad.create_distributed_session()
     sess.run(...)
 ```
-Ready to try? Please refer to an intuitive example in our doc to [get started].(https://petuum.github.io/autodist/usage/tutorials/getting-started.html).
+Ready to try? Please refer to an intuitive example in our doc to [get started](https://petuum.github.io/autodist/usage/tutorials/getting-started.html).
 ## References & Acknowledgements
 
 We learned and borrowed insights from a few open source projects 
