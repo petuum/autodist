@@ -12,6 +12,7 @@ cases = [
     "c3",  # Numpy basics
     "c4",  # Control flow while_loop
     "c9",  # Staleness
+    "c10"  # Test saver working on NFS
 ]
 
 resource_specs = [
