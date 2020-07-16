@@ -16,7 +16,6 @@ assignees: ''
 - TensorFlow version:
 - Python version:
 - GCC/Compiler version (if compiling from source):
-- MPI version:
 - CUDA version:
 - NCCL version:
 - cuDNN version:
