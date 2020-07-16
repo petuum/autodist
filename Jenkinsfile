@@ -2,6 +2,7 @@ def myflag = false
 
 pipeline {
     options {
+        disableConcurrentBuilds()
         timeout(time: 2, unit: 'HOURS')
     }
 
