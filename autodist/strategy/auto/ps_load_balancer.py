@@ -1,3 +1,19 @@
+# Copyright 2020 Petuum. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""PS load balancers."""
+
 from collections import OrderedDict
 
 import numpy as np
@@ -9,7 +25,19 @@ def calcuate_entropy(loads):
     entropy = - np.sum(distribution * np.log2(distribution))
     return entropy
 
+
 def greedy_load_balancer(ps_shards, resource_spec, var_helpers, sort_by_size=False):
+    """
+    A greedy load balancer that places the next largest load on the least loaded server.
+    Args:
+        ps_shards:
+        resource_spec:
+        var_helpers:
+        sort_by_size:
+
+    Returns:
+
+    """
     # no randomness
     assignments = {}
     reduction_device_names = [k for k, _ in resource_spec.cpu_devices]
@@ -27,7 +55,22 @@ def greedy_load_balancer(ps_shards, resource_spec, var_helpers, sort_by_size=Fal
         loads[destination] += var_helpers[shard_name].byte_size
     return assignments
 
+
 def christy_load_balancer(ps_shards, resource_spec, var_helpers, sort_by_size=False):
+    """
+    A randomized greedy load balancer. It places the variable by sampling from a multinomial distribution
+    correlated with their current load status -- node with least loads will have highest probability being
+    sampled.
+
+    Args:
+        ps_shards:
+        resource_spec:
+        var_helpers:
+        sort_by_size:
+
+    Returns:
+
+    """
     # Sample destination based on a distributed calculated based on loads and available bandwidth
     reduction_device_names = [k for k, _ in resource_spec.cpu_devices]
     loads = {ps: 0.0 for ps in reduction_device_names}
@@ -64,4 +107,3 @@ def christy_load_balancer(ps_shards, resource_spec, var_helpers, sort_by_size=Fa
     # best_entropy = calcuate_entropy(balanced_loads)
     # print('entropy {} vs. max entropy {}'.format(entropy, best_entropy))
     return assignments
-

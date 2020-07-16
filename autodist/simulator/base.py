@@ -203,52 +203,52 @@ class SimulatorBase:
                 meta[var_meta.name] = var_meta
         return meta, resource
 
-    def extract_pre_feature_legacy(self, strategy):
-        """Don't use now!!!"""
-        meta = defaultdict()
-        for node in strategy.node_config:
-            var_name = node.var_name
-            for var_op, var in self._original_graph_item.trainable_var_op_to_var.items():
-                if var.name == var_name:
-                    break
-            var_op_name = var_op.name
-            var_helper = VariableHelper(var, self._original_graph_item)
-            synchronizer = getattr(node, node.WhichOneof('synchronizer'))
-            compressor = getattr(synchronizer, 'compressor', None)
-            if compressor is not None:
-                compressor = AllReduceSynchronizer.Compressor.Name(compressor)
-            reduction_destinations = getattr(synchronizer, 'reduction_destinations', None)
-            if not reduction_destinations or len(reduction_destinations) <= 1:
-                # this variable is not partitioned
-                device = reduction_destinations[0] if reduction_destinations else var.device
-                var_meta = Var(name=var_name,
-                               is_sparse=var_helper.is_sparse,
-                               shape=var_helper.shape,
-                               dtype=var_helper.dtype,
-                               synchronizer=synchronizer,
-                               compressor=compressor,
-                               device=device)
-                meta[var_meta.name] = var_meta
-            else:
-                # this variable is partitioned
-                num_partitions = len(reduction_destinations)
-                partition_list = [1] * len(var_helper.shape)
-                partition_list[0] = num_partitions
-                pc = PartitionerConfig(partition_list=partition_list)
-                for i, device in enumerate(reduction_destinations):
-                    part_helper = PartHelper(i, var, pc)
-                    part_meta = Partition(name='{}/part_{}:0'.format(var_op_name, i),
-                                          is_sparse=var_helper.is_sparse,
-                                          shape=part_helper.shape,
-                                          dtype=var_helper.dtype,
-                                          synchronizer=synchronizer,
-                                          part_id=i,
-                                          partition_str=pc.partition_str,
-                                          original_shape=var_helper.shape,
-                                          compressor=compressor,
-                                          device=device)
-                    meta[part_meta.name] = part_meta
-        return meta
+    # def extract_pre_feature_legacy(self, strategy):
+    #     """Don't use now!!!"""
+    #     meta = defaultdict()
+    #     for node in strategy.node_config:
+    #         var_name = node.var_name
+    #         for var_op, var in self._original_graph_item.trainable_var_op_to_var.items():
+    #             if var.name == var_name:
+    #                 break
+    #         var_op_name = var_op.name
+    #         var_helper = VariableHelper(var, self._original_graph_item)
+    #         synchronizer = getattr(node, node.WhichOneof('synchronizer'))
+    #         compressor = getattr(synchronizer, 'compressor', None)
+    #         if compressor is not None:
+    #             compressor = AllReduceSynchronizer.Compressor.Name(compressor)
+    #         reduction_destinations = getattr(synchronizer, 'reduction_destinations', None)
+    #         if not reduction_destinations or len(reduction_destinations) <= 1:
+    #             # this variable is not partitioned
+    #             device = reduction_destinations[0] if reduction_destinations else var.device
+    #             var_meta = Var(name=var_name,
+    #                            is_sparse=var_helper.is_sparse,
+    #                            shape=var_helper.shape,
+    #                            dtype=var_helper.dtype,
+    #                            synchronizer=synchronizer,
+    #                            compressor=compressor,
+    #                            device=device)
+    #             meta[var_meta.name] = var_meta
+    #         else:
+    #             # this variable is partitioned
+    #             num_partitions = len(reduction_destinations)
+    #             partition_list = [1] * len(var_helper.shape)
+    #             partition_list[0] = num_partitions
+    #             pc = PartitionerConfig(partition_list=partition_list)
+    #             for i, device in enumerate(reduction_destinations):
+    #                 part_helper = PartHelper(i, var, pc)
+    #                 part_meta = Partition(name='{}/part_{}:0'.format(var_op_name, i),
+    #                                       is_sparse=var_helper.is_sparse,
+    #                                       shape=part_helper.shape,
+    #                                       dtype=var_helper.dtype,
+    #                                       synchronizer=synchronizer,
+    #                                       part_id=i,
+    #                                       partition_str=pc.partition_str,
+    #                                       original_shape=var_helper.shape,
+    #                                       compressor=compressor,
+    #                                       device=device)
+    #                 meta[part_meta.name] = part_meta
+    #     return meta
 
     def setup_resource(self, resource_spec: ResourceSpec):
         cluster = SSHCluster(resource_spec)
