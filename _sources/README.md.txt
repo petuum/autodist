@@ -8,9 +8,7 @@
 [Documentation](https://petuum.github.io/autodist) |
 [Examples](https://github.com/petuum/autodist/tree/master/examples/benchmark)
 
-**AutoDist** is a distributed deep-learning training engine. 
-AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models 
-across many GPUs with scalability and minimal code change.
+**AutoDist** is a distributed deep learning training engine for TensorFlow. AutoDist provides a user-friendly interface to distribute the training of a wide variety deep learning models across many GPUs with scalability and minimal code change.
 
 ## Introduction
 Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
@@ -53,7 +51,7 @@ with tf.Graph().as_default(), ad.scope():
     sess = ad.create_distributed_session()
     sess.run(...)
 ```
-
+Ready to try? Please refer to an intuitive example in our doc to [get started].(https://petuum.github.io/autodist/usage/tutorials/getting-started.html).
 ## References & Acknowledgements
 
 We learned and borrowed insights from a few open source projects 
