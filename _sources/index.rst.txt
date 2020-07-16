@@ -10,6 +10,7 @@ Welcome to AutoDist!
 AutoDist is a distributed deep-learning training engine.
 AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models
 across many GPUs with scalability and minimal code change.
+View source on `GitHub <https://github.com/petuum/autodist>`_.
 
 .. toctree::
    :titlesonly:
