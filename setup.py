@@ -75,7 +75,6 @@ setup(
         "protobuf==3.11.0",
         "pyyaml",
         # "tensorflow-gpu>=1.15,<=2.1",  # TF Version dynamic check at importing
-        "gast==0.2.2",
     ],
     extras_require={
         'dev': [
