@@ -88,5 +88,6 @@ class ENV(Enum):
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
 
+
 # An indicator for saver on NFS
 ONLY_MASTER_SAVE = not bool(ENV.AUTODIST_WORKER.val)
