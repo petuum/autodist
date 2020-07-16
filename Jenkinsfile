@@ -101,9 +101,9 @@ pipeline {
                         echo "${flagChiefDone}"
                     }
                     post {
-                        script {flagChiefDone = true}
-                        echo "${flagChiefDone}"
                         always {
+                            script {flagChiefDone = true}
+                            echo "${flagChiefDone}"
                             junit allowEmptyResults: true, testResults: 'tests/test_dist.xml'
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_chief'
                         }
