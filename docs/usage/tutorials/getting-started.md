@@ -7,7 +7,7 @@ We recommended reviewing the [TensorFlow Quickstart Guide](https://www.tensorflo
 particularly the difference between eager and graph mode. 
 If you can run the [Quickstart](https://www.tensorflow.org/tutorials/quickstart/advanced) properly, you can use the same environment to follow this tutorial.
 
-AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.1`. Install the downloaded wheel file by
+AutoDist currently supports `Python>=3.6` with `tensorflow>=1.15, <=2.2`. Install the downloaded wheel file by
 
 ```bash
 pip install autodist

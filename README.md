@@ -11,8 +11,6 @@
 AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models 
 across many GPUs with scalability and minimal code change.
 
-AutoDist has been tested with TensorFlow versions 1.15 through 2.1. 
-
 ## Introduction
 Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
 AutoDist achieves this goal by:
@@ -28,6 +26,8 @@ from ML prototyping and exposes a simple API that makes it easy to use and switc
 for all-level users.
 
 <p float="left"><img src="docs/_static/img/Figure1.png" width=400 /><img src="docs/_static/img/Figure2.png" width=400 /></p>
+
+For a closer look at the performance, please refer to our [doc](https://petuum.github.io/autodist/usage/performance.html).
 
 ## Using AutoDist
 
