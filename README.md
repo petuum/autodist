@@ -1,8 +1,9 @@
 
 <p align="center"><img src="docs/_static/img/logo.png" width=400 /></p>
 
-[![pipeline status](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastCompletedBuild/api/json&label=build&query=$.result&color=informational)](https://github.com/petuum/autodist/commits/master)
-[![coverage report](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&label=coverage&query=$.total_coverage_pct&color=9cf)](https://github.com/petuum/autodist/commits/master)
+[![pipeline status](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastCompletedBuild/api/json&label=build&query=$.result&color=informational)](https://jenkins.petuum.io/job/AutoDist/job/master/)
+[![coverage report](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&label=coverage&query=$.total_coverage_pct&color=green)](https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/)
+[![pypi version](https://img.shields.io/pypi/v/autodist?color=9cf)](https://pypi.org/project/autodist/)
 
 [Documentation](https://petuum.github.io/autodist) |
 [Examples](https://github.com/petuum/autodist/tree/master/examples/benchmark)
@@ -10,8 +11,6 @@
 **AutoDist** is a distributed deep-learning training engine. 
 AutoDist provides a user-friendly interface to distribute the training of a wide variety of deep learning models 
 across many GPUs with scalability and minimal code change.
-
-AutoDist has been tested with TensorFlow versions 1.15 through 2.1. 
 
 ## Introduction
 Different from specialized distributed ML systems, AutoDist is created to speed up a broad range of DL models with excellent all-around performance.
@@ -28,6 +27,8 @@ from ML prototyping and exposes a simple API that makes it easy to use and switc
 for all-level users.
 
 <p float="left"><img src="docs/_static/img/Figure1.png" width=400 /><img src="docs/_static/img/Figure2.png" width=400 /></p>
+
+For a closer look at the performance, please refer to our [doc](https://petuum.github.io/autodist/usage/performance.html).
 
 ## Using AutoDist
 
