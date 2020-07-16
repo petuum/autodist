@@ -1,8 +1,8 @@
 # Overview
 
 
-[![pipeline status](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastBuild/api/json&label=build&query=$.result&color=important)](https://github.com/petuum/autodist/commits/master)
-[![coverage report](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&label=coverage&query=$.total_coverage_pct&color=important)](https://github.com/petuum/autodist/commits/master)
+[![pipeline status](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastCompletedBuild/api/json&label=build&query=$.result&color=informational)](https://github.com/petuum/autodist/commits/master)
+[![coverage report](https://img.shields.io/badge/dynamic/json?url=https://jenkins.petuum.io/job/AutoDist/job/master/lastSuccessfulBuild/artifact/coverage-report/jenkinscovdata.json&label=coverage&query=$.total_coverage_pct&color=9cf)](https://github.com/petuum/autodist/commits/master)
 
 [Documentation](https://petuum.github.io/autodist) |
 [Examples](https://github.com/petuum/autodist/tree/master/examples/benchmark)
