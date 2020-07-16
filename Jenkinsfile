@@ -57,7 +57,7 @@ pipeline {
                     }
                     steps{
                         // .. remove "--run-integration" to have a mini test ..
-                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py test_device_spec.py && mv .coverage .coverage.local.tf1"
+                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf1"
                     }
                     post {
                         always {
@@ -77,7 +77,7 @@ pipeline {
                     }
                     steps{
                         // .. remove "--run-integration" to have a mini test ..
-                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py test_device_spec.py && mv .coverage .coverage.local.tf2"
+                        sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf2"
                     }
                     post {
                         always {
