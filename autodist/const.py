@@ -90,4 +90,4 @@ class ENV(Enum):
 
 
 # An indicator for saver on NFS
-ONLY_MASTER_SAVE = not bool(ENV.AUTODIST_WORKER.val)
+AUTODIST_ONLY_MASTER_SAVE = not bool(ENV.AUTODIST_WORKER.val)

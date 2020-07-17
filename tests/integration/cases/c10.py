@@ -2,7 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from autodist.const import ENV, ONLY_MASTER_SAVE
+from autodist.const import ENV, AUTODIST_ONLY_MASTER_SAVE
 from autodist.checkpoint.saver import Saver
 from autodist.strategy import AllReduce, Parallax, PartitionedAR, RandomAxisPartitionAR
 
@@ -76,7 +76,7 @@ def main(autodist):
         # Only save the model on master node if autodist is used with NFS.
         checkpoint_suffix = 'c10'
         checkpoint_name = checkpoint_dir + checkpoint_suffix
-        if ONLY_MASTER_SAVE:
+        if AUTODIST_ONLY_MASTER_SAVE:
             saver.save(session, checkpoint_name, global_step=epoch)
             print('Checkpoint saved at {%s}' % checkpoint_name)
         else:
