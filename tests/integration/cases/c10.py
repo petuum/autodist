@@ -2,6 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
+from autodist.autodist import IS_AUTODIST_CHIEF
 from autodist.const import ENV, AUTODIST_ONLY_MASTER_SAVE
 from autodist.checkpoint.saver import Saver
 from autodist.strategy import AllReduce, Parallax, PartitionedAR, RandomAxisPartitionAR
@@ -84,7 +85,7 @@ def main(autodist):
 
         # check the checkpoint existence only on master node
         checkpoint = checkpoint_name + '-' + str(epoch)
-        if autodist.IS_AUTODIST_CHIEF:
+        if IS_AUTODIST_CHIEF:
             assert(os.path.exists(checkpoint + '.meta')) # meta file
             assert(os.path.exists(checkpoint + '.index'))  # meta file
             assert(os.path.exists(checkpoint + '.data-00000-of-00001'))  # meta file
