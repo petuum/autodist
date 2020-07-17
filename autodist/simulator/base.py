@@ -1,24 +1,31 @@
+# Copyright 2020 Petuum. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Strategy Simulator."""
-import time
+
 from collections import defaultdict
-import numpy as np
 
-import tensorflow as tf
-from tensorflow.python.client import timeline
+from autodist.cluster import SSHCluster
+from autodist.graph_item import GraphItem
+from autodist.kernel.device.resolver import DeviceResolver
+from autodist.kernel.partitioner import PartitionerConfig
+from autodist.resource_spec import ResourceSpec
+from autodist.strategy.base import Strategy
+from autodist.simulator.utils import _resolve_device_address, GIGABITS, _max_num_local_replica, _num_local_replica
+from autodist.strategy.auto.strategy_sampler import VariableHelper, PartHelper
+from autodist.simulator.utils import INFINITY
 
-from arion.simulator.utils import NUM_RUNS
-from arion.cluster import SSHCluster
-from arion.graph_item import GraphItem
-from arion.kernel.device.resolver import DeviceResolver
-from arion.kernel.partitioner import PartitionerConfig
-from arion.proto.synchronizers_pb2 import AllReduceSynchronizer
-from arion.resource_spec import ResourceSpec
-from arion.strategy.base import Strategy
-from arion.simulator.utils import _resolve_device_address, GIGABITS, _max_num_local_replica, _num_local_replica
-from arion.strategy.random_sample_strategy import VariableHelper, PartHelper
-from arion.simulator.utils import INFINITY
-
-# tf.compat.v1.disable_eager_execution()
 
 class Var:
     def __init__(self,
@@ -310,97 +317,3 @@ class SimulatorBase:
     @property
     def original_graph_item_path(self):
         return self._original_graph_item_path
-
-    # @property
-    # def resource_file(self):
-    #     return self._resource_file
-
-    @staticmethod
-    def calculate_op_timings(fetches):
-        # Simple implementation. Calculate averaged run time of certain steps.
-        init_op = tf.compat.v1.initialize_all_variables()
-        outside_times = []
-
-        with tf.compat.v1.Session() as sess:
-            sess.run(init_op)
-            for i in range(NUM_RUNS):
-                start = time.time()
-                sess.run(fetches)
-                end = time.time()
-                outside_times.append(end - start)
-        comp_time_in_sec = np.mean(np.array(outside_times[1:]))
-        return comp_time_in_sec
-
-    @staticmethod
-    def profile_on_single_machine(fetches):
-        # calculate computation time of every op
-        init_op = tf.compat.v1.initialize_all_variables()
-        op_name2runtime = defaultdict(list)
-        outside_times = []
-        all_times = []
-
-        options = tf.compat.v1.RunOptions(trace_level=tf.compat.v1.RunOptions.FULL_TRACE)
-        run_metadata = tf.compat.v1.RunMetadata()
-        with tf.compat.v1.Session() as sess:
-            sess.run(init_op)
-            for i in range(NUM_RUNS):
-                start = time.time() * 1000
-                sess.run(fetches)
-                end = time.time() * 1000
-                outside_times.append(end - start)
-
-                sess.run(fetches, options=options, run_metadata=run_metadata)
-
-                fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-                chrome_trace = fetched_timeline.generate_chrome_trace_format()  # necessary
-                for event in fetched_timeline._chrome_trace._events:
-                    # print('\n')
-                    # print(list(event.keys()))
-                    # for key in list(event.keys()):
-                    #     print(key, event[key])
-                    if 'dur' in event:
-                        op_name2runtime[event['args']['name']].append(event['dur'])
-                    # todo: to be more accurate, add tid (thread/lanes id)
-
-        mean_outside_time = np.mean(np.array(outside_times[1:]))
-        print('mean outside_times: ', mean_outside_time)
-        print(outside_times)
-        # print('average all_times: ', np.mean(np.array(all_times)))
-
-        op_name2meanruntime = {}
-        for op_name, runtimes in op_name2runtime.items():
-            runtimes = np.array(runtimes)
-            if len(runtimes) > 1:  # Do not compute operations that only run once for all steps.
-                mean = np.mean(np.array(runtimes[1:]))
-                op_name2meanruntime[op_name] = mean
-                print(op_name, mean)
-                # print(op_name2runtime[op_name])
-
-        total_op_time = sum([mean_runtime for op_name, mean_runtime in op_name2meanruntime.items()])
-        print('total_op_time', total_op_time / 1000.)
-        # total_op_time = [sum([runtime[i] for op_name, runtime in op_name2runtime.items()])
-        # for i in range(self.num_runs)]
-        # print('total_op_time', np.mean(np.array(total_op_time)), total_op_time)
-
-        return mean_outside_time
-
-    # @staticmethod
-    # def _calculate_op_timings(graph_item: GraphItem):
-    #     """
-    #     Given a graph, calculates an expected running time for each (op, input_size) pair.
-    #
-    #     Args:
-    #         graph_item (GraphItem): The input graph.
-    #
-    #     Returns:
-    #         Dict mapping (op, input_size) to time.
-    #     """
-    #     all_ops = {}
-    #     for op in graph_item.graph.get_operations():
-    #         input_shapes = tuple((tuple(inp.shape.dims) for inp in op.inputs))
-    #         op_type = op.type
-    #         all_ops[(op_type, input_shapes)] = ops.Graph()
-    #
-    #     for ((op, shape), graph) in all_ops.items():
-    #         with graph.as_default():
-    #             getattr(tensorflow.raw_ops, op)
