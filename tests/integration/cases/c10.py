@@ -70,13 +70,13 @@ def main(autodist):
             W_val, b_val = session.run([W, b])
 
         # Try to save the two variables
-        checkpoint_dir = '/tmp/ckpt/'
+        checkpoint_dir = '/tmp/ckpt_c10/'
         if not os.path.exists(checkpoint_dir):
             os.mkdir(checkpoint_dir)
         # Only save the model on master node if autodist is used with NFS.
+        checkpoint_suffix = 'c10'
+        checkpoint_name = checkpoint_dir + checkpoint_suffix
         if ONLY_MASTER_SAVE:
-            checkpoint_suffix = 'c0'
-            checkpoint_name = checkpoint_dir + checkpoint_suffix
             saver.save(session, checkpoint_name, global_step=epoch)
             print('Checkpoint saved at {%s}' % checkpoint_name)
         else:
