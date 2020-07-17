@@ -106,15 +106,15 @@ More detailed usage, can be found [here](https://github.com/petuum/autodist/blob
 
 ## Save model on NFS
 
-AudoDist provides a saving indicator for users who want to save their models on NFS(Network File System) to avoid model writing conflict. It works for both `saver` and `SavedModelBuilder` introduced above.
+AudoDist provides a saving indicator for users who want to save their models on NFS(Network File System) to avoid model writing conflict. This is because some of the NFS systems don't support file locking and the saver in each node might save the model to the same file simultaneously. It works for both `saver` and `SavedModelBuilder` introduced above. Here is an example:
 
 ```
-from autodist.const import AUTODIST_ONLY_MASTER_SAVE
+from autodist.autodist import IS_AUTODIST_CHIEF
 
 # Some training code
 ...
 
-if AUTODIST_ONLY_MASTER_SAVE:
+if IS_AUTODIST_CHIEF:
     saver.save(session, checkpoint_name, global_step=epoch)
     print('Checkpoint saved at {%s}' % checkpoint_name)
 else:

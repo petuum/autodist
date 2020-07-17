@@ -87,7 +87,3 @@ class ENV(Enum):
         # pylint: disable=invalid-envvar-value, unpacking-non-sequence
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
-
-
-# An indicator for saver on NFS
-AUTODIST_ONLY_MASTER_SAVE = not bool(ENV.AUTODIST_WORKER.val)
