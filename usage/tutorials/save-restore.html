@@ -335,8 +335,24 @@ Just like the <code class="docutils literal notranslate"><span class="pre">saver
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loss: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>We don’t need to build our model in this case, because the model graph is loaded from the serialized data.</p>
-<p>More detailed usage, can be found <a class="reference external" href="https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_saved_model.py">here</a>.</p>
+<p>We don’t need to build our model in this case, because the model graph is loaded from the serialized data.
+More detailed usage, can be found <a class="reference external" href="https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_saved_model.py">here</a>.</p>
+</div>
+<div class="section" id="save-model-on-nfs">
+<h2>Save model on NFS<a class="headerlink" href="#save-model-on-nfs" title="Permalink to this headline">¶</a></h2>
+<p>AudoDist provides a saving indicator for users who want to save their models on NFS(Network File System) to avoid model writing conflict. This is because some of the NFS systems don’t support file locking and the saver in each node might save the model to the same file simultaneously. It works for both <code class="docutils literal notranslate"><span class="pre">saver</span></code> and <code class="docutils literal notranslate"><span class="pre">SavedModelBuilder</span></code> introduced above. Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autodist.autodist</span> <span class="kn">import</span> <span class="n">IS_AUTODIST_CHIEF</span>
+
+<span class="c1"># Some training code</span>
+<span class="o">...</span>
+
+<span class="k">if</span> <span class="n">IS_AUTODIST_CHIEF</span><span class="p">:</span>
+    <span class="n">saver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">checkpoint_name</span><span class="p">,</span> <span class="n">global_step</span><span class="o">=</span><span class="n">epoch</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checkpoint saved at {</span><span class="si">%s</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="n">checkpoint_name</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Skip saving on worker nodes.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 </div>
 

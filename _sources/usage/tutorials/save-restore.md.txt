@@ -14,7 +14,6 @@ AutoDist provides a `saver`, which is a wrapper of the original Tensorflow Saver
 from autodist.checkpoint.saver import Saver as autodist_saver
 ...
 
-
 # Build your model
 model = get_your_model()
 
@@ -103,6 +102,22 @@ with tf.compat.v1.Session() as sess:
 ```
 
 We don't need to build our model in this case, because the model graph is loaded from the serialized data.
-
-
 More detailed usage, can be found [here](https://github.com/petuum/autodist/blob/master/tests/checkpoint/test_saved_model.py).
+
+## Save model on NFS
+
+AudoDist provides a saving indicator for users who want to save their models on NFS(Network File System) to avoid model writing conflict. This is because some of the NFS systems don't support file locking and the saver in each node might save the model to the same file simultaneously. It works for both `saver` and `SavedModelBuilder` introduced above. Here is an example:
+
+```
+from autodist.autodist import IS_AUTODIST_CHIEF
+
+# Some training code
+...
+
+if IS_AUTODIST_CHIEF:
+    saver.save(session, checkpoint_name, global_step=epoch)
+    print('Checkpoint saved at {%s}' % checkpoint_name)
+else:
+    print("Skip saving on worker nodes.")
+
+```
