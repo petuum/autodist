@@ -1,18 +1,31 @@
-"""Strategy Simulator."""
+# Copyright 2020 Petuum. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import numpy as np
-import json
+"""Predefined simulator with linear model."""
+
 import pickle as pkl
 
 import tensorflow as tf
 from tensorflow.python.eager import context
 
-from arion.strategy.base import Strategy
-from arion.resource_spec import ResourceSpec
-from arion.proto.synchronizers_pb2 import PSSynchronizer, AllReduceSynchronizer
-from arion.simulator.models.base import SimulatorBase
-from arion.simulator.utils import _resolve_device_address, _resolved_devices_on_diff_machine, \
+from autodist.proto.synchronizers_pb2 import PSSynchronizer, AllReduceSynchronizer
+from autodist.resource_spec import ResourceSpec
+from autodist.simulator.base import SimulatorBase
+from autodist.simulator.utils import _resolved_devices_on_diff_machine, \
 	get_dense_var_bits, get_sparse_var_bits
+from autodist.strategy.base import Strategy
+
 
 class PredefinedSimulator(SimulatorBase):
 	"""Simulates strategies for a given graph and resource spec."""

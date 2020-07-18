@@ -1,18 +1,34 @@
+# Copyright 2020 Petuum. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Simulator-related utility functions."""
+
 import glob
 import json
 import os
 import numpy as np
 
-import tensorflow_ranking as tfr
 import tensorflow as tf
 from tensorflow.python.framework import device_spec
+import tensorflow_ranking as tfr
 
-from arion.utils import logging
-from arion.resource_spec import ResourceSpec
-from arion.strategy.base import Strategy
-from arion.const import DEFAULT_RUNTIME_SERIALIZATION_DIR, DEFAULT_SERIALIZATION_DIR, \
+from autodist.utils import logging
+from autodist.resource_spec import ResourceSpec
+from autodist.strategy.base import Strategy
+from autodist.const import DEFAULT_RUNTIME_SERIALIZATION_DIR, DEFAULT_SERIALIZATION_DIR, \
     DEFAULT_STRATEGY_JSON_SERIALIZATION_DIR, DEFAULT_RESOURCE_SERIALIZATION_DIR
-from arion.kernel.device.resolver import DeviceResolver
+from autodist.kernel.device.resolver import DeviceResolver
 
 
 RankingLossKeys = {
@@ -268,7 +284,7 @@ NUM_RUNS = 500
 
 
 def pad_list(l, max_len):
-	return l + [0.0] * (max_len - len(l))
+    return l + [0.0] * (max_len - len(l))
 
 
 def get_dtype_bits(dtype):

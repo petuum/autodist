@@ -27,6 +27,7 @@ from autodist.strategy.auto.ps_load_balancer import greedy_load_balancer, christ
 from autodist.strategy.auto.ar_group_assigner import chunk_group_assigner, christy_group_assigner, \
     ordered_balanced_group_assigner
 from autodist.strategy.auto import sample_util
+from autodist.const import MAX_INT32
 
 
 class VarType(Enum):
@@ -179,7 +180,7 @@ class PartHelper:
                * float(self.shape[self.pc.axis]) / float(self.var_shape[self.pc.axis])
 
 
-class RandomStrategySampler(StrategyBuilder):
+class RandomStrategySampler():
     """
     Random Strategy Sampler.
 
@@ -200,10 +201,6 @@ class RandomStrategySampler(StrategyBuilder):
             raise ValueError('Heuristic to guide strategy sampling is not provided.')
         self.space = space
         self.heuristics = heuristics
-        self.helpers = {}
-
-    def reset(self):
-        """Reset the helpers every time a strategy is sampled."""
         self.helpers = {}
 
     def build(self, graph_item, resource_spec):
@@ -250,7 +247,12 @@ class RandomStrategySampler(StrategyBuilder):
         sample_group_and_reduction_destinations(node_config, resource_spec, self.helpers, self.heuristics)
 
         expr.node_config.extend(node_config)
+        self._reset()
         return expr
+
+    def _reset(self):
+        """Reset the helpers every time a strategy is sampled."""
+        self.helpers = {}
 
 
 def sample_if_partition(var_helper, resource_spec, space, heuristics):
@@ -650,3 +652,25 @@ def assign_ar_group(node_config, ar_shards):
             synchronizer = getattr(node, node.WhichOneof('synchronizer'))
             if hasattr(synchronizer, 'compressor'):
                 synchronizer.group = ar_shards[node.var_name][1]
+
+
+default_space = {
+    'synchronizer_types': ['PS', 'AR'],
+    'maybe_partition': [True, False],
+    'compressor': ['HorovodCompressor', 'NoneCompressor', 'HorovodCompressorEF'],
+    'local_replication': [False],
+    'partitionable_axis': []
+}
+
+
+default_heuristics = {
+    'ps_load_balancer': None, # None, 'christy', 'greedy', 'LP'
+    'merge_scheme': None,  # random, by_chunk, christy, ordered_balanced
+    'chunk_size': -1,
+    'num_group_bounds': [-1, MAX_INT32],
+    'maybe_partition_bounds': [0, MAX_INT32],
+    'maybe_partition_by_size': None,
+    'num_partition_bounds': [2, MAX_INT32],
+    'enable_single_node_no_partition': False,
+    'same_synchronizer_for_parts': False,
+}
