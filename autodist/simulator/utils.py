@@ -26,8 +26,8 @@ import tensorflow_ranking as tfr
 from autodist.utils import logging
 from autodist.resource_spec import ResourceSpec
 from autodist.strategy.base import Strategy
-from autodist.const import DEFAULT_RUNTIME_SERIALIZATION_DIR, DEFAULT_SERIALIZATION_DIR, \
-    DEFAULT_STRATEGY_JSON_SERIALIZATION_DIR, DEFAULT_RESOURCE_SERIALIZATION_DIR
+# from autodist.const import DEFAULT_RUNTIME_SERIALIZATION_DIR, DEFAULT_SERIALIZATION_DIR, \
+#     DEFAULT_STRATEGY_JSON_SERIALIZATION_DIR, DEFAULT_RESOURCE_SERIALIZATION_DIR
 from autodist.kernel.device.resolver import DeviceResolver
 
 
@@ -281,6 +281,7 @@ DTYPE2BITS = {
 GIGABITS = np.float(1e+9)
 INFINITY = 1e+9
 NUM_RUNS = 500
+GPU_TO_CPU_BANDWIDTH = 1000 # Gbps
 
 
 def pad_list(l, max_len):
@@ -308,40 +309,40 @@ def _resolved_devices_on_diff_machine(device1, device2):
     return node1 != node2
 
 
-def _resolve_device_address(device: str, device_resolver: DeviceResolver):
-    # change real ip address to /job:worker/task:0
-    if not device:
-        return device
-    parts = device.split(':')
-    if parts and parts[0] in device_resolver._address_to_tasks:
-        resolved_device = device_resolver._address_to_tasks[parts[0]][0]
-        resolved = '/job:{}/task:{}/device:'.format(resolved_device['job'], resolved_device['task'])
-        resolved = resolved + ':'.join(parts[-2:])
-        return resolved
-    else:
-        raise ValueError("cannot resolve device: {} using device_resolver: {}".format(
-            device, device_resolver._address_to_tasks))
+# def _resolve_device_address(device: str, device_resolver: DeviceResolver):
+#     # change real ip address to /job:worker/task:0
+#     if not device:
+#         return device
+#     parts = device.split(':')
+#     if parts and parts[0] in device_resolver._address_to_tasks:
+#         resolved_device = device_resolver._address_to_tasks[parts[0]][0]
+#         resolved = '/job:{}/task:{}/device:'.format(resolved_device['job'], resolved_device['task'])
+#         resolved = resolved + ':'.join(parts[-2:])
+#         return resolved
+#     else:
+#         raise ValueError("cannot resolve device: {} using device_resolver: {}".format(
+#             device, device_resolver._address_to_tasks))
 
 
-def _num_local_replica(host, replicas, cluster):
-    # host: e.g., '/job:worker/task:0/device:CPU:0'
-    replica_devices = {device_spec.DeviceSpecV2.from_string(r) for r in replicas}
-    host_device = device_spec.DeviceSpecV2.from_string(host)
-    num_local_replica = sum(1 for d in replica_devices
-                            if cluster.get_address_from_task(d.job, d.task) ==
-                            cluster.get_address_from_task(host_device.job, host_device.task))
-    return num_local_replica
-
-
-def _max_num_local_replica(replicas, cluster):
-    replica_devices = {device_spec.DeviceSpecV2.from_string(r) for r in replicas}
-    replica_hosts = {cluster.get_address_from_task(d.job, d.task) for d in replica_devices}
-    max_num_local_replica = 0
-    for host in replica_hosts:
-        num_local_replica = sum(1 for d in replica_devices
-                                if cluster.get_address_from_task(d.job, d.task) == host)
-        max_num_local_replica = max(max_num_local_replica, num_local_replica)
-    return max_num_local_replica
+# def _num_local_replica(host, replicas, cluster):
+#     # host: e.g., '/job:worker/task:0/device:CPU:0'
+#     replica_devices = {device_spec.DeviceSpecV2.from_string(r) for r in replicas}
+#     host_device = device_spec.DeviceSpecV2.from_string(host)
+#     num_local_replica = sum(1 for d in replica_devices
+#                             if cluster.get_address_from_task(d.job, d.task) ==
+#                             cluster.get_address_from_task(host_device.job, host_device.task))
+#     return num_local_replica
+#
+#
+# def _max_num_local_replica(replicas, cluster):
+#     replica_devices = {device_spec.DeviceSpecV2.from_string(r) for r in replicas}
+#     replica_hosts = {cluster.get_address_from_task(d.job, d.task) for d in replica_devices}
+#     max_num_local_replica = 0
+#     for host in replica_hosts:
+#         num_local_replica = sum(1 for d in replica_devices
+#                                 if cluster.get_address_from_task(d.job, d.task) == host)
+#         max_num_local_replica = max(max_num_local_replica, num_local_replica)
+#     return max_num_local_replica
 
 
 def _strip_var_name(name):

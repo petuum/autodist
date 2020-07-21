@@ -31,8 +31,8 @@ class PredefinedSimulator(SimulatorBase):
 	"""Simulates strategies for a given graph and resource spec."""
 
 	def __init__(self,
-				 original_graph_item_path,
-				 fetches=None,
+				 graph_item=None,
+				 resource_spec=None,
 				 batch_size=1,
 				 seq_len=1,
 				 get_coef=True,
@@ -135,7 +135,7 @@ class PredefinedSimulator(SimulatorBase):
 	def create_features(self, strategy: Strategy, resource_spec: ResourceSpec):
 		# var_sync_time, vars, resource = self.predefined_sync_time(strategy, resource_spec)
 
-		vars, resource = self.extract_pre_feature(strategy=strategy, resource_spec=resource_spec)
+		vars, resource = self.preprocess(strategy=strategy, resource_spec=resource_spec)
 
 		feature_keys = ['transmission', 'network_overhead', 'gpu_kernel_memory_latency']
 		device_ps_sync_time = {}
@@ -178,7 +178,7 @@ class PredefinedSimulator(SimulatorBase):
 
 	def predefined_sync_time(self, strategy, resource_spec):
 		""" graph_item: transformed graph item """
-		vars, resource = self.extract_pre_feature(strategy=strategy, resource_spec=resource_spec)
+		vars, resource = self.preprocess(strategy=strategy, resource_spec=resource_spec)
 		# Compute synchronization time for every var
 		var_sync_time = {}
 		for var_name, var in vars.items():

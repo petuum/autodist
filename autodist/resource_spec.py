@@ -72,6 +72,7 @@ class ResourceSpec:
         self.__chief_address = None
         self.__ssh_config_map = dict()
         self.__ssh_group = dict()
+        self.__network_bandwidth = dict()
 
         # set self.__devices
         self._from_resource_info(resource_file)
@@ -147,6 +148,11 @@ class ResourceSpec:
         """SSH Group for each node."""
         return self.__ssh_group
 
+    @property
+    def network_bandwidth(self):
+        """Network bandwidth of each node."""
+        return self.__network_bandwidth
+
     def _add_device(self, device_spec):
         if device_spec.name_string() not in self.__devices:
             self.__devices[device_spec.name_string()] = device_spec
@@ -200,6 +206,14 @@ class ResourceSpec:
         self.__ssh_group[host_address] = node.get('ssh_config')
         if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
             raise ValueError("Need to define SSH groups for all non-chief nodes.")
+        # network bandwidth
+        if node.get('network_bandwidth'):
+            self.__network_bandwidth[host_address] = node.get('network_bandwidth')
+        else:
+            # TODO (Hao): we could also raise ValueError here.
+            logging.warning('Bandwidth for {} is undefined and set as default. '
+                            'Caution when using AutoStrategy.'.format(host_address))
+            self.__network_bandwidth[host_address] = 1
 
 
 class DeviceSpec:

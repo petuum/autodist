@@ -52,4 +52,9 @@ class AutoStrategy(AutoStrategyBase):
         )
 
     def build(self, graph_item, resource_spec):
-        return
+        candidates = self.propose_n(graph_item, resource_spec, self._num_proposals)
+
+        # Assess all candidates and simply pick the highest-scored one
+        features, scores = self._simulator.inference(candidates)
+        best_index = scores.index(min(scores))
+        return candidates[best_index]

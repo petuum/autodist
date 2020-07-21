@@ -16,168 +16,17 @@
 
 from collections import OrderedDict
 
-from enum import Enum
-from tensorflow.python.framework import ops
+import numpy as np
 
-from autodist.kernel.common.utils import get_op_name, get_consumers
+from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.partitioner import PartitionerConfig
 from autodist.proto import strategy_pb2, synchronizers_pb2
-from autodist.strategy.base import Strategy, StrategyBuilder, byte_size_load_fn
+from autodist.strategy.base import Strategy
+from autodist.strategy.auto.item import VariableItem, PartItem
 from autodist.strategy.auto.ps_load_balancer import greedy_load_balancer, christy_load_balancer
 from autodist.strategy.auto.ar_group_assigner import chunk_group_assigner, christy_group_assigner, \
     ordered_balanced_group_assigner
-from autodist.strategy.auto import sample_util
 from autodist.const import MAX_INT32
-
-
-class VarType(Enum):
-    SPARSE = 0
-    DENSE = 1
-
-
-class VariableHelper:
-    """Helper class to include meta information about a variable."""
-    def __init__(self, var, graph_item):
-        self.var = var
-        self.graph_item = graph_item
-        self._var_op_name = get_op_name(var.name)
-        self._grad = graph_item.var_op_name_to_grad_info[self._var_op_name][0]
-
-    @property
-    def var_type(self):
-        """
-        Return the type of the variable (VarType.SPARSE or VarType.DENSE).
-
-        Returns:
-            VarType
-        """
-        return VarType.DENSE if isinstance(self._grad, ops.Tensor) else VarType.SPARSE
-
-    @property
-    def is_sparse(self):
-        """
-        Return whether the variable is sparse.
-
-        Returns:
-            Bool
-        """
-        return True if self.var_type == VarType.SPARSE else False
-
-    @property
-    def is_embedding(self):
-        """
-        Return whether the variable corresponds to an embedding.
-
-        Returns:
-            Bool
-        """
-        # TODO (Hao): better way to determine is_embedding?
-        for op in get_consumers(self.var.op):
-            if op.type == "ResourceGather":
-                return True
-        return False
-
-    @property
-    def shape(self):
-        """
-        Return the shape of the variable, or None if it does not emit a tensor (e.g. scalar).
-
-        Returns:
-            List(int)
-        """
-        if self.var.initial_value.shape.ndims:
-            return self.var.initial_value.shape.as_list()
-        else:
-            return None
-
-    @property
-    def partitionable_axes(self):
-        """
-        Return the list of available axes that are legitimate to partition along.
-
-        Returns:
-            List(int)
-        """
-        valid_axes = []
-
-        # scalar
-        if not self.shape:
-            return valid_axes
-
-        # Sparse variable can only be partition along the 0th axis in current implementation.
-        if self.is_sparse or self.is_embedding:
-            valid_axes = [0]
-            return valid_axes
-        for idx, dim in enumerate(self.shape):
-            if dim > 1:
-                valid_axes.append(idx)
-        return valid_axes
-
-    @property
-    def byte_size(self):
-        """
-        Return the byte size of the variable.
-
-        Returns:
-            float
-        """
-        return float(byte_size_load_fn(self.var))
-
-    @property
-    def dtype(self):
-        """
-        Return the dtype of the variable.
-
-        Returns:
-            dtype
-        """
-        return self.var.dtype
-
-
-class PartHelper:
-    """Helper class to include meta information about a variable partition."""
-    def __init__(self, part_idx, var, pc):
-        self.var = var
-        self.part_idx = part_idx
-        self.pc = pc
-
-    @property
-    def shape(self):
-        """
-        Return the shape of this partition.
-
-        Returns:
-            List(int)
-
-        """
-        shape = self.var.initial_value.shape.as_list()
-        dim_size = shape[self.pc.axis] // self.pc.num_shards
-        extras = shape[self.pc.axis] % self.pc.num_shards
-        if self.part_idx < extras:
-            dim_size += 1
-        shape[self.pc.axis] = dim_size
-        return shape
-
-    @property
-    def var_shape(self):
-        """
-        Return the shape of the original value this part belonged to.
-
-        Returns:
-            List(int)
-        """
-        return self.var.initial_value.shape.as_list()
-
-    @property
-    def byte_size(self):
-        """
-        Return the byte size of this partition.
-
-        Returns:
-            float
-        """
-        return float(byte_size_load_fn(self.var)) \
-               * float(self.shape[self.pc.axis]) / float(self.var_shape[self.pc.axis])
 
 
 class RandomStrategySampler():
@@ -192,7 +41,7 @@ class RandomStrategySampler():
 
         Args:
             space (dict): the strategy space that the random strategy should be drawn from. An example of the space
-                          can be found at TODO(Hao).
+                          can be found at
             heuristics (dict): heuristics used to guide the random sampling process.
         """
         if not space:
@@ -201,7 +50,6 @@ class RandomStrategySampler():
             raise ValueError('Heuristic to guide strategy sampling is not provided.')
         self.space = space
         self.heuristics = heuristics
-        self.helpers = {}
 
     def build(self, graph_item, resource_spec):
         """Generate a randomized strategy given model and resource spec."""
@@ -210,41 +58,43 @@ class RandomStrategySampler():
         # number of graph replica is equal to number of GPU devices
         expr.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
         variables = graph_item.trainable_var_op_to_var.values()
+        name_to_item = OrderedDict()
 
         # Perform MCMC to generate each node configs
         node_config = []
         for var in variables:
-            var_helper = VariableHelper(var, graph_item)
-            self.helpers[var_helper.var.name] = var_helper
+            var_item = VariableItem(var, graph_item)
+            name_to_item[var_item.name] = var_item
 
             node = strategy_pb2.Strategy.Node()
-            node.var_name = var_helper.var.name
+            node.var_name = var_item.name
 
             # Step 1: determine whether or not to partition
             # TODO(Hao): some factor is not considered, e.g. number of reduction_device_names
-            maybe_partition = sample_if_partition(var_helper, resource_spec, self.space, self.heuristics)
+            maybe_partition = sample_if_partition(var_item, resource_spec, self.space, self.heuristics)
 
             # Step 2.1: if not partition, sample a synchronizer type for it
             if not maybe_partition:  # no partition
-                sample_var_synchronizer(node, var_helper, resource_spec, self.space)
+                sample_var_synchronizer(node, var_item, resource_spec, self.space)
             else:  # Step 2.2: else partition
                 # Step 2.2.1: sample a partitioner config
-                pc = sample_partition_config(var_helper, resource_spec, self.space, self.heuristics)
+                pc = sample_partition_config(var_item, resource_spec, self.space, self.heuristics)
                 node.partitioner = pc.partition_str
 
                 # step 2.2.2: sample a synchronizer type for each partition
                 parts = []
                 for i in range(pc.num_shards):
                     part = strategy_pb2.Strategy.Node()
+                    part_item = PartItem(var, graph_item, i, pc)
                     part.var_name = '{}/part_{}:0'.format(get_op_name(var.name), i)
-                    self.helpers[part.var_name] = PartHelper(i, var, pc)
+                    name_to_item[part.var_name] = part_item
                     parts.append(part)
-                sample_parts_synchronizers(parts, var_helper, resource_spec, self.space, self.heuristics)
+                sample_parts_synchronizers(parts, var_item, resource_spec, self.space, self.heuristics)
                 node.part_config.extend(parts)
             node_config.append(node)
 
         # Step 3: Post-assign group or placement.
-        sample_group_and_reduction_destinations(node_config, resource_spec, self.helpers, self.heuristics)
+        sample_group_and_reduction_destinations(node_config, resource_spec, name_to_item, self.heuristics)
 
         expr.node_config.extend(node_config)
         self._reset()
@@ -255,12 +105,12 @@ class RandomStrategySampler():
         self.helpers = {}
 
 
-def sample_if_partition(var_helper, resource_spec, space, heuristics):
+def sample_if_partition(var_item, resource_spec, space, heuristics):
     """
     Sample a bool value determining whether to partition a variable or not.
 
     Args:
-        var_helper: the variable helper corresponded to the variable of interest.
+        var_item: the variable item.
         resource_spec: the target cluster spec.
         space: the space argument controlling where to sample from.
         heuristics: the heuristics argument  guiding the sampling process.
@@ -275,9 +125,9 @@ def sample_if_partition(var_helper, resource_spec, space, heuristics):
         return False
 
     # intersection of variable's partitonable axis and global constraints
-    if var_helper.partitionable_axis:
-        if space['partitionable_axis']:
-            a = set(var_helper.partitionable_axis) & set(space['partitionable_axis'])
+    if var_item.partitionable_axes:
+        if space['partitionable_axes']:
+            a = set(var_item.partitionable_axes) & set(space['partitionable_axes'])
             if len(a) < 1:
                 return False
     else:
@@ -286,19 +136,19 @@ def sample_if_partition(var_helper, resource_spec, space, heuristics):
     # lower bound for abandoning partitioning
     lb = heuristics['maybe_partition_bounds'][0]
     ub = heuristics['maybe_partition_bounds'][1]
-    if var_helper.byte_size <= lb:
+    if var_item.byte_size <= lb:
         return False
-    if var_helper.byte_size >= ub:
+    if var_item.byte_size >= ub:
         return True
     assert (len(space['maybe_partition']) == 2)
 
     if heuristics['maybe_partition_by_size']:
         #  By variable size -- a large variable has a higher chance to be partitioned
         # TODO (Hao): MAX_INT32 is too large, reconsider later...
-        chance = float(var_helper.byte_size - lb) / float(ub - lb)
-        return sample_util.binary_sample(boundary=chance)
+        chance = float(var_item.byte_size - lb) / float(ub - lb)
+        return binary_sample(boundary=chance)
     else:
-        return sample_util.uniform_sample_by_choices(space['maybe_partition'])
+        return uniform_sample_by_choices(space['maybe_partition'])
 
 
 def sample_var_synchronizer(node, var_helper, resource_spec, space):
@@ -314,7 +164,7 @@ def sample_var_synchronizer(node, var_helper, resource_spec, space):
     """
     # We ALWAYS use PS for sparse variables
     synchronizer_type = 'PS' if var_helper.var_type == VarType.SPARSE \
-        else sample_util.uniform_sample_by_choices(space['synchronizer_types'])
+        else uniform_sample_by_choices(space['synchronizer_types'])
     if synchronizer_type == 'PS':
         node.PSSynchronizer.sync = True  # we don't consider async at this moment
         node.PSSynchronizer.staleness = 0
@@ -345,10 +195,10 @@ def sample_parts_synchronizers(parts, var_helper, resource_spec, space, heuristi
         synchronizer_types = ['PS'] * len(parts)
     else:
         if heuristics['same_synchronizer_for_parts']:
-            type = sample_util.uniform_sample_by_choices(space['synchronizer_types'])
+            type = uniform_sample_by_choices(space['synchronizer_types'])
             synchronizer_types = [type] * len(parts)
         else:
-            synchronizer_types = [sample_util.uniform_sample_by_choices(space['synchronizer_types'])
+            synchronizer_types = [uniform_sample_by_choices(space['synchronizer_types'])
                                   for part in parts]
     for i, part in enumerate(parts):
         if synchronizer_types[i] == 'PS':
@@ -378,13 +228,13 @@ def sample_partition_config(var_helper, resource_spec, space, heuristics):
     """
     # Arion only support partitioning along one axis -- we first sample a partition axis,
     # then sample the number of partitions along that axis, and obtain the partition config.
-    assert len(var_helper.partitionable_axis) > 0, 'No partition axis available'
+    assert len(var_helper.partitionable_axes) > 0, 'No partition axis available'
     # sample partition axis
     # TODO(Hao): some heursitics here available?
-    valid_axis = var_helper.partitionable_axis
-    if space['partitionable_axis']:
-        valid_axis = list(set(valid_axis) & set(space['partitionable_axis']))
-    partition_axis = sample_util.uniform_sample_by_choices(valid_axis)
+    valid_axis = var_helper.partitionable_axes
+    if space['partitionable_axes']:
+        valid_axis = list(set(valid_axis) & set(space['partitionable_axes']))
+    partition_axis = uniform_sample_by_choices(valid_axis)
 
     # sample how many partition to go
     num_nodes = resource_spec.num_cpus
@@ -405,7 +255,7 @@ def sample_partition_config(var_helper, resource_spec, space, heuristics):
         raise ValueError('unseen num_partition_bounds config')
 
     # sample from [min_shards, max_shards]
-    num_shards = sample_util.uniform_sample_by_choices(range(min_shards, max_shards + 1))
+    num_shards = uniform_sample_by_choices(list(range(min_shards, max_shards + 1)))
 
     # construct a PartitionerConfig (pc)
     partition_list = [1] * len(var_helper.shape)
@@ -431,7 +281,7 @@ def sample_if_local_replication(local_replication_space, resource_spec):
     if resource_spec.num_gpus <= resource_spec.num_cpus:
         # meaning every machine has at most 1 GPU
         return False
-    return sample_util.uniform_sample_by_choices(local_replication_space)
+    return uniform_sample_by_choices(local_replication_space)
 
 
 def sample_ar_compressor(compressor_space):
@@ -446,7 +296,7 @@ def sample_ar_compressor(compressor_space):
     Returns:
     """
     # TODO(Hao): try to use all four options
-    return sample_util.uniform_sample_by_choices(compressor_space)
+    return uniform_sample_by_choices(compressor_space)
 
 
 def sample_group_and_reduction_destinations(node_config, resource_spec, helpers, heuristics):
@@ -508,7 +358,7 @@ def sample_ps_reduction_destinations(node_config, ps_shards, resource_spec, help
     if not load_balancer:
         destinations = {}
         for shard_name in ps_shards:
-            destinations[shard_name] = sample_util.uniform_sample_by_choices(reduction_device_names)
+            destinations[shard_name] = uniform_sample_by_choices(reduction_device_names)
     elif load_balancer == 'greedy':
         destinations = greedy_load_balancer(ps_shards, resource_spec, helpers)
     elif load_balancer == 'christy':
@@ -576,7 +426,7 @@ def sample_ar_groups(node_config, ar_shards, helpers, heuristics):
     assert chunk_size_or_num_group > 0, "chunk_size or num_groups need to > 1..."
 
     if merge_scheme in ['random', None]:
-        tmp_assignments = sample_util.sample_merge_group(chunk_size_or_num_group, len(ar_shards))
+        tmp_assignments = sample_merge_group(chunk_size_or_num_group, len(ar_shards))
         group_assignments = OrderedDict()
         for i, shard_name in enumerate(ar_shards):
             group_assignments[shard_name] = tmp_assignments[i]
@@ -613,7 +463,7 @@ def sample_num_ar_groups(ar_shards, lb, ub):
     """
     min_num_group = max(1, lb)
     max_num_group = min(len(ar_shards), ub)
-    num_group = sample_util.uniform_sample_by_choices(list(range(min_num_group, max_num_group + 1)))
+    num_group = uniform_sample_by_choices(list(range(min_num_group, max_num_group + 1)))
     return num_group
 
 
@@ -627,7 +477,7 @@ def sample_chunk_size(num_ar_shards):
     Returns:
 
     """
-    chunk_size = sample_util.uniform_sample_by_choices(list(range(1, num_ar_shards + 1)))
+    chunk_size = uniform_sample_by_choices(list(range(1, num_ar_shards + 1)))
     return chunk_size
 
 
@@ -654,12 +504,56 @@ def assign_ar_group(node_config, ar_shards):
                 synchronizer.group = ar_shards[node.var_name][1]
 
 
+def uniform_sample_by_choices(choices):
+    """
+    Uniformly sample an option from a list of options.
+
+    Args:
+        choices (list): a list of values to be sampled from.
+
+    Returns:
+        choice: the sampled value.
+
+    """
+    assert choices
+    p = np.random.uniform()
+    t = 1.0 / len(choices)
+    sample = choices[0]
+    for i, c in enumerate(choices):
+        if p < t * (i+1):
+            sample = c
+            break
+    return sample
+
+
+def binary_sample(boundary=0.5):
+    p = np.random.uniform()
+    if p < boundary:
+        return True
+    else:
+        return False
+
+
+def sample_merge_group(num_group, num_candidates):
+
+    def is_valid(assignment):
+        unique_assignment = np.unique(assignment)
+        if unique_assignment.shape[0] == num_group:
+            return True
+        return False
+
+    assignment = np.random.randint(1, num_group+1, [num_candidates])
+    while not is_valid(assignment):
+        assignment = np.random.randint(1, num_group+1, [num_candidates])
+    return assignment
+
+
 default_space = {
     'synchronizer_types': ['PS', 'AR'],
     'maybe_partition': [True, False],
     'compressor': ['HorovodCompressor', 'NoneCompressor', 'HorovodCompressorEF'],
     'local_replication': [False],
-    'partitionable_axis': []
+    'partitionable_axes': []
 }
 
 
