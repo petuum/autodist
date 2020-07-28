@@ -68,9 +68,10 @@ class SimulatorBase:
                  strategy,
                  graph_item=None,
                  resource_spec=None,
-                 checkpoint=None):
+                 *args,
+                 **kwargs):
         """
-        Return simulated runtime cost given (Strategy, GraphItem, ResourceSpec) tuple.
+        Return simulated runtime cost given (strategy, graph_item, resource_spec) tuple.
 
         Args:
             strategy:
@@ -84,8 +85,7 @@ class SimulatorBase:
         raise NotImplementedError()
 
     def inference(self,
-                  features,
-                  checkpoint=None):
+                  features):
         """
         Abstract method for simulator inference.
 
@@ -115,9 +115,6 @@ class SimulatorBase:
             model: trained model.
             checkpoint: path where to save the checkpoint.
         """
-        raise NotImplementedError()
-
-    def create_features(self, strategy: Strategy, resource_spec: ResourceSpec):
         raise NotImplementedError()
 
     def preprocess(self,

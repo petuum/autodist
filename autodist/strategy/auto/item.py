@@ -249,6 +249,7 @@ class VariableItem:
             device_str =  resolver.resolve_to_device_str(device_str)
         return device_str
 
+
 class PartItem(VariableItem):
     """Helper class to include meta information about a variable partition."""
     def __init__(self,
@@ -364,7 +365,7 @@ class ResourceItem:
 
     Helper class that includes meta information about a resource spec. All addresses are resolved (in TF format).
 
-    TODO(zhisbug): merge ResourceItem class with ResourceSpec.
+    TODO(Hao): merge ResourceItem class with ResourceSpec.
     """
 
     def __init__(self, resource_spec):
@@ -405,7 +406,7 @@ class ResourceItem:
     def total_num_gpu_replica(self):
         return len(self.gpu_replicas)
 
-    def num_local_gpu_replica(self, host):
+    def num_local_gpu_replica_on(self, host):
         """
         Return the number of gpu replica on a TF host address, e.g. '/job:worker/task:0/device:CPU:0'.
 
@@ -427,7 +428,7 @@ class ResourceItem:
     @property
     def max_num_local_gpu_replica(self):
         """Return the max number of local gpu replicas on the cluster."""
-        return max([self.num_local_gpu_replica(host) for host in self.cpu_replicas])
+        return max([self.num_local_gpu_replica_on(host) for host in self.cpu_replicas])
 
     @cached_property
     def p2p_bandwidth(self):
