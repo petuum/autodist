@@ -16,6 +16,7 @@
 
 from enum import Enum
 
+import tensorflow as tf
 from tensorflow.python.framework import ops, device_spec
 
 from autodist.kernel.common.utils import get_op_name, get_consumers
@@ -24,7 +25,7 @@ from autodist.graph_item import cached_property
 from autodist.strategy.base import byte_size_load_fn
 from autodist.utils import logging
 from autodist.cluster import SSHCluster
-from autodist.simulator.utils import GPU_TO_CPU_BANDWIDTH, GIGABITS
+from autodist.simulator.utils import GPU_TO_CPU_BANDWIDTH, GIGABITS, get_dtype_bits
 
 
 class VarType(Enum):
@@ -136,8 +137,18 @@ class VariableItem:
                 size *= s
         return size
 
-    @property
     def size_to_transfer(self, batch_size_per_gpu=1, seq_len=1):
+        """
+        Return the number of elements (e.g. float, integer) to transfer for this variable per iteration.
+
+        To estimate the size to transfer for sparse variables, batch_size_per_gpu and seq_len are required.
+        Args:
+            batch_size_per_gpu: batch size used on each GPU replica.
+            seq_len: the length of the sequence of each input example.
+
+        Returns:
+            integer
+        """
         if not self.is_sparse:
             return self.size
         else:
@@ -153,7 +164,30 @@ class VariableItem:
             sparse_data_size = batch_size_per_gpu * seq_len * emb_size
 
             # estimate the embedding of this partition simply using a proportional formula
-            return sparse_data_size * self.size / self.original_size
+            return sparse_data_size * float(self.size) / float(self.original_size)
+
+    @property
+    def bits_to_transfer(self, batch_size_per_gpu=1, seq_len=1):
+        """
+        Estimate the bits to transfer across the network per iteration.
+
+        For sparse variables, this is an over-estimation as we think all columns corresponded to this batch
+        is unique.
+        Args:
+            batch_size_per_gpu:
+            seq_len:
+
+        Returns:
+            integer
+        """
+        s = self.size_to_transfer(batch_size_per_gpu, seq_len)
+        if self.is_sparse: # IndexSlices: values, indices, dense_shape
+            bits = s * get_dtype_bits(self.dtype) + \
+                   batch_size_per_gpu * seq_len * self.size / self.original_size * get_dtype_bits(tf.int64) + \
+                   2 * get_dtype_bits(tf.int64)
+            return bits
+        else: # Tensor
+            return s * get_dtype_bits(self.dtype)
 
     @property
     def partitionable_axes(self):
@@ -234,7 +268,7 @@ class VariableItem:
         Return the reduction_destination in the node config of this variable.
 
         Returns:
-            Reduction destinaiton.
+            str.
         """
         if not self._node_config:
             raise ValueError('Node config is unset.')
@@ -248,6 +282,21 @@ class VariableItem:
         if device_str:
             device_str =  resolver.resolve_to_device_str(device_str)
         return device_str
+    
+    @property
+    def local_replication(self):
+        """
+        Return the local_replication in the node config of this variable.
+
+        Returns:
+            bool
+        """
+        if not self._node_config:
+            raise ValueError('Node config is unset.')
+        if self._node_config.partitioner:
+            logging.warning('This variable will be partitioned')
+            return None
+        return getattr(self.synchronizer, 'local_replication', False)
 
 
 class PartItem(VariableItem):
@@ -359,6 +408,21 @@ class PartItem(VariableItem):
             return None
         return getattr(self.synchronizer, 'reduction_destination', None)
 
+    @property
+    def local_replication(self):
+        """
+        Return the local_replication in the node config of this variable partition.
+
+        Returns:
+            bool
+        """
+        if not self._node_config:
+            raise ValueError('Node config is unset.')
+        if not self._node_config.partitioner:
+            logging.warning('Partitioner field is empty for a variable partition.')
+            return None
+        return getattr(self.synchronizer, 'local_replication', False)
+
 
 class ResourceItem:
     """ResourceItem.
@@ -372,6 +436,11 @@ class ResourceItem:
         self._resource_spec = resource_spec
         self._cluster = SSHCluster(resource_spec)
         self._device_resolver = DeviceResolver(self._cluster)
+
+    @property
+    def device_resolver(self):
+        """Resolver of this resource_spec that resolves an AutoDist device to TF device."""
+        return self._device_resolver
 
     @property
     def replicas(self):
@@ -389,7 +458,7 @@ class ResourceItem:
         """
         # device_str is autodist device string, e.g. 192.168.0.1:CPU:0
         device_strs = [k for k, _ in self._resource_spec.gpu_devices]
-        return self._device_resolver.resolve_to_device_str(device_strs)
+        return self.device_resolver.resolve_to_device_str(device_strs)
 
     @property
     def cpu_replicas(self):
@@ -400,7 +469,7 @@ class ResourceItem:
             List(string)
         """
         device_strs = [k for k, _ in self._resource_spec.cpu_devices]
-        return self._device_resolver.resolve_to_device_str(device_strs)
+        return self.device_resolver.resolve_to_device_str(device_strs)
 
     @property
     def total_num_gpu_replica(self):
@@ -434,7 +503,7 @@ class ResourceItem:
     def p2p_bandwidth(self):
         """Calculates P2P network bandwidth between nodes in the cluster.
 
-        Note that this is NOT a sysmetric
+        Note that this is NOT a symmetric matrix.
         """
         bw = {} # key: (device1, device2)
         devices = [device for device, _ in self._resource_spec.devices]
@@ -451,8 +520,8 @@ class ResourceItem:
                 if d_j not in bw:
                     bw[d_j] = {}
                 if ip_i != ip_j:
-                    bw[d_i][d_j] = GIGABITS * self._resource_spec[ip_i].bandwidth[ip_i]
-                    bw[d_j][d_i] = GIGABITS * self._resource_spec[ip_j].bandwidth[ip_j]
+                    bw[d_i][d_j] = GIGABITS * self._resource_spec.network_bandwidth[ip_i]
+                    bw[d_j][d_i] = GIGABITS * self._resource_spec.network_bandwidth[ip_j]
                 else:
                     bw[d_i][d_j] = GIGABITS * GPU_TO_CPU_BANDWIDTH
                     bw[d_j][d_i] = GIGABITS * GPU_TO_CPU_BANDWIDTH

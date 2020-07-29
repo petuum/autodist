@@ -258,11 +258,11 @@ DTYPE2BITS = {
     tf.string: 1,  # todo: confirm
     'tf.string': 1,  # todo: confirm
     "<dtype: 'string'>": 1,  # todo: confirm
+    tf.quint8: 8,
+    'tf.quint8': 8,
     tf.qint8: 8,
     'tf.qint8': 8,
     "<dtype: 'qint8'>": 8,
-    tf.quint8: 8,
-    'tf.quint8': 8,
     "<dtype: 'quint8'>": 8,
     tf.qint16: 16,
     'tf.qint16': 16,
@@ -302,11 +302,26 @@ def get_sparse_var_bits(size):
            + 2 * get_dtype_bits(tf.int64)
 
 
-def _resolved_devices_on_diff_machine(device1, device2):
-    # e.g., '/job:worker/task:1/device:CPU:0', '/job:worker/task:1/GPU:0'
-    node1 = ':'.join(device1.split('/')[:-1])
-    node2 = ':'.join(device2.split('/')[:-1])
-    return node1 != node2
+def on_same_host(device_str1, device_str2):
+    """
+    Return True if d1 and d2 are on the same host.
+
+    Args:
+        device_str1 (string): the first device as a TF device string, e.g. /job:worker/task:0/device:CPU:0.
+        device_str2 (string): the first device as a TF device string, e.g. /job:worker/task:0/device:GPU:0.
+
+    Returns:
+        Bool: True if they are on the same host, otherwise False.
+    """
+    host1 = '/'.join(device_str1.split('/')[:-1])
+    host2 = '/'.join(device_str2.split('/')[:-1])
+    return host1 == host2
+
+# def _resolved_devices_on_diff_machine(device1, device2):
+#     # e.g., '/job:worker/task:1/device:CPU:0', '/job:worker/task:1/GPU:0'
+#     node1 = ':'.join(device1.split('/')[:-1])
+#     node2 = ':'.join(device2.split('/')[:-1])
+#     return node1 != node2
 
 
 # def _resolve_device_address(device: str, device_resolver: DeviceResolver):

@@ -23,7 +23,7 @@ from tensorflow.python.eager import context
 from autodist.proto.synchronizers_pb2 import PSSynchronizer, AllReduceSynchronizer
 from autodist.resource_spec import ResourceSpec
 from autodist.simulator.base import SimulatorBase
-from autodist.simulator.utils import _resolved_devices_on_diff_machine, \
+from autodist.simulator.utils import on_same_host, \
     get_dense_var_bits, get_sparse_var_bits
 from autodist.strategy.base import Strategy
 from autodist.utils import logging
@@ -196,133 +196,89 @@ class PredefinedSimulator(SimulatorBase):
                     var_item,
                     resource_item,
                     network_overhead=0.0,
-                    gpu_kernel_memory_latency=0.0,
-                    get_coef=False):
+                    gpu_kernel_memory_latency=0.0):
         """
-        Estimate the synchronization time of a variable with PS synchronizer.
+        Estimate the synchronization time of a variable using PS synchronizer.
 
         Args:
             var_item:
             resource_item:
             network_overhead:
             gpu_kernel_memory_latency:
-            get_coef: return the
 
         Returns:
-
+            tuple(dict)
         """
+        bits_to_transfer = var_item.bits_to_transfer(self._batch_size_per_gpu, self._seq_len)
 
-        def _helper(worker_list, worker_num_replicas=None):
-            if worker_num_replicas is None:
-                worker_num_replicas = [1.0] * len(worker_list)
-
-            this_server_time = 0
-            # network transfer: sum up all workers time. equals to the time cost of this server.
-            # TODO(Hao): didn't consider any parallelization among partitions
-            for k, worker in enumerate(worker_list):
-                if _resolved_devices_on_diff_machine(var.device, worker):
-                    if var.is_sparse:
-                        this_worker_size = get_sparse_var_bits(var_size_to_transfer) * worker_num_replicas[k]
-                    else:
-                        this_worker_size = get_dense_var_bits(var_size_to_transfer, var.dtype)
-                    this_server_time += this_worker_size / resource.network_bandwidth[var.device][worker]
-
-            if get_coef:
-                return {
-                    'transmission': this_server_time,
-                    'network_overhead': len(worker_list),
-                    'gpu_kernel_memory_latency': resource.max_num_local_replica,
-                    'constant': 1.0,
-                    # possible affecting factors.
-                    'var_name': var.name,
-                    'strategy': 'ps',
-                    'local_proxy': var.synchronizer.local_replication,
-                    'is_sparse': var.is_sparse,
-                    'size_to_transfer': var_size_to_transfer,
-                    'dtype': str(var.dtype),
-                    # 'server_list': [partition.to_dict() for partition in server_list],
-                    'worker_list': worker_list,
-                    'cpu_worker_list': resource.cpu_worker_list,
-                    'gpu_worker_list': resource.gpu_worker_list,
-                    'worker_num_replicas': worker_num_replicas,
-                    'max_num_local_replica': resource.max_num_local_replica,
-                    'is_ps': True,
-                }
-            else:
-                return this_server_time + len(worker_list) * network_overhead + \
-                       gpu_kernel_memory_latency * resource.max_num_local_replica
-
-        var_size_to_transfer = var.size_to_transfer(batch_size_per_gpu=self._batch_size_per_gpu,
-                                                    seq_len=self._seq_len)
-
-        if var.is_sparse:
-            send_time = _helper(resource.cpu_worker_list, worker_num_replicas=resource.worker_num_replicas)
-            receive_time = _helper(resource.gpu_worker_list)
+        num_local_replica_on_each_worker = [resource_item.num_local_gpu_replica_on(host)
+                                            for host in resource_item.cpu_replicas]
+        if var_item.is_sparse:
+            send_time = self._estimate_ps_time(var_item,
+                                               resource_item,
+                                               resource_item.cpu_replicas,
+                                               num_local_replica_on_each_worker)
+            recv_time = self._estimate_ps_time(var_item,
+                                               resource_item,
+                                               resource_item.gpu_replicas,
+                                               [1.0] * len(resource_item.gpu_replicas))
         else:
-            send_time = _helper(resource.cpu_worker_list)
-            if var.synchronizer.local_replication:
-                receive_time = _helper(resource.cpu_worker_list)
+            send_time = self._estimate_ps_time(var_item,
+                                               resource_item,
+                                               resource_item.cpu_replicas,
+                                               [1.0] * len(resource_item.cpu_replicas))
+            if var_item.local_replication:
+                recv_time = self._estimate_ps_time(var_item,
+                                                   resource_item,
+                                                   resource_item.cpu_replicas,
+                                                   [1.0] * len(resource_item.cpu_replicas))
             else:
-                receive_time = _helper(resource.gpu_worker_list)
+                recv_time = self._estimate_ps_time(var_item,
+                                                   resource_item,
+                                                   resource_item.gpu_replicas,
+                                                   [1.0] * len(resource_item.gpu_replicas))
+        return send_time, recv_time
 
-        return send_time, receive_time
-
-    @staticmethod
-    def _estimate_ps_send_receive_time(var_item,
-                                       resource_item,
-                                       hosts,
-                                       virtual_num_local_replica):
+    def _estimate_ps_time(self,
+                          var_item,
+                          resource_item,
+                          virtual_worker_list,
+                          virtual_num_local_replica):
         """
-        Estimate the send and receive time of a ps and return multiple impacting factors.
+        Estimate the send or receive time of a ps and return multiple impacting factors.
 
         Args:
-            var_item:
+            var_item: the variable whose communication time will be estimated.
             resource_item:
-            hosts:
-            virtual_num_local_replica:
+            virtual_worker_list: A list of virtual workers (could be actual gpu workers, or virtual cpu worker).
+            virtual_num_local_replica: A list of integers indicating the number of local replica on each virtual worker.
 
         Returns:
             Dict: a dictionary of impacting factors.
         """
-        if worker_num_replicas is None:
-            worker_num_replicas = [1.0] * len(worker_list)
+        transmission_time = 0.0
 
-        this_server_time = 0
-        # network transfer: sum up all workers time. equals to the time cost of this server.
-        # TODO(Hao): didn't consider any parallelization among partitions
-        for k, worker in enumerate(worker_list):
-            if _resolved_devices_on_diff_machine(var.device, worker):
-                if var.is_sparse:
-                    this_worker_size = get_sparse_var_bits(var_size_to_transfer) * worker_num_replicas[k]
-                else:
-                    this_worker_size = get_dense_var_bits(var_size_to_transfer, var.dtype)
-                this_server_time += this_worker_size / resource.network_bandwidth[var.device][worker]
+        # To estimate network transmission time for the given variable var_item on PS, we simply sum up the time of
+        # transmitting (or say, synchronizing) this variable across all workers.
+        # The time is separately estimated as send_time and recv_time by calling this function twice with different
+        # values of arguments.
+        # TODO(Hao): didn't consider any parallelization between variables or partitions.
+        for k, worker in enumerate(virtual_worker_list):
+            if not on_same_host(var_item.device, worker):
+                bits_on_this_worker = var_item.bits_to_transfer(self._batch_size_per_gpu, self._seq_len) * \
+                                      virtual_num_local_replica[k]
+                bandwidth = min(resource_item.p2p_bandwidth[var_item.device][worker],
+                                resource_item.p2p_bandwidth[worker][var_item.device])
+                transmission_time += bits_on_this_worker / bandwidth
 
-        if get_coef:
-            return {
-                'transmission': this_server_time,
-                'network_overhead': len(worker_list),
-                'gpu_kernel_memory_latency': resource.max_num_local_replica,
-                'constant': 1.0,
-                # possible affecting factors.
-                'var_name': var.name,
-                'strategy': 'ps',
-                'local_proxy': var.synchronizer.local_replication,
-                'is_sparse': var.is_sparse,
-                'size_to_transfer': var_size_to_transfer,
-                'dtype': str(var.dtype),
-                # 'server_list': [partition.to_dict() for partition in server_list],
-                'worker_list': worker_list,
-                'cpu_worker_list': resource.cpu_worker_list,
-                'gpu_worker_list': resource.gpu_worker_list,
-                'worker_num_replicas': worker_num_replicas,
-                'max_num_local_replica': resource.max_num_local_replica,
-                'is_ps': True,
-            }
-        else:
-            return this_server_time + len(worker_list) * network_overhead + \
-                   gpu_kernel_memory_latency * resource.max_num_local_replica
 
+        factors = {
+            'transmission': transmission_time,
+            'network_overhead': len(virtual_worker_list),
+            'gpu_kernel_memory_latency': resource_item.max_num_local_gpu_replica,
+            'constant': 1.0
+        }
+        return factors
 
     def var_ar_time(self, var, resource, network_overhead=0.0, gpu_kernel_memory_latency=0.0, get_coef=False):
         """Compute synchronization time of a variable in AR strategy."""
@@ -400,6 +356,7 @@ class PredefinedSimulator(SimulatorBase):
 
 
 
+
 # @staticmethod
 # def var_ps_time(var_name, is_sparse, local_proxy, server_list, cpu_worker_list, gpu_worker_list,
 #				 max_num_local_replica, worker_num_replicas, network_bandwidth, get_coef,
@@ -462,3 +419,46 @@ class PredefinedSimulator(SimulatorBase):
 #		 return send_time, receive_time
 #	 else:
 #		 return send_time, receive_time
+
+
+
+
+        # def _helper(worker_list, worker_num_replicas=None):
+        #     if worker_num_replicas is None:
+        #         worker_num_replicas = [1.0] * len(worker_list)
+        #
+        #     this_server_time = 0
+        #     # network transfer: sum up all workers time. equals to the time cost of this server.
+        #     # TODO(Hao): didn't consider any parallelization among partitions
+        #     for k, worker in enumerate(worker_list):
+        #         if _resolved_devices_on_diff_machine(var.device, worker):
+        #             if var.is_sparse:
+        #                 this_worker_size = get_sparse_var_bits(var_size_to_transfer) * worker_num_replicas[k]
+        #             else:
+        #                 this_worker_size = get_dense_var_bits(var_size_to_transfer, var.dtype)
+        #             this_server_time += this_worker_size / resource.network_bandwidth[var.device][worker]
+        #
+        #     if get_coef:
+        #         return {
+        #             'transmission': this_server_time,
+        #             'network_overhead': len(worker_list),
+        #             'gpu_kernel_memory_latency': resource.max_num_local_replica,
+        #             'constant': 1.0,
+        #             # possible affecting factors.
+        #             'var_name': var.name,
+        #             'strategy': 'ps',
+        #             'local_proxy': var.synchronizer.local_replication,
+        #             'is_sparse': var.is_sparse,
+        #             'size_to_transfer': var_size_to_transfer,
+        #             'dtype': str(var.dtype),
+        #             # 'server_list': [partition.to_dict() for partition in server_list],
+        #             'worker_list': worker_list,
+        #             'cpu_worker_list': resource.cpu_worker_list,
+        #             'gpu_worker_list': resource.gpu_worker_list,
+        #             'worker_num_replicas': worker_num_replicas,
+        #             'max_num_local_replica': resource.max_num_local_replica,
+        #             'is_ps': True,
+        #         }
+        #     else:
+        #         return this_server_time + len(worker_list) * network_overhead + \
+        #                gpu_kernel_memory_latency * resource.max_num_local_replica
