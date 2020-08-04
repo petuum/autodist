@@ -186,7 +186,7 @@ class VariableItem:
                    batch_size_per_gpu * seq_len * self.size / self.original_size * get_dtype_bits(tf.int64) + \
                    2 * get_dtype_bits(tf.int64)
             return bits
-        else: # Tensor
+        else:  # Tensor
             return s * get_dtype_bits(self.dtype)
 
     @property
@@ -246,6 +246,21 @@ class VariableItem:
             logging.warning('This variable will be partitioned')
             return None
         return getattr(self._node_config, self._node_config.WhichOneOf('synchronizer'))
+
+    @property
+    def group(self):
+        """
+        Return the group in the node config of this variable.
+
+        Returns:
+            int: group
+        """
+        if not self._node_config:
+            raise ValueError('Node config is unset.')
+        if self._node_config.partitioner:
+            logging.warning('This variable will be partitioned')
+            return None
+        return getattr(self.synchronizer, 'group', 0)
 
     @property
     def compressor(self):
@@ -378,6 +393,20 @@ class PartItem(VariableItem):
         if not self._node_config.partitioner:
             raise ValueError('Partitioner field is empty for a variable partition.')
         return getattr(self._node_config, self._node_config.WhichOneOf('synchronizer'))
+
+    @property
+    def group(self):
+        """
+        Return the group in the node config of this variable.
+
+        Returns:
+            int: group
+        """
+        if not self._node_config:
+            raise ValueError('Node config is unset.')
+        if not self._node_config.partitioner:
+            raise ValueError('Partitioner field is empty for a variable partition.')
+        return getattr(self.synchronizer, 'group', 0)
 
     @property
     def compressor(self):
