@@ -15,7 +15,7 @@
 """An AutoStrategy using a trained linear simulator."""
 
 from autodist.strategy.auto.base import AutoStrategyBase
-from autodist.simulator.linear_simulator import LinearSimulator
+from autodist.autosync.simulator.linear_simulator import LinearSimulator
 
 class AutoStrategy(AutoStrategyBase):
     """

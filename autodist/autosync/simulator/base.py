@@ -70,22 +70,10 @@ class SimulatorBase:
                  resource_spec=None,
                  *args,
                  **kwargs):
-        """
-        Return simulated runtime cost given (strategy, graph_item, resource_spec) tuple.
-
-        Args:
-            strategy:
-            graph_item:
-            resource_spec:
-            checkpoint:
-
-        Returns:
-            float
-        """
+        """Return simulated runtime cost given (strategy, graph_item, resource_spec) tuple."""
         raise NotImplementedError()
 
-    def inference(self,
-                  features):
+    def inference(self, *args, **kwargs):
         """
         Abstract method for simulator inference.
 
@@ -98,7 +86,7 @@ class SimulatorBase:
         """
         raise NotImplementedError()
 
-    def load_checkpoint(self, checkpoint=None):
+    def load_checkpoint(self, checkpoint):
         """
         Load a checkpoint file as weights of the simulator.
 
@@ -107,15 +95,15 @@ class SimulatorBase:
         """
         raise NotImplementedError()
 
-    def save_checkpoint(self, model, checkpoint):
-        """
-        Save a trained weight as a checkpoint file.
-
-        Args:
-            model: trained model.
-            checkpoint: path where to save the checkpoint.
-        """
-        raise NotImplementedError()
+    # def save_checkpoint(self, model, checkpoint):
+    #     """
+    #     Save a trained weight as a checkpoint file.
+    #
+    #     Args:
+    #         model: trained model.
+    #         checkpoint: path where to save the checkpoint.
+    #     """
+    #     raise NotImplementedError()
 
     def preprocess(self,
                    strategy,

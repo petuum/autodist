@@ -19,9 +19,8 @@ from collections import OrderedDict
 import tensorflow as tf
 
 from autodist.proto.synchronizers_pb2 import PSSynchronizer, AllReduceSynchronizer
-from autodist.simulator.base import SimulatorBase
-from autodist.simulator.utils import on_same_host, \
-    get_dtype_bits
+from autodist.autosync.simulator.base import SimulatorBase
+from autodist.autosync.simulator.utils import on_same_host, get_dtype_bits
 from autodist.utils import logging
 
 
@@ -82,6 +81,19 @@ class PredefinedSimulator(SimulatorBase):
         Returns:
             float: the estimated runtime (lower is better).
         """
+        if not strategy:
+            raise ValueError('strategy is None.')
+        if not graph_item:
+            if not self._graph_item:
+                raise ValueError('No graph item provided.')
+            else:
+                graph_item = self._graph_item
+        if not resource_spec:
+            if not self._resource_spec:
+                raise ValueError('No resource spec provided.')
+            else:
+                resource_spec = self._resource_spec
+
         var_name_to_items, resource_item, var_name_to_sync_time = \
             self.extract_prefeature(strategy, graph_item, resource_spec)
 
@@ -135,8 +147,8 @@ class PredefinedSimulator(SimulatorBase):
 
     def extract_prefeature(self,
                            strategy,
-                           graph_item=None,
-                           resource_spec=None):
+                           graph_item,
+                           resource_spec):
         """
         Extract impacting factors of the communication time for each variable.
 
@@ -148,18 +160,6 @@ class PredefinedSimulator(SimulatorBase):
         Returns:
             Dict: A dict of variable name (str) to impacting factors (dict).
         """
-        if not strategy:
-            raise ValueError('strategy is None.')
-        if not graph_item:
-            if not self._graph_item:
-                raise ValueError('No graph item provided.')
-            else:
-                graph_item = self._graph_item
-        if not resource_spec:
-            if not self._resource_spec:
-                raise ValueError('No resource spec provided.')
-            else:
-                resource_spec = self._resource_spec
         # TODO(Hao): need to make sure the (strategy, graph_item, resource_spec) match each other.
         # construct the meta objects
         name_to_items, resource_item = self.preprocess(strategy, graph_item, resource_spec)
@@ -173,7 +173,7 @@ class PredefinedSimulator(SimulatorBase):
                 var_sync_time[var_name] = self.var_ar_time(var_item, resource_item)
             else:
                 raise ValueError('{}'.format(type(var_item.synchronizer)))
-        return var_sync_time
+        return name_to_items, resource_item, var_sync_time
 
     def var_ps_time(self,
                     var_item,

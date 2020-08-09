@@ -25,7 +25,7 @@ from autodist.graph_item import cached_property
 from autodist.strategy.base import byte_size_load_fn
 from autodist.utils import logging
 from autodist.cluster import SSHCluster
-from autodist.simulator.utils import GPU_TO_CPU_BANDWIDTH, GIGABITS, get_dtype_bits
+from autodist.autosync.simulator.utils import GPU_TO_CPU_BANDWIDTH, GIGABITS, get_dtype_bits
 
 
 class VarType(Enum):
