@@ -45,6 +45,15 @@ class DeviceResolver:
         return d
 
     def resolve_to_device_spec(self, device):
+        """
+        Resolve an AutoDist DeviceSpec or string to a TensorFlow DeviceSpec.
+
+        Args:
+            device: (a container of) AutoDist DeviceSpec or DeviceSpec string.
+
+        Returns:
+            device_spec, List(device_spec), or Set(device_spec)
+        """
         """Resolve an AutoDist DeviceSpec or its string to a TensorFlow DeviceSpec."""
         if isinstance(device, (list, set)):
             return type(device)(self.resolve_to_device_spec(d) for d in device)
@@ -59,7 +68,15 @@ class DeviceResolver:
         )
 
     def resolve_to_device_str(self, device):
-        """Resolve an AutoDist DeviceSpec or its string to a TensorFlow device string."""
+        """Resolve an AutoDist DeviceSpec or its string to a TensorFlow device string.
+
+        E.g. 192.168.0.1:GPU:0 or localhost:CPU:1 -> job:worker/task:0/device:GPU:0
+        Args:
+            device: (a container of) AutoDist DeviceSpec or DeviceSpec string.
+
+        Returns:
+            str, List(str), or Set(str)
+        """
         if isinstance(device, (list, set)):
             return type(device)(self.resolve_to_device_spec(d).to_string() for d in device)
         elif isinstance(device, RepeatedScalarContainer):

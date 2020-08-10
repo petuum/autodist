@@ -15,13 +15,12 @@
 """Partitioned PS StrategyBuilder with Greedy Load Balancer."""
 
 from math import ceil
-from tensorflow.python.framework import tensor_shape
 
 from autodist.const import ENV
 from autodist.kernel.common.op_info import CONTROL_FLOW_OPS
 from autodist.kernel.common.utils import get_consumers, get_op_name
 from autodist.kernel.partitioner import PartitionerConfig
-from autodist.strategy.base import Strategy, StrategyBuilder
+from autodist.strategy.base import Strategy, StrategyBuilder, byte_size_load_fn
 from autodist.proto import strategy_pb2
 
 
@@ -133,37 +132,3 @@ class PartitionedPS(StrategyBuilder):
             if n % i == 0:
                 return i
         return n
-
-
-def byte_size_load_fn(op):
-    """
-    Load function that computes the byte size of a single-output `Operation`.
-
-    Copied (with modifications) from tensorflow.contrib.training.python.training.device_setter.
-
-    This is intended to be used with `"Variable"` ops, which have a single
-    `Tensor` output with the contents of the variable.  However, it can also be
-    used for calculating the size of any op that has a single output.
-
-    Intended to be used with `GreedyLoadBalancingStrategy`.
-
-    Args:
-      op: An `Operation` with a single output, typically a "Variable" op.
-
-    Returns:
-      The number of bytes in the output `Tensor`.
-
-    Raises:
-      ValueError: if `op` does not have a single output, or if the shape of the
-        single output is not fully-defined.
-    """
-    elem_size = op.dtype.size
-    shape = op.get_shape()
-    if not shape.is_fully_defined():
-        # Due to legacy behavior, scalar "Variable" ops have output Tensors that
-        # have unknown shape when the op is created (and hence passed to this
-        # load function for placement), even though the scalar shape is set
-        # explicitly immediately afterward.
-        shape = tensor_shape.TensorShape(op.get_attr("shape"))
-    shape.assert_is_fully_defined()
-    return shape.num_elements() * elem_size
