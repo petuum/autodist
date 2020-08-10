@@ -13,13 +13,13 @@
 # limitations under the License.
 
 """Simulator base class."""
-import os
 from collections import OrderedDict
+
+import os
 
 from autodist.graph_item import GraphItem
 from autodist.kernel.partitioner import PartitionerConfig
 from autodist.resource_spec import ResourceSpec
-from autodist.strategy.base import Strategy
 from autodist.strategy.auto.item import VariableItem, PartItem, ResourceItem
 
 
@@ -74,16 +74,7 @@ class SimulatorBase:
         raise NotImplementedError()
 
     def inference(self, *args, **kwargs):
-        """
-        Abstract method for simulator inference.
-
-        Args:
-            features: feature input extracted from (GraphItem, ResourceSpec, Strategy) tuple.
-            checkpoint: optional simulator weight.
-
-        Returns:
-            float
-        """
+        """Abstract method for simulator inference."""
         raise NotImplementedError()
 
     def load_checkpoint(self, checkpoint):
