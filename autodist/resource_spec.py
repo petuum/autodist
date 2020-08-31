@@ -101,6 +101,13 @@ class ResourceSpec:
         return self.__cpu_devices.items()
 
     @property
+    def cpu_only_devices(self):
+        """String-to-device_spec mapping of all cpu ONLY devices."""
+        gpu_addresses = set([k.split(':')[0] for k, _ in self.gpu_devices])
+        cpu_only_devices = {k: v for k, v in self.cpu_devices if k.split(':')[0] not in gpu_addresses}
+        return cpu_only_devices.items()
+
+    @property
     def num_cpus(self):
         """Number of all cpu devices."""
         if not self.__num_cpus:
@@ -124,7 +131,7 @@ class ResourceSpec:
 
     @property
     def node_cpu_devices(self):
-        """Node_address-to-device_string mapping of all cpu devices."""        
+        """Node_address-to-device_string mapping of all cpu devices."""
         _cpu_devices = dict()
         for device in self.cpu_devices:
             _cpu_devices.setdefault(device[0].split(':')[0], []).append(device[0])

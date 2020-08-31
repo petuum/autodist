@@ -25,3 +25,4 @@ from .parallax_strategy import Parallax
 from .partitioned_all_reduce_strategy import PartitionedAR
 from .random_axis_partition_all_reduce_strategy import RandomAxisPartitionAR
 from .uneven_partition_ps_strategy import UnevenPartitionedPS
+from .byte_ps_strategy import BytePS
