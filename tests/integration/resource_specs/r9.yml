@@ -1,4 +1,4 @@
-# multi-nodes, heterogeneous cluster  -- one with 2 GPUs and one with 1 GPU.
+# multi-nodes, heterogeneous cluster  -- one with 2 CPUs and one with 1 CPU.
 
 nodes:
   - address: 10.20.41.57
