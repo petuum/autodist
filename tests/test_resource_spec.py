@@ -4,11 +4,6 @@ import pytest
 import os
 import textwrap
 
-resource_specs = [
-    os.path.join(os.path.dirname(__file__), 'integration/resource_specs/r0.yml'),  # single node with 2 GPUs
-    os.path.join(os.path.dirname(__file__), 'integration/resource_specs/r9.yml')  # single node with 2 CPUs
-]
-
 
 @pytest.mark.parametrize(
     argnames='resource_spec_path',
@@ -20,7 +15,7 @@ resource_specs = [
 def test_bandwidth_default(resource_spec_path):
     r = ResourceSpec(resource_file=resource_spec_path)
     assert r.num_cpus >= 0
-    for k, v in r.node_cpu_devices:
+    for k in r.node_cpu_devices:
         # by default it is set as 1
         assert r.network_bandwidth[k] == 1
 
@@ -34,16 +29,23 @@ def tmp_resource_spec_with_bandwidth(tmp_path):
           - address: 1.1.1.1
             cpus: [0]
             chief: true
-            network_bandwidth: 100
+            network_bandwidth: 123
+            ssh_config: conf
           - address: 2.2.2.2
             cpus: [0]
-            network_bandwidth: 222
+            network_bandwidth: 456
+            ssh_config: conf
+        ssh:
+          conf:
+            username: 'root'
+            key_file: '/root/.ssh/id_rsa'
+            port: 12345
         """
     ))
     return p
 
 
-def test_bandwidth_fix(tmp_resource_spec):
-    r = ResourceSpec(resource_file=tmp_resource_spec)
-    assert r.network_bandwidth['1.1.1.1'] == 100
-    assert r.network_bandwidth['2.2.2.2'] == 222
+def test_bandwidth_fix(tmp_resource_spec_with_bandwidth):
+    r = ResourceSpec(resource_file=tmp_resource_spec_with_bandwidth)
+    assert r.network_bandwidth['1.1.1.1'] == 123
+    assert r.network_bandwidth['2.2.2.2'] == 456

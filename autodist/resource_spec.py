@@ -210,8 +210,8 @@ class ResourceSpec:
         if node.get('network_bandwidth'):
             self.__network_bandwidth[host_address] = node.get('network_bandwidth')
         else:
-            logging.warning('The bandwidth for {} is undefined and set as default (1 GBE).'
-                            'Caution that AutoStrategy might be inaccurate.'.format(host_address))
+            logging.debug('The bandwidth for {} is undefined and set as default (1 GBE). '
+                          'Caution: AutoStrategy might be inaccurate.'.format(host_address))
             self.__network_bandwidth[host_address] = 1
 
 
