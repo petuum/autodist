@@ -1,4 +1,4 @@
-# Mutli-node multi-gpu experiment
+# Mutli-node multi-cpu experiment
 
 nodes:
   - address: 10.20.41.57

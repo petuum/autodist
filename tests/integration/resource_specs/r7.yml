@@ -1,4 +1,4 @@
-# Single-node single-GPU experiment
+# Single-node single-cPU experiment
 
 nodes:
   - address: localhost
