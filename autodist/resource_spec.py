@@ -103,7 +103,7 @@ class ResourceSpec:
     @property
     def cpu_only_devices(self):
         """String-to-device_spec mapping of all cpu ONLY devices."""
-        gpu_addresses = set([k.split(':')[0] for k, _ in self.gpu_devices])
+        gpu_addresses = {k.split(':')[0] for k, _ in self.gpu_devices}
         cpu_only_devices = {k: v for k, v in self.cpu_devices if k.split(':')[0] not in gpu_addresses}
         return cpu_only_devices.items()
 

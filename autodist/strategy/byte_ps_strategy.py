@@ -1,10 +1,6 @@
 """BytePS StrategyBuilder."""
-from tensorflow.python.framework import ops
-
 from autodist.strategy.base import Strategy
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
-from autodist.strategy.all_reduce_strategy import AllReduce
-from autodist.kernel.common.utils import get_op_name
 
 
 class BytePS(PSLoadBalancing):
