@@ -84,6 +84,7 @@ class PSSynchronizer(Synchronizer):
             self._share_variable(item, var_op_name, master_replica=master_replica_index)
             master_var_name = ops.prepend_name_scope(var_name, replica_prefix(master_replica_index))
             master_var_op_name = get_op_name(master_var_name)
+            item.updated = True # force graph item to recalculate the dict
             grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
             agg_grad = self._aggregate_gradients(item, old_update_op=update_op, old_grad=grad, old_target=target)
 
@@ -223,6 +224,7 @@ class PSSynchronizer(Synchronizer):
             if i == master_replica:
                 continue
             this_var_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
+            graph_item.updated = True
             _, _, update_op = graph_item.var_op_name_to_grad_info[this_var_op_name]
             source_op = self._get_optimizer_source_op(update_op)
             remove_from_control_consumers(get_control_consumers(source_op), source_op)
@@ -261,6 +263,7 @@ class PSSynchronizer(Synchronizer):
         item = graph_item
         # here the variable on replica:0 has been shared, so the original var_name won't work
         var_op_name = ops.prepend_name_scope(get_op_name(var_name), replica_prefix(0))
+        item.updated = True
         gradient, target, update_op = item.var_op_name_to_grad_info[var_op_name]
         with item.graph.as_default():
             proxy = self._create_proxy(item, gradient, target) if self._local_replication else None

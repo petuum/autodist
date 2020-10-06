@@ -241,6 +241,8 @@ class GraphItem:
         # Info
         self.info = Info()
         self.optimizer, self.optimizer_args, self.optimizer_kwargs = None, None, None
+        self.updated = True 
+        self.var_op_name_to_grad_dict = None
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -319,6 +321,9 @@ class GraphItem:
     @property
     def var_op_name_to_grad_info(self):
         """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple."""
+        # if the graph has not been rewritten, return old dict instead of generating a new one
+        if not self.updated:
+          return self.var_op_name_to_grad_dict
         expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
         res = {}
         for op in self.all_update_ops:
@@ -336,6 +341,9 @@ class GraphItem:
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
                 res[var_op.name] = expected_var_ops[var_op] + (op,)
+        # recalculated the dict, set the indicator
+        self.var_op_name_to_grad_dict = res
+        self.updated = False
         return res
 
     def _is_auxiliary(self, update_op: ops.Operation):
