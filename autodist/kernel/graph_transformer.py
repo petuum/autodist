@@ -64,7 +64,6 @@ class GraphTransformer:
             graph_item, self._strategy.node_config = VariablePartitioner.apply(self._strategy.node_config, graph_item)
 
             visualization_util.log_graph(graph=graph_item.graph, name='1-after-partition')
-
             # Create Synchronizers for each node in the strategy
             self._initialize_synchronizers()
 
@@ -146,6 +145,7 @@ class GraphTransformer:
             GraphItem
         """
         new_graph_item = graph_item
+        new_graph_item.first_time_loop = True
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.in_graph_apply(new_graph_item, var_name)
         return new_graph_item
@@ -161,6 +161,7 @@ class GraphTransformer:
             GraphItem
         """
         new_graph_item = multi_gpu_graph_item
+        new_graph_item.first_time_loop = True
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.between_graph_apply(new_graph_item, var_name)
         self._prune_colocation_groups(new_graph_item)

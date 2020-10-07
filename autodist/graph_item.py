@@ -17,6 +17,7 @@
 import contextlib
 import copy
 import functools
+from collections import defaultdict
 from typing import Union, Callable
 
 from google.protobuf.any_pb2 import Any
@@ -242,7 +243,9 @@ class GraphItem:
         self.info = Info()
         self.optimizer, self.optimizer_args, self.optimizer_kwargs = None, None, None
         self.updated = True
-        self.var_op_name_to_grad_dict = None
+        self.var_op_name_to_grad_dict = dict()  #None
+        self.update_op_depend_var = defaultdict(list)
+        self.first_time_loop = True
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -325,6 +328,7 @@ class GraphItem:
         if not self.updated:
             return self.var_op_name_to_grad_dict
         expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
+        #on_trainable_variable = {var.op: True for grad, var in self.grad_target_pairs.items()}
         res = {}
         for op in self.all_update_ops:
             var_op = op.inputs[op_info.UPDATE_OP_VAR_POS].op
@@ -335,16 +339,28 @@ class GraphItem:
             # TODO: we should not hardcode this scope.
             # It is actually coming from the name given to the saver
             is_saving = update_op_scope.endswith('save')
-
             # TODO(future): support one variable -> multiple update ops (see AdamWeightDecay optimizer)
             if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
                 res[var_op.name] = expected_var_ops[var_op] + (op,)
+                self.var_op_name_to_grad_dict[var_op.name] = expected_var_ops[var_op] + (op,)
+                # analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
+                if self.first_time_loop:
+                    self.update_op_depend_var[op].append(var_op.name)
+                # this var has been done, remove this var from values of the dict
+                if len(self.update_op_depend_var[op]) != 0:
+                    self.update_op_depend_var[op].remove(var_op.name)
+                if len(self.update_op_depend_var[op]) == 0:
+                    self.all_update_ops.remove(op)
+
+                #print(len(self.all_update_ops))
         # recalculated the dict, set the indicator
-        self.var_op_name_to_grad_dict = res
+        #self.var_op_name_to_grad_dict = res
         self.updated = False
-        return res
+        self.first_time_loop = False
+        return self.var_op_name_to_grad_dict  #res
+
 
     def _is_auxiliary(self, update_op: ops.Operation):
         """Check whether a specific update_op is an auxiliary op that should not be considered."""

@@ -84,8 +84,10 @@ class PSSynchronizer(Synchronizer):
             self._share_variable(item, var_op_name, master_replica=master_replica_index)
             master_var_name = ops.prepend_name_scope(var_name, replica_prefix(master_replica_index))
             master_var_op_name = get_op_name(master_var_name)
-            item.updated = True    # force graph item to recalculate the dict
+            #item.updated = True    # force graph item to recalculate the dict
             grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
+            #print(grad, target, update_op,master_var_op_name,master_var_name)
+            #assert False
             agg_grad = self._aggregate_gradients(item, old_update_op=update_op, old_grad=grad, old_target=target)
 
         # update grad_target_pair and variable info
