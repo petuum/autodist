@@ -162,6 +162,7 @@ class GraphTransformer:
         """
         new_graph_item = multi_gpu_graph_item
         new_graph_item.first_time_loop = True
+        GraphItem.all_update_ops.fget.cache_clear()
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.between_graph_apply(new_graph_item, var_name)
         self._prune_colocation_groups(new_graph_item)

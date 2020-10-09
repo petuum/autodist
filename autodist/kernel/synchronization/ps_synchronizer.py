@@ -86,6 +86,7 @@ class PSSynchronizer(Synchronizer):
             master_var_op_name = get_op_name(master_var_name)
             #item.updated = True    # force graph item to recalculate the dict
             grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
+            item.var_quried.append(master_var_op_name)
             #print(grad, target, update_op,master_var_op_name,master_var_name)
             #assert False
             agg_grad = self._aggregate_gradients(item, old_update_op=update_op, old_grad=grad, old_target=target)
@@ -267,6 +268,8 @@ class PSSynchronizer(Synchronizer):
         var_op_name = ops.prepend_name_scope(get_op_name(var_name), replica_prefix(0))
         item.updated = True
         gradient, target, update_op = item.var_op_name_to_grad_info[var_op_name]
+        item.var_quried.append(var_op_name)
+        #print(item.var_quried)
         with item.graph.as_default():
             proxy = self._create_proxy(item, gradient, target) if self._local_replication else None
             if proxy:
