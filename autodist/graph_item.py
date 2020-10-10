@@ -242,11 +242,25 @@ class GraphItem:
         # Info
         self.info = Info()
         self.optimizer, self.optimizer_args, self.optimizer_kwargs = None, None, None
+
+
+        # Optimizing the var_op_name_to_grad query.
+        # used to inform the var_op_name_to_grad_dict that the graph has been modified
+        # only used when the synchronizer is calling the lookup with optimize=True
         self.updated = True
-        self.var_op_name_to_grad_dict = dict()  #None
+        # used to cached the result of var_op_name_to_grad function from last time
+        self.var_op_name_to_grad_dict = dict()
+        # map the updated op to its inputs variables, used to optimize var_op_name_to_grad
         self.update_op_depend_var = defaultdict(list)
+
+        # on if this graph is in loop optimize mode for the first time
         self.first_time_loop = True
         self.var_quried = []
+
+
+    def end_loop_optimize(self):
+        """end a loop of synchronizer apply, so that first_time_loop is reset"""
+        self.first_time_loop = True
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -325,6 +339,33 @@ class GraphItem:
     @property
     def var_op_name_to_grad_info(self):
         """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple."""
+        if not self.updated:
+            return self.var_op_name_to_grad_dict
+        expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
+        res = {}
+        for op in self.all_update_ops:
+            var_op = op.inputs[op_info.UPDATE_OP_VAR_POS].op
+            on_trainable_variable = var_op in expected_var_ops
+            var_scope = var_op.name
+            update_op_scope = parse_name_scope(op.name)
+            is_initialization = update_op_scope == var_scope
+            # TODO: we should not hardcode this scope.
+            # It is actually coming from the name given to the saver
+            is_saving = update_op_scope.endswith('save')
+
+            # TODO(future): support one variable -> multiple update ops (see AdamWeightDecay optimizer)
+            if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
+                if var_op.name in res:
+                    raise ValueError('A variable cannot correspond to more than one update op for now.')
+                res[var_op.name] = expected_var_ops[var_op] + (op,)
+        self.updated = False
+        self.var_op_name_to_grad_dict = res
+        return res
+
+    @property
+    def var_op_name_to_grad_info_optimize(self):
+        """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple.
+           An optimized version that is aware of this method is iteratively used"""
         # if the graph has not been rewritten, return old dict instead of generating a new one
         if not self.updated:
             return self.var_op_name_to_grad_dict
@@ -340,27 +381,27 @@ class GraphItem:
             # It is actually coming from the name given to the saver
             is_saving = update_op_scope.endswith('save')
             # TODO(future): support one variable -> multiple update ops (see AdamWeightDecay optimizer)
-            #print(on_trainable_variable, is_initialization, is_saving, self._is_auxiliary(op))
             if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
-                res[var_op.name] = expected_var_ops[var_op] + (op,)
+                #res[var_op.name] = expected_var_ops[var_op] + (op,)
                 self.var_op_name_to_grad_dict[var_op.name] = expected_var_ops[var_op] + (op,)
                 # analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
-                if self.first_time_loop:
-                    self.update_op_depend_var[op].append(var_op.name)
+                # if self.first_time_loop:
+                #     self.update_op_depend_var[op].append(var_op.name)
+                #
+                # assert len(self.var_quried) <= 1
+                # if len(self.var_quried) > 0:
+                #     if var_op.name == self.var_quried[0]:
+                #         self.update_op_depend_var[op].remove(var_op.name)
+                #         self.var_quried.remove(var_op.name)
+                # if len(self.update_op_depend_var[op]) == 0:
+                #     self.all_update_ops.remove(op)
 
-                assert len(self.var_quried) <= 1
-                if len(self.var_quried) > 0:
-                    if var_op.name == self.var_quried[0]:
-                        self.update_op_depend_var[op].remove(var_op.name)
-                        self.var_quried.remove(var_op.name)
-                if len(self.update_op_depend_var[op]) == 0:
-                    self.all_update_ops.remove(op)
         # recalculated the dict, set the indicator
         self.updated = False
         self.first_time_loop = False
-        return self.var_op_name_to_grad_dict  #res
+        return self.var_op_name_to_grad_dict
 
 
     def _is_auxiliary(self, update_op: ops.Operation):
@@ -398,7 +439,7 @@ class GraphItem:
             ) if isinstance(g, tuple) else self.graph.get_tensor_by_name(g): self.graph.get_tensor_by_name(t)
             for g, t in self._grad_target_pairs.items()}
 
-    @cached_property
+    @property
     def trainable_var_op_to_var(self):
         """
         Mapping from trainable variable ops (e.g. VarHandleOps) to the Variables.

@@ -63,13 +63,14 @@ class PSSynchronizer(Synchronizer):
         self._var_op_to_accum_apply_op = {}
         super().__init__()
 
-    def in_graph_apply(self, graph_item, var_name):
+    def in_graph_apply(self, graph_item, var_name, optimize = False):
         """
         Apply in-graph ps synchronization.
 
         Args:
             graph_item: the old graph item
             var_name: the variable name w/o replica prefix
+            optimize: True if this is iteratively called
 
         Returns:
             graph_item.GraphItem
@@ -80,13 +81,15 @@ class PSSynchronizer(Synchronizer):
         master_replica_index = 0
 
         with item.graph.as_default():
-            self._prune_control_dependencies(item, var_op_name, master_replica=master_replica_index)
+            self._prune_control_dependencies(item, var_op_name, master_replica=master_replica_index, optimize=optimize)
             self._share_variable(item, var_op_name, master_replica=master_replica_index)
             master_var_name = ops.prepend_name_scope(var_name, replica_prefix(master_replica_index))
             master_var_op_name = get_op_name(master_var_name)
-            #item.updated = True    # force graph item to recalculate the dict
-            grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
-            item.var_quried.append(master_var_op_name)
+            if optimize:
+                grad, target, update_op = item.var_op_name_to_grad_info_optimize[master_var_op_name]
+                item.var_quried.append(master_var_op_name)
+            else:
+                grad, target, update_op = item.var_op_name_to_grad_info[master_var_op_name]
             #print(grad, target, update_op,master_var_op_name,master_var_name)
             #assert False
             agg_grad = self._aggregate_gradients(item, old_update_op=update_op, old_grad=grad, old_target=target)
@@ -212,7 +215,7 @@ class PSSynchronizer(Synchronizer):
             raise RuntimeError("Incorrect old_grad.")
         return agg_grad
 
-    def _prune_control_dependencies(self, graph_item, var_op_name, master_replica=0):
+    def _prune_control_dependencies(self, graph_item, var_op_name, master_replica=0, optimize = False):
         """
         Prune the control dependencies between the train_op on non-master replica and update op.
 
@@ -227,8 +230,11 @@ class PSSynchronizer(Synchronizer):
             if i == master_replica:
                 continue
             this_var_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
-            graph_item.updated = True
-            _, _, update_op = graph_item.var_op_name_to_grad_info[this_var_op_name]
+            if optimize:
+                graph_item.updated = True
+                _, _, update_op = graph_item.var_op_name_to_grad_info_optimize[this_var_op_name]
+            else:
+                _, _, update_op = graph_item.var_op_name_to_grad_info[this_var_op_name]
             source_op = self._get_optimizer_source_op(update_op)
             remove_from_control_consumers(get_control_consumers(source_op), source_op)
 
@@ -250,13 +256,14 @@ class PSSynchronizer(Synchronizer):
 
     _BETWEEN_GRAPH_APPLY_SCOPE = 'autodist-between'.lower()
 
-    def between_graph_apply(self, graph_item, var_name):
+    def between_graph_apply(self, graph_item, var_name, optimize = False):
         """
         Apply between-graph synchronization to the target ops in the graph.
 
         Args:
             graph_item: The current graph.
             var_name: the variable to be synchronized.
+            optimize: True if iteratively called
 
         Returns:
             graph_item.GraphItem: updated graph item.
@@ -266,10 +273,12 @@ class PSSynchronizer(Synchronizer):
         item = graph_item
         # here the variable on replica:0 has been shared, so the original var_name won't work
         var_op_name = ops.prepend_name_scope(get_op_name(var_name), replica_prefix(0))
-        item.updated = True
-        gradient, target, update_op = item.var_op_name_to_grad_info[var_op_name]
-        item.var_quried.append(var_op_name)
-        #print(item.var_quried)
+        if optimize:
+            item.updated = True
+            gradient, target, update_op = item.var_op_name_to_grad_info_optimize[var_op_name]
+            item.var_quried.append(var_op_name)
+        else:
+            gradient, target, update_op = item.var_op_name_to_grad_info[var_op_name]
         with item.graph.as_default():
             proxy = self._create_proxy(item, gradient, target) if self._local_replication else None
             if proxy:
@@ -304,6 +313,7 @@ class PSSynchronizer(Synchronizer):
         this_worker_cpu = this_worker_cpu.replace(device_type='CPU', device_index=0)
 
         var_op = var_update_op.inputs[UPDATE_OP_VAR_POS].op
+        #print(graph_item.trainable_var_op_to_var)
         is_trainable = var_op in graph_item.trainable_var_op_to_var
         source_op = self._get_optimizer_source_op(var_update_op)
         cc = get_control_consumers(source_op)
