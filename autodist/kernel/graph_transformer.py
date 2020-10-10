@@ -145,11 +145,10 @@ class GraphTransformer:
             GraphItem
         """
         new_graph_item = graph_item
+        new_graph_item.start_loop_optimize()
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.in_graph_apply(new_graph_item, var_name, optimize = True)
-            new_graph_item.end_loop_optimize()
-        # MUST turn off the optimize after use
-        new_graph_item.loop_optimize = False
+        new_graph_item.end_loop_optimize()
         return new_graph_item
 
     def _between_graph_apply(self, multi_gpu_graph_item: GraphItem):
@@ -163,12 +162,11 @@ class GraphTransformer:
             GraphItem
         """
         new_graph_item = multi_gpu_graph_item
-        #GraphItem.all_update_ops.fget.cache_clear()
+        new_graph_item.start_loop_optimize()
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.between_graph_apply(new_graph_item, var_name, optimize = True)
-            new_graph_item.end_loop_optimize()
+        new_graph_item.end_loop_optimize()
         self._prune_colocation_groups(new_graph_item)
-        new_graph_item.loop_optimize = False
         # TODO: make this work
         # update_shard_values_for_worker(num_workers, worker_id)
         return new_graph_item

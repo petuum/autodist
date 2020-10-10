@@ -255,12 +255,24 @@ class GraphItem:
 
         # on if this graph is in loop optimize mode for the first time
         self.first_time_loop = True
+        self.loop_phase = False
         self.var_quried = []
+        self.useful_update_op = []
 
+        # how many local replica is this graph comprised of
+        self.num_replica = 0
+        self.var_op_appear_time = defaultdict(int)
+
+
+    def start_loop_optimize(self):
+        """start a loop of synchronizer apply"""
+        self.first_time_loop = True
+        self.loop_phase = True
 
     def end_loop_optimize(self):
-        """end a loop of synchronizer apply, so that first_time_loop is reset"""
+        """end a loop of synchronizer apply"""
         self.first_time_loop = True
+        self.loop_phase = False
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -339,8 +351,10 @@ class GraphItem:
     @property
     def var_op_name_to_grad_info(self):
         """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple."""
-        if not self.updated:
-            return self.var_op_name_to_grad_dict
+        # this method only called when the caller does not know there is an optimization for this.
+        # so if it is in loop phase, we compute the dict again.
+        if (not self.updated and not self.loop_phase):
+           return self.var_op_name_to_grad_dict
         expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
         res = {}
         for op in self.all_update_ops:
@@ -370,8 +384,11 @@ class GraphItem:
         if not self.updated:
             return self.var_op_name_to_grad_dict
         expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
-        res = {}
-        for op in self.all_update_ops:
+        res = []
+        # keep a list of useful update_op
+        if self.first_time_loop:
+            self.useful_update_op = self.all_update_ops.copy()
+        for op in self.useful_update_op:
             var_op = op.inputs[op_info.UPDATE_OP_VAR_POS].op
             on_trainable_variable = var_op in expected_var_ops
             var_scope = var_op.name
@@ -384,23 +401,23 @@ class GraphItem:
             if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
-                #res[var_op.name] = expected_var_ops[var_op] + (op,)
+                res.append(var_op.name)
                 self.var_op_name_to_grad_dict[var_op.name] = expected_var_ops[var_op] + (op,)
-                # analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
-                # if self.first_time_loop:
-                #     self.update_op_depend_var[op].append(var_op.name)
-                #
-                # assert len(self.var_quried) <= 1
-                # if len(self.var_quried) > 0:
-                #     if var_op.name == self.var_quried[0]:
-                #         self.update_op_depend_var[op].remove(var_op.name)
-                #         self.var_quried.remove(var_op.name)
-                # if len(self.update_op_depend_var[op]) == 0:
-                #     self.all_update_ops.remove(op)
+                #analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
+                if self.first_time_loop:
+                    self.update_op_depend_var[op].append(var_op.name)
+
+                assert len(self.var_quried) <= 1
+                if len(self.var_quried) > 0:
+                    if var_op.name == self.var_quried[0]:
+                        self.var_op_appear_time[var_op] += 1
+                        self.var_quried.remove(var_op.name)
+                        self.useful_update_op.remove(op)
 
         # recalculated the dict, set the indicator
         self.updated = False
         self.first_time_loop = False
+        #print(self.var_op_name_to_grad_dict["AutoDist-Replica-0/word_embeddings/embeddings"])
         return self.var_op_name_to_grad_dict
 
 
