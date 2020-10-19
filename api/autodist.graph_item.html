@@ -293,7 +293,7 @@ first time it is called.</p>
 <dl class="py class">
 <dt id="autodist.graph_item.Info">
 <em class="property">class </em><code class="sig-name descname">Info</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.Info" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Stores useful variable tracking information.</p>
 <p>In essence, replaces collections, and this way
 we don’t have to deal with <cite>MetaGraphs</cite>.</p>
@@ -329,7 +329,7 @@ we don’t have to deal with <cite>MetaGraphs</cite>.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>variables</strong> (<em>Iterable</em><em>[</em><em>VariableType</em><em>]</em>) – Iterable of variables to insert.</p></li>
-<li><p><strong>replace</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Whether or not to overwrite existing contents.</p></li>
+<li><p><strong>replace</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Whether or not to overwrite existing contents.</p></li>
 </ul>
 </dd>
 </dl>
@@ -342,8 +342,8 @@ we don’t have to deal with <cite>MetaGraphs</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>table_initializers</strong> (<em>Iterable</em><em>(</em><em>Union</em><em>[</em><em>ops.Operation</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a><em>]</em>) – Initializers for lookup tables.</p></li>
-<li><p><strong>replace</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Whether or not to overwrite existing contents.</p></li>
+<li><p><strong>table_initializers</strong> (<em>Iterable</em><em>(</em><em>Union</em><em>[</em><em>ops.Operation</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>]</em>) – Initializers for lookup tables.</p></li>
+<li><p><strong>replace</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Whether or not to overwrite existing contents.</p></li>
 </ul>
 </dd>
 </dl>
@@ -374,7 +374,7 @@ we don’t have to deal with <cite>MetaGraphs</cite>.</p>
 <dl class="py class">
 <dt id="autodist.graph_item.GraphItem">
 <em class="property">class </em><code class="sig-name descname">GraphItem</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">graph</span><span class="p">:</span> <span class="n">tensorflow.python.framework.ops.Graph</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">graph_def</span><span class="p">:</span> <span class="n">tensorflow.core.framework.graph_pb2.GraphDef</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>GraphItem is a TensorFlow Graph wrapper.</p>
 <p>It represents the states in-between consecutive AutoDist.kernel graph transformations.
 tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.</p>
@@ -417,7 +417,7 @@ tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/gen
 
 <dl class="py method">
 <dt id="autodist.graph_item.GraphItem.pop_gradient_info">
-<code class="sig-name descname">pop_gradient_info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.pop_gradient_info" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">pop_gradient_info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.pop_gradient_info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pop out a grad target pair by variable name.</p>
 </dd></dl>
 
@@ -499,7 +499,7 @@ tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/gen
 <dd><p>Get the binding op for a given colocation group.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>colocation_group</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><em>bytes</em></a>) – The colocation group</p>
+<dd class="field-odd"><p><strong>colocation_group</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)"><em>bytes</em></a>) – The colocation group</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Op</p>
@@ -513,7 +513,7 @@ tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/gen
 <dd><p>Given an iterator of ops or op names, return the corresponding ops in self graph.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>op_iter</strong> (<em>Iterable</em><em>[</em><em>Union</em><em>[</em><em>ops.Operation</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a><em>]</em><em>]</em>) – Ops or ops names</p>
+<dd class="field-odd"><p><strong>op_iter</strong> (<em>Iterable</em><em>[</em><em>Union</em><em>[</em><em>ops.Operation</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>]</em><em>]</em>) – Ops or ops names</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Iterable</p>
