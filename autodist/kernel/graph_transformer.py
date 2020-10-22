@@ -99,11 +99,13 @@ class GraphTransformer:
                 for part in node.part_config:
                     self._synchronizers[part.var_name] = \
                         Synchronizer.create(part.WhichOneof('synchronizer'),
-                                            getattr(part, part.WhichOneof('synchronizer')))
+                                            getattr(part, part.WhichOneof('synchronizer')),
+                                            part.compressor)
             else:
                 self._synchronizers[node.var_name] = \
                     Synchronizer.create(node.WhichOneof('synchronizer'),
-                                        getattr(node, node.WhichOneof('synchronizer')))
+                                        getattr(node, node.WhichOneof('synchronizer')).
+                                        node.compressor)
 
         config = self._strategy.graph_config.replicas
         replica_devices = {device_spec.DeviceSpecV2.from_string(s) for s in config}

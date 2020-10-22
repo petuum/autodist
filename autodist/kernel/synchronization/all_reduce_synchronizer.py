@@ -27,7 +27,7 @@ from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.synchronization.collective_key import get_collective_keys
 from autodist.kernel.synchronization.compressor import Compressor, CollectiveOpsConfig
 from autodist.kernel.synchronization.synchronizer import Synchronizer
-from autodist.proto import synchronizers_pb2
+from autodist.proto import synchronizers_pb2, compressor_pb2
 from autodist.utils import logging
 
 
@@ -50,7 +50,7 @@ class AllReduceSynchronizer(Synchronizer):
     2. any other types of hybrid reduction of PS and AllReduce.
     """
 
-    def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer):
+    def __init__(self, config: synchronizers_pb2.AllReduceSynchronizer, compressor_value):
         self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(config.spec)
         if autodist.float_major_minor_tf_version < 1.15 or autodist.float_major_minor_tf_version < 2.1:
             logging.warning('Collective synchronizer spec "{}" a.k.a communication_hint has no effect '
@@ -58,7 +58,7 @@ class AllReduceSynchronizer(Synchronizer):
                             .format(self._spec))
             self._spec = None
 
-        self._compressor_type = synchronizers_pb2.AllReduceSynchronizer.Compressor.Name(config.compressor)
+        self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
 
         # Collective ops within the same group will be merged by the scoped optimizer.
         # Normally the group index shall be smaller than the number of variables in the graph; this kernel assumes

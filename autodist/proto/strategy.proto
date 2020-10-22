@@ -23,6 +23,8 @@ package autodist.proto;
 
 import "autodist/proto/synchronizers.proto";
 
+import "autodist/proto/compressor.proto";
+
 
 /**
  * Represents the strategy the AutoDist backend will implement.
@@ -48,6 +50,8 @@ message Strategy {
         }
         string partitioner = 4;  // Optional partitioner configuration, e.g. `1, 2, 1`
         repeated Node part_config = 5;   // Optional node configs for each node partition (if partitioned)
+
+        autodist.proto.Compressor compressor = 6;
     }
 
     /** configuration of some individual nodes of the computational graph */
