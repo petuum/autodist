@@ -235,12 +235,10 @@ class PowerSGDCompressor(CompressorEF):
 
         # compressor init
         if self.compressor is None:
-            self.compressor = random_ops.random_normal([array_ops.shape_v2(tensor)[1], self.rank])
+            self.compressor = random_ops.random_normal([array_ops.shape_v2(tensor)[1], self.rank], seed=1000)
 
-            # synchronize compressor init statue
             self.compressor_conf = copy.copy(conf)
             self.conf.instance_key = get_collective_keys().get_instance_key(self.var_op_name + '/compressor')
-            self.compressor = self._all_reduce(self.compressor, self.compressor_conf)
 
         if self.error is not None:
             tensor += self.error
