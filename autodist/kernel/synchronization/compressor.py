@@ -300,5 +300,5 @@ class PowerSGDCompressor(CompressorEF):
 
             rest = matrix[:, (i + 1):]
             rest -= math_ops.reduce_sum_v1(v * rest, axis=0, keepdims=True) * v
-            matrix = array_ops.concat([matrix[:, :i], v, rest], axis=1)
+            matrix = array_ops.concat([matrix[:, :i], v, rest], 1)
         return matrix
