@@ -35,7 +35,7 @@ from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancesto
     remove_from_control_consumers, get_index_from_tensor_name, update_colocation_group
 from autodist.kernel.common.variable_utils import get_read_var_ops
 from autodist.kernel.synchronization.synchronizer import Synchronizer
-from autodist.proto import synchronizers_pb2
+from autodist.proto import synchronizers_pb2, strategy_pb2
 
 
 class PSSynchronizer(Synchronizer):
@@ -53,15 +53,19 @@ class PSSynchronizer(Synchronizer):
     for each variable for the workers to mark when their variable update is complete.
     """
 
-    def __init__(self, config: synchronizers_pb2.PSSynchronizer):
-        self.target_device = config.reduction_destination if config.reduction_destination else ""
-        self._local_replication = config.local_replication
-        self._sync = config.sync
-        self._staleness = config.staleness
+    def __init__(self, config: strategy_pb2.Strategy.Node):
+        syncer_config = getattr(config, config.WhichOneof('synchronizer'))
+        compressor_value = getattr(config, 'compressor')
+        self.target_device = syncer_config.reduction_destination if syncer_config.reduction_destination else ""
+        self._local_replication = syncer_config.local_replication
+        self._sync = syncer_config.sync
+        self._staleness = syncer_config.staleness
 
         self._var_op_to_agg_grad = {}
         self._var_op_to_accum_apply_op = {}
         super().__init__()
+        if compressor_value:
+            self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
 
     def in_graph_apply(self, graph_item, var_name):
         """

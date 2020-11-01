@@ -23,14 +23,14 @@ from tensorflow.python.ops import collective_ops, math_ops
 #from autodist.utils import logging
 
 
-class CollectiveOpsConfig:
-    """Config for using Collective Ops."""
+# class CollectiveOpsConfig:
+#     """Config for using Collective Ops."""
 
-    group_size: int
-    group_key: str
-    instance_key: str
-    merge_op: str
-    final_op: str
+#     group_size: int
+#     group_key: str
+#     instance_key: str
+#     merge_op: str
+#     final_op: str
 
 
 class Compressor(ABC):
@@ -44,21 +44,21 @@ class Compressor(ABC):
     def __init__(self, var_op_name):
         self.var_op_name = var_op_name
 
+    # @abstractmethod
+    # def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
+    #     """
+    #     Compress, reduce, and decompress a given tensor.
+
+    #     Args:
+    #         tensor (Tensor): the Tensor to reduce.
+    #         conf (CollectiveOpsConfig): the config for Collective Ops.
+
+    #     Returns:
+    #         Reduced Tensor
+    #     """
+
     @abstractmethod
-    def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
-        """
-        Compress, reduce, and decompress a given tensor.
-
-        Args:
-            tensor (Tensor): the Tensor to reduce.
-            conf (CollectiveOpsConfig): the config for Collective Ops.
-
-        Returns:
-            Reduced Tensor
-        """
-
-    @abstractmethod
-    def _compress(self, tensor: Tensor):
+    def compress(self, tensor: Tensor):
         """
         Compress a given tensor.
 
@@ -70,7 +70,7 @@ class Compressor(ABC):
         """
 
     @abstractmethod
-    def _decompress(self, compressed_tensor: Tensor):
+    def decompress(self, compressed_tensor: Tensor):
         """
         Decompress a given tensor.
 
@@ -81,19 +81,19 @@ class Compressor(ABC):
             Tensor, Context
         """
 
-    @staticmethod
-    def _all_reduce(tensor: Tensor, conf: CollectiveOpsConfig):
-        """
-        Using CollectiveOps, AllReduce the given tensor.
+    # @staticmethod
+    # def _all_reduce(tensor: Tensor, conf: CollectiveOpsConfig):
+    #     """
+    #     Using CollectiveOps, AllReduce the given tensor.
 
-        Args:
-            tensor (Tensor): the tensor to all-reduce
-            conf (CollectiveOpsConfig): the config for CollectiveOps
+    #     Args:
+    #         tensor (Tensor): the tensor to all-reduce
+    #         conf (CollectiveOpsConfig): the config for CollectiveOps
 
-        Returns:
-            The All-Reduced Tensor
-        """
-        return collective_ops.all_reduce(tensor, **conf.__dict__)
+    #     Returns:
+    #         The All-Reduced Tensor
+    #     """
+    #     return collective_ops.all_reduce(tensor, **conf.__dict__)
 
     @classmethod
     def create(cls, name, *args, **kwargs):
@@ -124,45 +124,50 @@ class CompressorEF(Compressor, ABC):
         self.error = None
         super().__init__(var_op_name)
 
-    def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
-        """
-        Compress, reduce, and decompress a given tensor.
+    # def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
+    #     """
+    #     Compress, reduce, and decompress a given tensor.
 
-        Args:
-            tensor (Tensor): the Tensor to reduce.
-            conf (CollectiveOpsConfig): the config for Collective Ops.
+    #     Args:
+    #         tensor (Tensor): the Tensor to reduce.
+    #         conf (CollectiveOpsConfig): the config for Collective Ops.
 
-        Returns:
-            Reduced Tensor
-        """
+    #     Returns:
+    #         Reduced Tensor
+    #     """
+    #     if self.error is not None:
+    #         tensor += self.error
+    #     compressed_tensor = self._compress(tensor)
+    #     self.error = tensor - self._decompress(compressed_tensor)
+    #     reduced = self._all_reduce(compressed_tensor, conf)
+    #     return self._decompress(reduced)
+
+    def compute_error(self, tensor: Tensor):
         if self.error is not None:
             tensor += self.error
         compressed_tensor = self._compress(tensor)
         self.error = tensor - self._decompress(compressed_tensor)
-        reduced = self._all_reduce(compressed_tensor, conf)
-        return self._decompress(reduced)
-
 
 class NoneCompressor(Compressor):
     """An identity Compressor."""
 
-    def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
-        """
-        Compress, reduce, and decompress a given tensor.
+    # def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
+    #     """
+    #     Compress, reduce, and decompress a given tensor.
 
-        Args:
-            tensor (Tensor): the Tensor to reduce.
-            conf (CollectiveOpsConfig): the config for Collective Ops.
+    #     Args:
+    #         tensor (Tensor): the Tensor to reduce.
+    #         conf (CollectiveOpsConfig): the config for Collective Ops.
 
-        Returns:
-            Reduced Tensor
-        """
-        return self._all_reduce(tensor, conf)
+    #     Returns:
+    #         Reduced Tensor
+    #     """
+    #     return self._all_reduce(tensor, conf)
 
-    def _compress(self, tensor: Tensor):
+    def compress(self, tensor: Tensor):
         return tensor
 
-    def _decompress(self, compressed_tensor: Tensor):
+    def decompress(self, compressed_tensor: Tensor):
         return compressed_tensor
 
 
@@ -173,22 +178,22 @@ class HorovodCompressor(Compressor):
         self.dtype = None
         super().__init__(var_op_name)
 
-    def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
-        """
-        Compress, reduce, and decompress a given tensor.
+    # def reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
+    #     """
+    #     Compress, reduce, and decompress a given tensor.
 
-        Args:
-            tensor (Tensor): the Tensor to reduce.
-            conf (CollectiveOpsConfig): the config for Collective Ops.
+    #     Args:
+    #         tensor (Tensor): the Tensor to reduce.
+    #         conf (CollectiveOpsConfig): the config for Collective Ops.
 
-        Returns:
-            Reduced Tensor
-        """
-        compressed_tensor = self._compress(tensor)
-        reduced = self._all_reduce(compressed_tensor, conf)
-        return self._decompress(reduced)
+    #     Returns:
+    #         Reduced Tensor
+    #     """
+    #     compressed_tensor = self._compress(tensor)
+    #     reduced = self._all_reduce(compressed_tensor, conf)
+    #     return self._decompress(reduced)
 
-    def _compress(self, tensor: Tensor):
+    def compress(self, tensor: Tensor):
         self.dtype = tensor.dtype
         tensor_compressed = tensor
         if tensor.dtype.is_floating:
@@ -197,12 +202,12 @@ class HorovodCompressor(Compressor):
             tensor_compressed = math_ops.cast(tensor, dtypes.float32)
         return tensor_compressed
 
-    def _decompress(self, compressed_tensor: Tensor):
+    def decompress(self, compressed_tensor: Tensor):
         return math_ops.cast(compressed_tensor, self.dtype)
 
 
-class HorovodCompressorEF(CompressorEF, HorovodCompressor):  # This works because of Method Resolution Order
-    """Horovod's Compression but with Error Feedback."""
+# class HorovodCompressorEF(CompressorEF, HorovodCompressor):  # This works because of Method Resolution Order
+#     """Horovod's Compression but with Error Feedback."""
 
 
 # class PowerSGDCompressor(CompressorEF):

@@ -41,6 +41,7 @@ class Synchronizer(ABC):
         self.var_op_to_accum_apply_op = None
         self.is_chief = None
         self.all_canonical_replica_devices = None
+        self._compressor_type = None
 
     # pylint: disable=too-many-arguments
     def assign_cluster_information(self,
