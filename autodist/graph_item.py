@@ -259,10 +259,6 @@ class GraphItem:
         self.var_quried = []
         self.useful_update_op = []
 
-        # how many local replica is this graph comprised of
-        self.num_replica = 0
-        self.var_op_appear_time = defaultdict(int)
-
     def start_loop_optimize(self):
         """Start a loop of synchronizer apply."""
         self.first_time_loop = True
@@ -396,16 +392,16 @@ class GraphItem:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
                 res.append(var_op.name)
                 self.var_op_name_to_grad_dict[var_op.name] = expected_var_ops[var_op] + (op,)
-                #analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
                 if self.first_time_loop:
                     self.update_op_depend_var[op].append(var_op.name)
-
-        #         assert len(self.var_quried) <= 1
-        #         if len(self.var_quried) > 0:
-        #             if var_op.name == self.var_quried[0]:
-        #                 self.var_op_appear_time[var_op] += 1
-        #                 self.var_quried.remove(var_op.name)
-        #                 self.useful_update_op.remove(op)
+                #analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
+                assert len(self.var_quried) <= 1
+                if len(self.var_quried) > 0:
+                    if var_op.name == self.var_quried[0]:
+                        self.var_quried.remove(var_op.name)
+                        self.update_op_depend_var[op].remove(var_op.name)
+                        if len(self.update_op_depend_var[op]) == 0:
+                            self.useful_update_op.remove(op)
         # recalculated the dict, set the indicator
         self.updated = False
         self.first_time_loop = False
