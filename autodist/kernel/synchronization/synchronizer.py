@@ -60,13 +60,16 @@ class Synchronizer(ABC):
         return self
 
     @abstractmethod
-    def in_graph_apply(self, graph_item, var_name):
+    def in_graph_apply(self, graph_item, var_name, optimize=False):
         """
         Apply in-graph synchronization to the grad and target in the graph.
 
         Args:
             graph_item (graph_item.GraphItem): The graph to put the new ops in.
             var_name (str): The variable name w/o the replica prefix.
+            optimize (bool): whether to use loop optimize when building graph.
+                             Only apply when this call from graph_transformer.
+
 
         Returns:
             graph_item.GraphItem
@@ -74,13 +77,15 @@ class Synchronizer(ABC):
         return
 
     @abstractmethod
-    def between_graph_apply(self, graph_item, var_name):
+    def between_graph_apply(self, graph_item, var_name, optimize=False):
         """
         Apply between-graph synchronization to the target ops in the graph.
 
         Args:
             graph_item (graph_item.GraphItem): The graph to put the new ops in.
             var_name (str): The variable name w/o the replica prefix.
+            optimize (bool): whether to use loop optimize when building graph.
+                             Only apply when this call from graph_transformer.
 
         Returns:
             graph_item.GraphItem

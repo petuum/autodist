@@ -17,6 +17,7 @@
 import contextlib
 import copy
 import functools
+from collections import defaultdict
 from typing import Union, Callable
 
 from google.protobuf.any_pb2 import Any
@@ -216,6 +217,7 @@ class Info:
 
 class GraphItem:
     """
+
     GraphItem is a TensorFlow Graph wrapper.
 
     It represents the states in-between consecutive AutoDist.kernel graph transformations.
@@ -224,6 +226,7 @@ class GraphItem:
     A GraphItem can be constructed with either a `tf.Graph` or a `GraphDef`.
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, graph: ops.Graph = None, graph_def: GraphDef = None):
         if graph:
             self._graph = graph
@@ -241,6 +244,34 @@ class GraphItem:
         # Info
         self.info = Info()
         self.optimizer, self.optimizer_args, self.optimizer_kwargs = None, None, None
+        # Optimizing the var_op_name_to_grad query.
+        # used to inform the var_op_name_to_grad_dict that the graph has been modified
+        # only used when the synchronizer is calling the lookup with optimize=True
+        self.updated = True
+        # used to cached the result of var_op_name_to_grad function from last time
+        self.var_op_name_to_grad_dict = dict()
+        # map the updated op to its inputs variables, used to optimize var_op_name_to_grad
+        self.update_op_depend_var = defaultdict(list)
+
+        # on if this graph is in loop optimize mode for the first time
+        self.first_time_loop = True
+        self.loop_phase = False
+        self.var_quried = []
+        self.useful_update_op = []
+
+        # how many local replica is this graph comprised of
+        self.num_replica = 0
+        self.var_op_appear_time = defaultdict(int)
+
+    def start_loop_optimize(self):
+        """Start a loop of synchronizer apply."""
+        self.first_time_loop = True
+        self.loop_phase = True
+
+    def end_loop_optimize(self):
+        """End a loop of synchronizer apply."""
+        self.first_time_loop = True
+        self.loop_phase = False
 
     def get_trainable_variables(self):
         """Get variables that need to be synchronized if doing data parallelism."""
@@ -319,6 +350,8 @@ class GraphItem:
     @property
     def var_op_name_to_grad_info(self):
         """A mapping from VarHandleOp name (e.g. "W" not "W:0") to its (grad, var, update_op) tuple."""
+        if (not self.updated and not self.loop_phase):
+            return self.var_op_name_to_grad_dict
         expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
         res = {}
         for op in self.all_update_ops:
@@ -336,7 +369,47 @@ class GraphItem:
                 if var_op.name in res:
                     raise ValueError('A variable cannot correspond to more than one update op for now.')
                 res[var_op.name] = expected_var_ops[var_op] + (op,)
+        self.updated = False
+        self.var_op_name_to_grad_dict = res
         return res
+
+    @property
+    def var_op_name_to_grad_info_optimize(self):
+        """An optimized version that is aware of this method is iteratively used."""
+        # if the graph has not been rewritten, return old dict instead of generating a new one
+        if not self.updated:
+            return self.var_op_name_to_grad_dict
+        expected_var_ops = {var.op: (grad, var) for grad, var in self.grad_target_pairs.items()}
+        res = []
+        # keep a list of useful update_op
+        if self.first_time_loop:
+            self.useful_update_op = self.all_update_ops.copy()
+        for op in self.useful_update_op:
+            var_op = op.inputs[op_info.UPDATE_OP_VAR_POS].op
+            on_trainable_variable = var_op in expected_var_ops
+            var_scope = var_op.name
+            update_op_scope = parse_name_scope(op.name)
+            is_initialization = update_op_scope == var_scope
+            is_saving = update_op_scope.endswith('save')
+            if on_trainable_variable and not is_initialization and not is_saving and not self._is_auxiliary(op):
+                if var_op.name in res:
+                    raise ValueError('A variable cannot correspond to more than one update op for now.')
+                res.append(var_op.name)
+                self.var_op_name_to_grad_dict[var_op.name] = expected_var_ops[var_op] + (op,)
+                #analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
+                if self.first_time_loop:
+                    self.update_op_depend_var[op].append(var_op.name)
+
+        #         assert len(self.var_quried) <= 1
+        #         if len(self.var_quried) > 0:
+        #             if var_op.name == self.var_quried[0]:
+        #                 self.var_op_appear_time[var_op] += 1
+        #                 self.var_quried.remove(var_op.name)
+        #                 self.useful_update_op.remove(op)
+        # recalculated the dict, set the indicator
+        self.updated = False
+        self.first_time_loop = False
+        return self.var_op_name_to_grad_dict
 
     def _is_auxiliary(self, update_op: ops.Operation):
         """Check whether a specific update_op is an auxiliary op that should not be considered."""
