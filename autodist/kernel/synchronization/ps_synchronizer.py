@@ -87,7 +87,7 @@ class PSSynchronizer(Synchronizer):
             master_var_name = ops.prepend_name_scope(var_name, replica_prefix(master_replica_index))
             master_var_op_name = get_op_name(master_var_name)
             if optimize:
-                item.updated=True
+                item.updated = True
                 grad, target, update_op = item.var_op_name_to_grad_info_optimize[master_var_op_name]
                 item.var_quried.append(master_var_op_name)
             else:
