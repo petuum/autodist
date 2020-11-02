@@ -259,12 +259,12 @@ class GraphItem:
         self.var_quried = []
         self.useful_update_op = []
 
-    def start_loop_optimize(self):
+    def set_optimize(self):
         """Start a loop of synchronizer apply."""
         self.first_time_loop = True
         self.loop_phase = True
 
-    def end_loop_optimize(self):
+    def reset_optimize(self):
         """End a loop of synchronizer apply."""
         self.first_time_loop = True
         self.loop_phase = False

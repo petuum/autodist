@@ -66,7 +66,7 @@ class AllReduceSynchronizer(Synchronizer):
         self._group = config.group
         super().__init__()
 
-    def in_graph_apply(self, graph_item, var_name, optimize=False):
+    def in_graph_apply(self, graph_item, var_name):
         """
         Perform in-graph synchronization based on AllReduce and TensorFlow Collective Ops.
 
@@ -75,8 +75,6 @@ class AllReduceSynchronizer(Synchronizer):
         Args:
             graph_item (graph_item.GraphItem): the graph_item to be distributed
             var_name (str): the corresponded variable name
-            optimize (bool): whether to use loop optimize when building graph.
-                             Only apply when this call from graph_transformer.
 
         Returns:
             graph_item.GraphItem: The new graph
@@ -90,20 +88,18 @@ class AllReduceSynchronizer(Synchronizer):
 
         # Throw an error if the variable is sparse
         master_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(0))
-        if optimize:
-            graph_item.updated = True
-            grad, _, _ = graph_item.var_op_name_to_grad_info_optimize[master_op_name]
-        else:
-            grad, _, _ = graph_item.var_op_name_to_grad_info[master_op_name]
+        graph_item.updated = True
+        grad, _, _ = graph_item.var_op_name_to_grad_info_optimize[master_op_name]
+        graph_item.var_quried.append(master_op_name)
         with item.graph.as_default():
             self._share_initializer(item, var_op_name, master_replica=0)
             if isinstance(grad, ops.IndexedSlices):
-                self._collect_sparse_gradients(item, var_op_name, optimize=optimize)
+                self._collect_sparse_gradients(item, var_op_name)
             else:
-                self._collect_dense_gradients(item, var_op_name, optimize=optimize)
+                self._collect_dense_gradients(item, var_op_name)
         return item
 
-    def _collect_dense_gradients(self, graph_item, var_op_name, optimize=False):
+    def _collect_dense_gradients(self, graph_item, var_op_name):
         """Append collective ops after the gradient is calculated."""
         if self.num_replicas * self.num_workers <= 1:
             raise ValueError('CollectiveOps requires collective group size > 1')
@@ -121,11 +117,8 @@ class AllReduceSynchronizer(Synchronizer):
 
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
-            if optimize:
-                graph_item.updated = True
-                grad, _, _ = graph_item.var_op_name_to_grad_info_optimize[op_name]
-            else:
-                grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
+            graph_item.updated = True
+            grad, _, _ = graph_item.var_op_name_to_grad_info_optimize[op_name]
             # TODO (Tairui): (3) Merge of reduction for performance
             grad_consumers = get_consumers(grad.op)  # this line must happen before the reduction
 
@@ -136,7 +129,7 @@ class AllReduceSynchronizer(Synchronizer):
             update_consumers(grad_consumers, grad, reduced_grad)
             # TODO(Hao): update grad, target pair here or not?
 
-    def _collect_sparse_gradients(self, graph_item, var_op_name, optimize=False):
+    def _collect_sparse_gradients(self, graph_item, var_op_name):
         """Append collective ops after the gradient is calculated."""
         if self.num_workers > 1 and not ENV.AUTODIST_INTERNAL_TF.value:
             raise NotImplementedError('Currently the collective NCCL AllGather is not supported in TensorFlow release.'
@@ -150,11 +143,8 @@ class AllReduceSynchronizer(Synchronizer):
             raise ValueError('CollectiveOps requires collective group size > 1')
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
-            if optimize:
-                graph_item.updated = True
-                grad, _, _ = graph_item.var_op_name_to_grad_info_optimize[op_name]
-            else:
-                grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
+            graph_item.updated = True
+            grad, _, _ = graph_item.var_op_name_to_grad_info_optimize[op_name]
             grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
             # TODO (Tairui): (3) Merge of reduction for performance
             indices_c_ops = grad.indices.consumers()
@@ -207,6 +197,6 @@ class AllReduceSynchronizer(Synchronizer):
             init_assign_op._update_input(1, master_init_tensor)
 
     # pylint: disable=no-self-use
-    def between_graph_apply(self, graph_item, var_name, optimize=False):
+    def between_graph_apply(self, graph_item, var_name):
         """Allreduce synchronizer will do nothing in between-graph synchronization."""
         return graph_item
