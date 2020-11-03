@@ -18,6 +18,7 @@ from collections import defaultdict
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
 from tensorflow.python.ops import collective_ops
+from tensorflow.python.framework.ops import Tensor
 
 import autodist
 from autodist.const import ENV
@@ -62,7 +63,8 @@ class AllReduceSynchronizer(Synchronizer):
     """
 
     def __init__(self, config: strategy_pb2.Strategy.Node):
-        compressor_value = getattr(config, 'compressor')
+        # compressor_value = getattr(config, 'compressor')
+        compressor_value = getattr(config.compressor, 'type')
         syncer_config = getattr(config, config.WhichOneof('synchronizer'))
         self._spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Name(syncer_config.spec)
         if autodist.float_major_minor_tf_version < 1.15 or autodist.float_major_minor_tf_version < 2.1:
@@ -79,8 +81,18 @@ class AllReduceSynchronizer(Synchronizer):
         if compressor_value:
             self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
 
-    def _all_reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
+    @staticmethod
+    def _all_reduce(tensor: Tensor, conf: CollectiveOpsConfig):
+        """
+        Using CollectiveOps, AllReduce the given tensor.
 
+        Args:
+            tensor (Tensor): the tensor to all-reduce
+            conf (CollectiveOpsConfig): the config for CollectiveOps
+
+        Returns:
+            The All-Reduced Tensor
+        """
         return collective_ops.all_reduce(tensor, **conf.__dict__)
 
     def in_graph_apply(self, graph_item, var_name):
@@ -139,7 +151,9 @@ class AllReduceSynchronizer(Synchronizer):
             # "\/" is added for name scope reuse
             with ops.name_scope(replica_prefix(i) + "/collective-group-{}/".format(self._group)):
                 with ops.colocate_with(grad.op):
-                    reduced_grad = compressors[i].compress(grad, conf)
+                    compressed_grad = compressors[i].compress(grad)
+                    reduced = self._all_reduce(compressed_grad, conf)
+                    reduced_grad = compressors[i].compress(reduced)
             update_consumers(grad_consumers, grad, reduced_grad)
             # TODO(Hao): update grad, target pair here or not?
 

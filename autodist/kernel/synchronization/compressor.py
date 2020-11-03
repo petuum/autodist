@@ -148,6 +148,7 @@ class CompressorEF(Compressor, ABC):
         compressed_tensor = self.compress(tensor)
         self.error = tensor - self.decompress(compressed_tensor)
 
+
 class NoneCompressor(Compressor):
     """An identity Compressor."""
 

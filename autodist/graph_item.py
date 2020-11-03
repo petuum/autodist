@@ -71,7 +71,6 @@ def get_default_graph_item():
 
 def wrap_optimizer_init(fn: Callable):
     """Wraps the __init__ function of OptimizerV2 objects and stores the info in the default GraphItem."""
-
     def wrapper(*args, **kwargs):
         # args[0] should be `self`, which is an object of type == optimizer class
         containing_class = type(args[0])
