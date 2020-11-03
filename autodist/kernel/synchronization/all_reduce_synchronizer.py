@@ -31,8 +31,6 @@ from autodist.kernel.synchronization.synchronizer import Synchronizer
 from autodist.proto import synchronizers_pb2, compressor_pb2, strategy_pb2
 from autodist.utils import logging
 
-from tensorflow.python.ops import collective_ops
-
 
 class CollectiveOpsConfig:
     """Config for using Collective Ops."""
@@ -81,10 +79,9 @@ class AllReduceSynchronizer(Synchronizer):
         if compressor_value:
             self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
 
-    def _all_reduce(tensor: Tensor, conf: CollectiveOpsConfig):
+    def _all_reduce(self, tensor: Tensor, conf: CollectiveOpsConfig):
 
         return collective_ops.all_reduce(tensor, **conf.__dict__)
-
 
     def in_graph_apply(self, graph_item, var_name):
         """

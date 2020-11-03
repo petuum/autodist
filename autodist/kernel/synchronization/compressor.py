@@ -16,8 +16,8 @@
 from abc import ABC, abstractmethod
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework.ops import Tensor
-from tensorflow.python.ops import collective_ops, math_ops
-
+# from tensorflow.python.ops import collective_ops, math_ops
+from tensorflow.python.ops import math_ops
 #from tensorflow.python.ops import array_ops, collective_ops, linalg_ops, math_ops, random_ops
 #from autodist.kernel.synchronization.collective_key import get_collective_keys
 #from autodist.utils import logging
@@ -142,11 +142,11 @@ class CompressorEF(Compressor, ABC):
     #     reduced = self._all_reduce(compressed_tensor, conf)
     #     return self._decompress(reduced)
 
-    def compute_error(self, tensor: Tensor):
+    def _compute_error(self, tensor: Tensor):
         if self.error is not None:
             tensor += self.error
-        compressed_tensor = self._compress(tensor)
-        self.error = tensor - self._decompress(compressed_tensor)
+        compressed_tensor = self.compress(tensor)
+        self.error = tensor - self.decompress(compressed_tensor)
 
 class NoneCompressor(Compressor):
     """An identity Compressor."""
@@ -165,9 +165,27 @@ class NoneCompressor(Compressor):
     #     return self._all_reduce(tensor, conf)
 
     def compress(self, tensor: Tensor):
+        """
+        Compress a given tensor.
+
+        Args:
+            tensor (Tensor): the Tensor to compress.
+
+        Returns:
+            Tensor
+        """
         return tensor
 
     def decompress(self, compressed_tensor: Tensor):
+        """
+        Decompress a given tensor.
+
+        Args:
+            compressed_tensor (Tensor): the Tensor to decompress.
+
+        Returns:
+            Tensor, Context
+        """
         return compressed_tensor
 
 
@@ -194,6 +212,15 @@ class HorovodCompressor(Compressor):
     #     return self._decompress(reduced)
 
     def compress(self, tensor: Tensor):
+        """
+        Compress a given tensor.
+
+        Args:
+            tensor (Tensor): the Tensor to compress.
+
+        Returns:
+            Tensor
+        """
         self.dtype = tensor.dtype
         tensor_compressed = tensor
         if tensor.dtype.is_floating:
@@ -203,6 +230,15 @@ class HorovodCompressor(Compressor):
         return tensor_compressed
 
     def decompress(self, compressed_tensor: Tensor):
+        """
+        Decompress a given tensor.
+
+        Args:
+            compressed_tensor (Tensor): the Tensor to decompress.
+
+        Returns:
+            Tensor, Context
+        """
         return math_ops.cast(compressed_tensor, self.dtype)
 
 

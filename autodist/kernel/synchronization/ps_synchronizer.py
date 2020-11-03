@@ -35,7 +35,8 @@ from autodist.kernel.common.utils import get_op_name, get_consumers, get_ancesto
     remove_from_control_consumers, get_index_from_tensor_name, update_colocation_group
 from autodist.kernel.common.variable_utils import get_read_var_ops
 from autodist.kernel.synchronization.synchronizer import Synchronizer
-from autodist.proto import synchronizers_pb2, strategy_pb2
+# from autodist.proto import synchronizers_pb2, strategy_pb2
+from autodist.proto import strategy_pb2, compressor_pb2
 
 
 class PSSynchronizer(Synchronizer):
