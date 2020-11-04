@@ -108,8 +108,6 @@ class Compressor(ABC):
         Returns:
             Compressor
         """
-        print('='*89)
-        print(name)
         subclass = next(subclass for subclass in cls._get_subclasses() if subclass.__name__ == name)
         return subclass(*args, **kwargs)
 

@@ -78,8 +78,6 @@ class AllReduceSynchronizer(Synchronizer):
         # the strategy will validate the group assignments are legitimate.
         self._group = syncer_config.group
         super().__init__()
-        print('='*89)
-        print(compressor_value)
         if compressor_value is not None:
             self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
             print(self._compressor_type)
