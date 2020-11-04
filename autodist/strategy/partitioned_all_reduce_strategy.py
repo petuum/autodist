@@ -107,7 +107,7 @@ class PartitionedAR(StrategyBuilder):
             # Here let's just make it consistent
             part.var_name = '{}/part_{}:0'.format(get_op_name(var.name), i)
             part.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
-            part.compressor = compressor_pb2.Compressor.Type.Value("NoneCompressor")
+            part.compressor.type = compressor_pb2.Compressor.Type.Value("NoneCompressor")
             # part.compressor = compressor_pb2.Compressor.Type.Value("PowerSGDCompressor")                
             part.AllReduceSynchronizer.group = (var_counter + i) // self.chunk_size
             node.part_config.extend([part])

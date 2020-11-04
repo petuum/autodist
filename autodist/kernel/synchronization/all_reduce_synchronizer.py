@@ -78,8 +78,11 @@ class AllReduceSynchronizer(Synchronizer):
         # the strategy will validate the group assignments are legitimate.
         self._group = syncer_config.group
         super().__init__()
-        if compressor_value:
+        print('='*89)
+        print(compressor_value)
+        if compressor_value is not None:
             self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
+            print(self._compressor_type)
 
     @staticmethod
     def _all_reduce(tensor: Tensor, conf: CollectiveOpsConfig):
@@ -150,10 +153,12 @@ class AllReduceSynchronizer(Synchronizer):
 
             # "\/" is added for name scope reuse
             with ops.name_scope(replica_prefix(i) + "/collective-group-{}/".format(self._group)):
+                # compressed_grad = compressors[i].compress(grad)
                 with ops.colocate_with(grad.op):
                     compressed_grad = compressors[i].compress(grad)
                     reduced = self._all_reduce(compressed_grad, conf)
-                    reduced_grad = compressors[i].compress(reduced)
+                    reduced_grad = compressors[i].decompress(reduced)
+                # reduced_grad = compressors[i].decompress(reduced)
             update_consumers(grad_consumers, grad, reduced_grad)
             # TODO(Hao): update grad, target pair here or not?
 

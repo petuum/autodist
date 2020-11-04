@@ -56,7 +56,8 @@ class PSSynchronizer(Synchronizer):
 
     def __init__(self, config: strategy_pb2.Strategy.Node):
         syncer_config = getattr(config, config.WhichOneof('synchronizer'))
-        compressor_value = getattr(config, 'compressor')
+        # compressor_value = getattr(config, 'compressor')
+        compressor_value = getattr(config.compressor, 'type')
         self.target_device = syncer_config.reduction_destination if syncer_config.reduction_destination else ""
         self._local_replication = syncer_config.local_replication
         self._sync = syncer_config.sync

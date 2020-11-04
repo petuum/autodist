@@ -85,6 +85,6 @@ class AllReduce(StrategyBuilder):
         node = strategy_pb2.Strategy.Node()
         node.var_name = var_name
         node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value(all_reduce_spec)
-        node.compressor = compressor_pb2.Compressor.Type.Value(compressor)
+        node.compressor.type = compressor_pb2.Compressor.Type.Value(compressor)
         node.AllReduceSynchronizer.group = group
         return node
