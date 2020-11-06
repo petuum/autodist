@@ -256,7 +256,7 @@ class GraphItem:
         # on if this graph is in loop optimize mode for the first time
         self.first_time_loop = True
         self.loop_phase = False
-        self.var_quried = []
+        self.var_queried = []
         self.useful_update_op = []
 
     def set_optimize(self):
@@ -370,8 +370,20 @@ class GraphItem:
         return res
 
     @property
-    def var_op_name_to_grad_info_optimize(self):
-        """An optimized version that is aware of this method is iteratively used."""
+    def var_op_name_to_grad_info_v2(self):
+        """
+        An optimized version that is aware of this method is iteratively used. It optimize based on.
+
+        (1) Give an updated option, if the graph has not been updated before this query, then it will not
+            calculate again. A new method considering this v2 method needs to manipulate updated outside.
+        (2) Give an var_queried option, which will record which variable has been doen synchronized. If all 
+            the variable associated with an update op has been synchronized, this method will not consier
+            the update op next time (it will reconsider if the current loop has done processed, so the
+            set/reset optimize method is necessary to set the boolean flags). This optimization is
+            inspired by that the for loop in this method is executed for every update_op, which is typically
+            a lot, and causes the slowness. This option is safe in that if the var_queried is not set outside,
+            it will not trigger the remove op.
+        """
         # if the graph has not been rewritten, return old dict instead of generating a new one
         if not self.updated:
             return self.var_op_name_to_grad_dict
@@ -395,10 +407,10 @@ class GraphItem:
                 if self.first_time_loop:
                     self.update_op_depend_var[op].append(var_op.name)
                 #analyze what var_ops the op depends on, if all removed, then can remove this op from the loop
-                assert len(self.var_quried) <= 1
-                if len(self.var_quried) > 0:
-                    if var_op.name == self.var_quried[0]:
-                        self.var_quried.remove(var_op.name)
+                assert len(self.var_queried) <= 1
+                if len(self.var_queried) > 0:
+                    if var_op.name == self.var_queried[0]:
+                        self.var_queried.remove(var_op.name)
                         self.update_op_depend_var[op].remove(var_op.name)
                         if len(self.update_op_depend_var[op]) == 0:
                             self.useful_update_op.remove(op)
