@@ -226,19 +226,24 @@ class PowerSGDCompressor(CompressorEF):
             Reduced Tensor
         """
         if self.og_shape is None:
-            self.og_shape = tensor.shape
-            self.ndims = len(self.og_shape)
+            self.og_shape = array_ops.shape_v2(tensor)
+            if self.og_shape.shape[0] is None:
+                self.ndims = 0
+            else:
+                self.ndims = self.og_shape.shape[0]
 
         # rank <= 1
-        if self.ndims <= 1 or (self.ndims == 2 and any([d == 1 for d in self.og_shape])):
+        if self.ndims <= 1:
             return self._all_reduce(tensor, conf)
+
+        tensor = array_ops.reshape(tensor, [array_ops.shape_v2(tensor)[0], -1])
 
         # compressor init
         if self.compressor is None:
             self.compressor = random_ops.random_normal([array_ops.shape_v2(tensor)[1], self.rank], seed=1000)
 
             self.compressor_conf = copy.copy(conf)
-            self.conf.instance_key = get_collective_keys().get_instance_key(self.var_op_name + '/compressor')
+            self.compressor_conf.instance_key = get_collective_keys().get_instance_key(self.var_op_name + '/compressor')
 
         if self.error is not None:
             tensor += self.error
@@ -255,7 +260,7 @@ class PowerSGDCompressor(CompressorEF):
         # all reduce mean compressor
         self.compressor = self._all_reduce(self.compressor, self.compressor_conf)
 
-        return self._decompress(orthonormal_reduced_tensor)
+        return array_ops.reshape(self._decompress(orthonormal_reduced_tensor), self.og_shape)
 
     def _compress(self, tensor: Tensor):
         """
