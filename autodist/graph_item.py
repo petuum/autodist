@@ -217,7 +217,6 @@ class Info:
 
 class GraphItem:
     """
-
     GraphItem is a TensorFlow Graph wrapper.
 
     It represents the states in-between consecutive AutoDist.kernel graph transformations.
