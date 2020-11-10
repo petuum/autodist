@@ -316,7 +316,7 @@ all GPU devices for your data parallelism.</p></li>
 all variables that you want to configure or utilize the <code class="docutils literal notranslate"><span class="pre">resource_spec</span></code> properties to
 prepare for where to put the variable states.</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">graph_item</span><span class="o">.</span><span class="n">get_trainable_variables</span><span class="p">()</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">graph_item</span><span class="o">.</span><span class="n">trainable_var_op_to_var</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
 <span class="n">reduction_devices</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">resource_spec</span><span class="o">.</span><span class="n">cpu_devices</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>

@@ -72,7 +72,7 @@ strategy.graph_config.replicas.extend([k for k, v in resource_spec.gpu_devices])
 all variables that you want to configure or utilize the `resource_spec` properties to
 prepare for where to put the variable states.
 ```python
-variables = graph_item.get_trainable_variables()
+variables = graph_item.trainable_var_op_to_var.values()
 reduction_devices = [k for k, _ in resource_spec.cpu_devices][0:1]
 ```
 * Set configurations for variable nodes. Besides the below example,
