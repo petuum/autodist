@@ -49,7 +49,7 @@ class Parallax(PSLoadBalancing, AllReduce):
 
         # Generate node config
         node_config = []
-        for idx, var in enumerate(graph_item.get_trainable_variables()):
+        for idx, var in enumerate(graph_item.trainable_var_op_to_var.values()):
             var_op_name = get_op_name(var.name)
             grad, _, _ = graph_item.var_op_name_to_grad_info[var_op_name]
             if isinstance(grad, ops.Tensor):  # this is a dense variable

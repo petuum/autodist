@@ -50,7 +50,7 @@ class PSLoadBalancing(StrategyBuilder):
                 expr.graph_config.replicas.extend(v)
 
         # find all variables
-        variables = graph_item.get_trainable_variables()
+        variables = graph_item.trainable_var_op_to_var.values()
         reduction_device_names = [k for k, _ in resource_spec.cpu_devices]
         self.loads = {ps: 0.0 for ps in reduction_device_names}
 
