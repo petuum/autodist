@@ -380,6 +380,18 @@ we don’t have to deal with <cite>MetaGraphs</cite>.</p>
 tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/generated on demand.</p>
 <p>A GraphItem can be constructed with either a <cite>tf.Graph</cite> or a <cite>GraphDef</cite>.</p>
 <dl class="py method">
+<dt id="autodist.graph_item.GraphItem.set_optimize">
+<code class="sig-name descname">set_optimize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.set_optimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a loop of synchronizer apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.reset_optimize">
+<code class="sig-name descname">reset_optimize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.reset_optimize" title="Permalink to this definition">¶</a></dt>
+<dd><p>End a loop of synchronizer apply.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt id="autodist.graph_item.GraphItem.get_trainable_variables">
 <code class="sig-name descname">get_trainable_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.get_trainable_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get variables that need to be synchronized if doing data parallelism.</p>
@@ -458,6 +470,23 @@ tf.Graph is the primary property of GraphItem, whereas MetaGraph is exported/gen
 <dd class="field-odd"><p>A mapping from VarHandleOp name (e.g. “W” not “W</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="autodist.graph_item.GraphItem.var_op_name_to_grad_info_v2">
+<em class="property">property </em><code class="sig-name descname">var_op_name_to_grad_info_v2</code><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/graph_item.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.graph_item.GraphItem.var_op_name_to_grad_info_v2" title="Permalink to this definition">¶</a></dt>
+<dd><p>An optimized version that is aware of this method is iteratively used. It optimize based on.</p>
+<ol class="arabic simple">
+<li><p>Give an updated option, if the graph has not been updated before this query, then it will not
+calculate again. A new method considering this v2 method needs to manipulate updated outside.</p></li>
+<li><p>Give an var_queried option, which will record which variable has been doen synchronized. If all
+the variable associated with an update op has been synchronized, this method will not consier
+the update op next time (it will reconsider if the current loop has done processed, so the
+set/reset optimize method is necessary to set the boolean flags). This optimization is
+inspired by that the for loop in this method is executed for every update_op, which is typically
+a lot, and causes the slowness. This option is safe in that if the var_queried is not set outside,
+it will not trigger the remove op.</p></li>
+</ol>
 </dd></dl>
 
 <dl class="py method">
