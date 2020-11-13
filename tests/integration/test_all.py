@@ -43,6 +43,7 @@ strategies = [
     PartitionedAR(),
     UnevenPartitionedPS(local_proxy_variable=True),
     RandomAxisPartitionAR(chunk_size=4)
+    Poseidon(batch_size=32, local_proxy_variable=True)
 ]
 
 

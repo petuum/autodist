@@ -27,6 +27,7 @@ message Compressor {
         NoneCompressor = 0;  // No compression
         HorovodCompressor = 1;  //  Horovod's Compression
         HorovodCompressorEF = 2;  // Horovod's Compression but with Error Feedback.
+        SFBCompressor = 3;
     }
 
     Type type = 1;

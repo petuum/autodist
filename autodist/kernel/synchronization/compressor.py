@@ -177,7 +177,7 @@ class NoneCompressor(Compressor):
         """
         return tensor
 
-    def decompress(self, compressed_tensor: Tensor):
+    def decompress(self, compressed_tensor: Tensor, *args, **kwargs):
         """
         Decompress a given tensor.
 
@@ -230,7 +230,7 @@ class HorovodCompressor(Compressor):
             tensor_compressed = math_ops.cast(tensor, dtypes.float32)
         return tensor_compressed
 
-    def decompress(self, compressed_tensor: Tensor):
+    def decompress(self, compressed_tensor: Tensor, *args, **kwargs):
         """
         Decompress a given tensor.
 
@@ -241,6 +241,23 @@ class HorovodCompressor(Compressor):
             Tensor, Context
         """
         return math_ops.cast(compressed_tensor, self.dtype)
+
+
+class SFBCompressor(Compressor):
+    """Implement Sufficient Factor Broadcasting's Compressor."""
+
+    def decompress(self, compressed_tensor: Tensor, *args, **kwargs):
+        """
+        Decompress given a pair of tensors.
+
+        Args:
+            compressed_tensor : A tuple of tensors to decompress.
+
+        Returns:
+            Tensor, Context
+        """
+        compressed_tensor_2 = args[0]
+        return math_ops.multiply(compressed_tensor, compressed_tensor_2)
 
 
 # class HorovodCompressorEF(CompressorEF, HorovodCompressor):  # This works because of Method Resolution Order
