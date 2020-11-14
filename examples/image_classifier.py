@@ -5,9 +5,15 @@ import tensorflow as tf
 ############################################################
 # Step 1: Construct AutoDist with ResourceSpec
 from autodist import AutoDist
-filepath = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
+filepath = os.path.join(adaptdl.env.share_path(),'resource_spec.yml')
 autodist = AutoDist(resource_spec_file=filepath)
+import adaptdl
+import adaptdl.torch as adl
+
 ############################################################
+
+adaptdl.torch.write_config()
+
 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
