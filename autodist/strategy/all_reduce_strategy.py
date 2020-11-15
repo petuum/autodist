@@ -55,7 +55,7 @@ class AllReduce(StrategyBuilder):
                 expr.graph_config.replicas.extend(v)    
 
         # find all variables
-        variables = graph_item.get_trainable_variables()
+        variables = graph_item.trainable_var_op_to_var.values()
 
         # Mark each variable to be synchronized with allreduce
         for i, var in enumerate(variables):
