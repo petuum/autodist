@@ -40,8 +40,8 @@ class CollectiveOpsConfig:
     group_size: int
     group_key: str
     instance_key: str
-    shape: tensorflow.python.framework.tensor_shape.TensorShape
-    dtype: tensorflow.python.framework.dtypes.DType
+    shape: tensorflow.TensorShape
+    dtype: tensorflow.dtypes.DType
     # merge_op: str
     # final_op: str
 
