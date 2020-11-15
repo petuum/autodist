@@ -233,10 +233,10 @@ class PowerSGDCompressor(CompressorEF):
                 self.ndims = self.og_shape.shape[0]
 
         # rank <= 1
-        if self.ndims <= 1:
+        if self.ndims <= 1 or (self.ndims == 2 and any([i == 1 for i in tensor.get_shape().as_list()])):
             return self._all_reduce(tensor, conf)
 
-        tensor = array_ops.reshape(tensor, [array_ops.shape_v2(tensor)[0], -1])
+        tensor = array_ops.reshape(tensor, [self.og_shape[0], -1])
 
         # compressor init
         if self.compressor is None:
