@@ -87,7 +87,7 @@ class RandomAxisPartitionAR(StrategyBuilder):
 
         if num_shards <= 1:
             node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
-            node.compressor = compressor_pb2.Compressor.Type.Value("NoneCompressor")
+            node.compressor.type = compressor_pb2.Compressor.Type.Value("NoneCompressor")
             # node.compressor = compressor_pb2.Compressor.Type.Value("PowerSGDCompressor")
             node.AllReduceSynchronizer.group = var_counter // self.chunk_size
             return node, num_shards
