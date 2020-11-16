@@ -236,11 +236,13 @@ class PowerSGDCompressor(CompressorEF):
         if self.ndims <= 1 or (self.ndims == 2 and any([i == 1 for i in tensor.get_shape().as_list()])):
             return self._all_reduce(tensor, conf)
 
-        tensor = array_ops.reshape(tensor, [self.og_shape[0], -1])
+        og_dtype = tensor.dtype
+        tensor = array_ops.reshape(math_ops.cast(tensor, dtype=dtypes.float32), [self.og_shape[0], -1])
 
         # compressor init
         if self.compressor is None:
-            self.compressor = random_ops.random_normal([array_ops.shape_v2(tensor)[1], self.rank], seed=1000)
+            self.compressor = random_ops.random_normal([array_ops.shape_v2(tensor)[1], self.rank],
+                                                       seed=1000, dtype=dtypes.float32)
 
             self.compressor_conf = copy.copy(conf)
             self.compressor_conf.instance_key = get_collective_keys().get_instance_key(self.var_op_name + '/compressor')
@@ -260,7 +262,7 @@ class PowerSGDCompressor(CompressorEF):
         # all reduce mean compressor
         self.compressor = self._all_reduce(self.compressor, self.compressor_conf)
 
-        return array_ops.reshape(self._decompress(orthonormal_reduced_tensor), self.og_shape)
+        return math_ops.cast(array_ops.reshape(self._decompress(orthonormal_reduced_tensor), self.og_shape), og_dtype)
 
     def _compress(self, tensor: Tensor):
         """
