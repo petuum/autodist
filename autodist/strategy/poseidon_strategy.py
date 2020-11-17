@@ -70,9 +70,11 @@ class Poseidon(StrategyBuilder):
             op_name = get_op_name(var.name)
             shape = get_op_shape(var)
             if op_name == 'sequential/dense/kernel' and ((2 * self._batch_size * (num_workers - 1) *
-                                                          (shape[0] + shape[1])) <= (2 * shape[0] * shape[1] * 
-                                                                                     (num_servers + num_workers - 2)
-                                                                                     / num_servers)):
+                                                          int(shape[0] + shape[1])) <= (2 * int(shape[0]) * 
+                                                                                        int(shape[1]) * 
+                                                                                        (num_servers + 
+                                                                                         num_workers - 2)
+                                                                                        / num_servers)):
                 node_config = self._gen_sfb_node_config(var.name, broadcast_spec=self.broadcast_spec, 
                                                         compressor=self.compressor)
             else:
