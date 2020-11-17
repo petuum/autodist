@@ -237,7 +237,7 @@ class PowerSGDCompressor(CompressorEF):
             return self._all_reduce(tensor, conf)
 
         og_dtype = tensor.dtype
-        tensor = array_ops.reshape(math_ops.cast(tensor, dtype=dtypes.float32), [self.og_shape[0], -1])
+        tensor = array_ops.reshape(math_ops.cast(tensor, dtypes.float32), [self.og_shape[0], -1])
 
         # compressor init
         if self.compressor is None:
