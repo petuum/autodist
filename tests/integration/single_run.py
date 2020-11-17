@@ -25,7 +25,7 @@ STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'PartitionedAR': PartitionedAR(),
     'RandomAxisPartitionAR': RandomAxisPartitionAR(chunk_size=4),
     'UnevenPartitionedPS': UnevenPartitionedPS(local_proxy_variable=True),
-    'Poseidon': Poseidon(batch_size=32, local_proxy_variable=True, staleness=3)
+    'Poseidon': Poseidon(batch_size=32, local_proxy_variable=True)
 }
 
 

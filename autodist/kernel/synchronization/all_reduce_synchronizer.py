@@ -80,7 +80,6 @@ class AllReduceSynchronizer(Synchronizer):
         super().__init__()
         if compressor_value is not None:
             self._compressor_type = compressor_pb2.Compressor.Type.Name(compressor_value)
-            print(self._compressor_type)
 
     @staticmethod
     def _all_reduce(tensor: Tensor, conf: CollectiveOpsConfig):
