@@ -165,7 +165,7 @@ class Cluster(metaclass=ABCMeta):
         """
         # pylint: disable=import-outside-toplevel
         from autodist.utils import server_starter
-
+        assert False
         # atexit registration should be placed
         #   - before the beginning of the start
         #   (to ensure the clean termination if the start fails in its half way); and
@@ -178,7 +178,7 @@ class Cluster(metaclass=ABCMeta):
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
         module_file = server_starter.__file__
-
+        print(self.cluster_spec)
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
@@ -209,6 +209,110 @@ class Cluster(metaclass=ABCMeta):
                     # to ensure no gap for termination failure due to the empty proc list.
                     self.subprocesses.append(proc)
 
+    # pylint: disable=too-many-locals
+    def start_chief(self):
+        """
+        Start tf.servers on all nodes.
+
+        Note that this only runs (and only should run) on the chief node.
+        """
+        # pylint: disable=import-outside-toplevel
+        from autodist.utils import server_starter
+        # atexit registration should be placed
+        #   - before the beginning of the start
+        #   (to ensure the clean termination if the start fails in its half way); and
+        #   - at the same module as the start
+        #   (to follow the python assumption that
+        #   lower level modules will normally be imported
+        #   before higher level modules and thus must be cleaned up later).
+        atexit.register(self.terminate)
+        envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
+        envs = ['{}={}'.format(k, v) for k, v in envs.items()]
+        module_name = server_starter.__name__
+        module_file = server_starter.__file__
+        print(self.cluster_spec)
+        for job_name, tasks in self.cluster_spec.items():
+            for task_index, full_address in enumerate(tasks):
+                address = full_address.split(':')[0]
+                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
+                        '--cpu_device_num=%d' % len(self._cpu_devices[address])]
+                if address in self._gpu_devices:
+                    envs_cuda = []
+                else:
+                    envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
+                if self.is_chief(address):
+                    json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
+                    cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
+                    # pylint: disable=subprocess-popen-preexec-fn
+                    proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
+                    self.subprocesses.append(proc)
+                    # The above line immediately follows the Popen
+                    # to ensure no gap for termination failure due to the empty proc list.
+                    logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
+                        full_address, job_name, task_index
+                    ))
+                else:  # remote
+                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
+                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+                    bash = envs + envs_cuda + ['python', '-u', file] + args
+                    logging.info("Launching tf.server on %s" % address)
+                    proc = self.remote_exec(bash, hostname=address)
+                    # The above line immediately follows the Popen
+                    # to ensure no gap for termination failure due to the empty proc list.
+                    self.subprocesses.append(proc)
+
+    # pylint: disable=too-many-locals
+    def start_worker(self):
+        """
+        Start tf.servers on all nodes.
+
+        Note that this only runs (and only should run) on the chief node.
+        """
+        # pylint: disable=import-outside-toplevel
+        from autodist.utils import server_starter
+
+        # atexit registration should be placed
+        #   - before the beginning of the start
+        #   (to ensure the clean termination if the start fails in its half way); and
+        #   - at the same module as the start
+        #   (to follow the python assumption that
+        #   lower level modules will normally be imported
+        #   before higher level modules and thus must be cleaned up later).
+        atexit.register(self.terminate)
+        envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
+        envs = ['{}={}'.format(k, v) for k, v in envs.items()]
+        module_name = server_starter.__name__
+        module_file = server_starter.__file__
+        print(self.cluster_spec)
+        for job_name, tasks in self.cluster_spec.items():
+            for task_index, full_address in enumerate(tasks):
+                address = full_address.split(':')[0]
+                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
+                        '--cpu_device_num=%d' % len(self._cpu_devices[address])]
+                if address in self._gpu_devices:
+                    envs_cuda = []
+                else:
+                    envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
+                if self.is_chief(address):
+                    json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
+                    cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
+                    # pylint: disable=subprocess-popen-preexec-fn
+                    proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
+                    self.subprocesses.append(proc)
+                    # The above line immediately follows the Popen
+                    # to ensure no gap for termination failure due to the empty proc list.
+                    logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
+                        full_address, job_name, task_index
+                    ))
+                else:  # remote
+                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
+                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+                    bash = envs + envs_cuda + ['python', '-u', file] + args
+                    logging.info("Launching tf.server on %s" % address)
+                    proc = self.remote_exec(bash, hostname=address)
+                    # The above line immediately follows the Popen
+                    # to ensure no gap for termination failure due to the empty proc list.
+                    self.subprocesses.append(proc)
     def terminate(self):
         """Terminate."""
         logging.debug('Terminating cluster...')
@@ -273,6 +377,7 @@ class SSHCluster(Cluster):
 
     def __init__(self, resource_spec):
         self._ssh_conf = resource_spec.ssh_config_map
+        print(self._ssh_conf)
         super().__init__(resource_spec)
 
     @contextlib.contextmanager

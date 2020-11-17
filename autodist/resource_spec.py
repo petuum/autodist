@@ -184,6 +184,7 @@ class ResourceSpec:
 
     def _parse_node(self, node, num_nodes):
         host_address = node['address']
+        print(host_address)
         if is_loopback_address(host_address) and num_nodes > 1:
             raise ValueError("Can't (currently) use a loopback address when there are multiple nodes.")
         if node.get('chief') or num_nodes == 1:
@@ -193,6 +194,7 @@ class ResourceSpec:
             logging.info("Chief: %s" % host_address)
             self.__chief_address = host_address
         host_cpu = DeviceSpec(host_address, device_index=0)
+        print(host_cpu)
         self._add_device(host_cpu)
         # handle any other CPUs when GPU is unavailable
         if len(node.get('gpus', [])) == 0:
@@ -201,9 +203,11 @@ class ResourceSpec:
                 self._add_device(cpu)
         # handle GPUs
         for gpu_index in set(sorted(node.get('gpus', []))):
+            print(gpu_index)
             gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
             self._add_device(gpu)
         self.__ssh_group[host_address] = node.get('ssh_config')
+        print(node.get('ssh_config'))
         if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
             raise ValueError("Need to define SSH groups for all non-chief nodes.")
         # handle network bandwidth (optional)

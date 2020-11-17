@@ -36,6 +36,7 @@ from autodist.runner import WrappedSession
 from autodist.strategy import base
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.utils import logging
+import adaptdl.collective as collective
 
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
@@ -122,9 +123,12 @@ class _AutoDistInterface:
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
+            collective.initialize()
             self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
-            self._cluster.start()
-            self._coordinator.launch_clients()
+            self._cluster.start_chief()
+            self._coordinator.launch_clients_chief()
+        else: 
+            collective.initialize()
         logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
 
 

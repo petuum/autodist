@@ -36,6 +36,11 @@ from utils import bert_models
 from utils import common_flags
 from utils import input_pipeline
 from utils import bert_utils
+import adaptdl.torch as adl
+#import adaptdl
+import adaptdl.env as env
+import adaptdl.torch as adl
+adl.write_config()
 
 #########################################################################
 # Import AutoDist and Strategy
@@ -197,8 +202,8 @@ def main(_):
     else:
         os.environ['AUTODIST_PATCH_TF'] = 'False'
     resource_spec_file = os.path.join(
-        os.path.dirname(__file__),
-        '../resource_spec.yml')
+        env.share_path(),
+        'resource_spec.yml')
 
     if FLAGS.autodist_strategy == 'PS':
         strategy = AutoDist(
