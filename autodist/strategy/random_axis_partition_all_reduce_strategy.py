@@ -19,7 +19,7 @@ from tensorflow.python.framework.ops import IndexedSlices
 
 from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.partitioner import PartitionerConfig
-from autodist.proto import strategy_pb2, synchronizers_pb2
+from autodist.proto import strategy_pb2, synchronizers_pb2, compressor_pb2
 from autodist.strategy.base import Strategy, StrategyBuilder
 
 
@@ -87,10 +87,8 @@ class RandomAxisPartitionAR(StrategyBuilder):
 
         if num_shards <= 1:
             node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
-            node.AllReduceSynchronizer.compressor = \
-                synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("NoneCompressor")
-            # node.AllReduceSynchronizer.compressor = \
-            #     synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")
+            node.compressor.type = compressor_pb2.Compressor.Type.Value("NoneCompressor")
+            # node.compressor = compressor_pb2.Compressor.Type.Value("PowerSGDCompressor")
             node.AllReduceSynchronizer.group = var_counter // self.chunk_size
             return node, num_shards
 
@@ -107,10 +105,8 @@ class RandomAxisPartitionAR(StrategyBuilder):
             # Here let's just make it consistent
             part.var_name = '{}/part_{}:0'.format(get_op_name(var.name), i)
             part.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value("AUTO")
-            part.AllReduceSynchronizer.compressor = \
-                synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("NoneCompressor")
-            # part.AllReduceSynchronizer.compressor = \
-            #     synchronizers_pb2.AllReduceSynchronizer.Compressor.Value("PowerSGDCompressor")
+            part.compressor.type = compressor_pb2.Compressor.Type.Value("NoneCompressor")
+            # part.compressor = compressor_pb2.Compressor.Type.Value("PowerSGDCompressor")
             part.AllReduceSynchronizer.group = (var_counter + i) // self.chunk_size
             node.part_config.extend([part])
         return node, num_shards

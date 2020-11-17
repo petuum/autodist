@@ -14,6 +14,7 @@ from autodist.strategy.ps_strategy import PS
 from autodist.strategy.partitioned_all_reduce_strategy import PartitionedAR
 from autodist.strategy.uneven_partition_ps_strategy import UnevenPartitionedPS
 from autodist.strategy.random_axis_partition_all_reduce_strategy import RandomAxisPartitionAR
+from autodist.strategy.poseidon_strategy import Poseidon
 
 from .cases import c0, c1, c2, c3, c4, c5, c6, c7, c8
 
@@ -37,12 +38,13 @@ strategies = [
     PartitionedPS(local_proxy_variable=True),
     AllReduce(chunk_size=1, all_reduce_spec='NCCL', compressor='NoneCompressor'),
     AllReduce(chunk_size=1, all_reduce_spec='NCCL', compressor='HorovodCompressor'),
-    AllReduce(chunk_size=1, all_reduce_spec='RING', compressor='HorovodCompressorEF'),
+    # AllReduce(chunk_size=1, all_reduce_spec='RING', compressor='HorovodCompressorEF'),
     PSLoadBalancing(local_proxy_variable=True),
     Parallax(local_proxy_variable=True),
     PartitionedAR(),
     UnevenPartitionedPS(local_proxy_variable=True),
-    RandomAxisPartitionAR(chunk_size=4)
+    RandomAxisPartitionAR(chunk_size=4),
+    Poseidon(batch_size=32, local_proxy_variable=True)
 ]
 
 
