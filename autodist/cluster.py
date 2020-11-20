@@ -40,10 +40,11 @@ import warnings
 from abc import ABCMeta, abstractmethod
 
 import paramiko
-
+import adaptdl.collective as collective
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, ENV
 from autodist.resource_spec import ResourceSpec
 from autodist.utils import logging
+import socket
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
 
@@ -230,7 +231,6 @@ class Cluster(metaclass=ABCMeta):
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
         module_file = server_starter.__file__
-        print(self.cluster_spec)
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
@@ -254,12 +254,12 @@ class Cluster(metaclass=ABCMeta):
                 else:  # remote
                     self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                    bash = envs + envs_cuda + ['python', '-u', file] + args
-                    logging.info("Launching tf.server on %s" % address)
-                    proc = self.remote_exec(bash, hostname=address)
+                    # bash = envs + envs_cuda + ['python', '-u', file] + args
+                    # logging.info("Launching tf.server on %s" % address)
+                    # proc = self.remote_exec(bash, hostname=address)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.
-                    self.subprocesses.append(proc)
+                    # self.subprocesses.append(proc)
 
     # pylint: disable=too-many-locals
     def start_worker(self):
@@ -283,43 +283,35 @@ class Cluster(metaclass=ABCMeta):
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
         module_file = server_starter.__file__
-        print(self.cluster_spec)
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
+                if socket.gethostname() != address:
+                    continue
                 args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
                         '--cpu_device_num=%d' % len(self._cpu_devices[address])]
                 if address in self._gpu_devices:
                     envs_cuda = []
                 else:
                     envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
-                if self.is_chief(address):
-                    json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
-                    cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
-                    # pylint: disable=subprocess-popen-preexec-fn
-                    proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
-                    self.subprocesses.append(proc)
+                assert not self.is_chief(address):
+                self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file, chief=False)
+                file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+                bash = envs + envs_cuda + ['python', '-u', file] + args
+                logging.info("Launching tf.server on %s" % address)
+                proc = self.local_exec(bash, address)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.
-                    logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
-                        full_address, job_name, task_index
-                    ))
-                else:  # remote
-                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
-                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                    bash = envs + envs_cuda + ['python', '-u', file] + args
-                    logging.info("Launching tf.server on %s" % address)
-                    proc = self.remote_exec(bash, hostname=address)
-                    # The above line immediately follows the Popen
-                    # to ensure no gap for termination failure due to the empty proc list.
-                    self.subprocesses.append(proc)
+                self.subprocesses.append(proc)
+                assert len(self.subprocesses) <= 1
+
     def terminate(self):
         """Terminate."""
         logging.debug('Terminating cluster...')
         for p in self.subprocesses:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
-    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, working_dir=DEFAULT_WORKING_DIR):
+    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, working_dir=DEFAULT_WORKING_DIR, chief):
         """
         Prepare to start a TensorFlow server remotely.
 
@@ -329,11 +321,12 @@ class Cluster(metaclass=ABCMeta):
             working_dir (str): remote working directory
         """
         logging.info("Copying necessary files to %s" % hostname)
-        self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname)
+        self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief)
         self.remote_file_write(
             remote_path=os.path.join(working_dir, 'cluster_spec.json'),
             data=json.dumps(self.cluster_spec),
             hostname=hostname,
+            chief
         )
 
     @abstractmethod
@@ -377,7 +370,6 @@ class SSHCluster(Cluster):
 
     def __init__(self, resource_spec):
         self._ssh_conf = resource_spec.ssh_config_map
-        print(self._ssh_conf)
         super().__init__(resource_spec)
 
     @contextlib.contextmanager
@@ -391,6 +383,7 @@ class SSHCluster(Cluster):
         Returns:
             Yields a Paramiko SSHClient.
         """
+        assert False
         ssh_config = self._ssh_conf[hostname]
         client = paramiko.SSHClient()
         client.load_system_host_keys()
@@ -410,6 +403,7 @@ class SSHCluster(Cluster):
         Returns:
             Yields a Paramiko SFTPClient.
         """
+        assert False
         ssh_config = self._ssh_conf[hostname]
         t = paramiko.Transport((hostname, ssh_config.port))
         t.connect(username=ssh_config.username, pkey=ssh_config.pkey)
@@ -429,6 +423,7 @@ class SSHCluster(Cluster):
         Returns:
             Process: process handle
         """
+        assert False
         cmd_list = []
         ssh_config = self._ssh_conf[hostname]
         if ssh_config.python_venv:
@@ -449,7 +444,27 @@ class SSHCluster(Cluster):
         proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
         return proc
 
-    def remote_file_write(self, remote_path, data, hostname):
+    def local_exec(self, args, hostname):
+        cmd_list = []
+        ssh_config = self._ssh_conf[hostname]
+        if ssh_config.python_venv:
+            cmd_list.append('%s;' % ssh_config.python_venv)
+        if ssh_config.env:
+            cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
+        full_cmd = ' '.join(cmd_list + args)
+
+        remote_cmd = '\'bash -c "{}"\' </dev/null' \
+            .format(full_cmd)
+
+        logging.debug('$ %s' % remote_cmd)
+
+        if ENV.AUTODIST_DEBUG_REMOTE.val:
+            return None
+
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
+        return proc
+    def remote_file_write(self, remote_path, data, hostname, chief):
         """
         Write a remote file.
 
@@ -458,11 +473,19 @@ class SSHCluster(Cluster):
             data (str): data to be written
             hostname (str): host name or address
         """
-        with self._get_sftp_client(hostname) as sftp:
-            with sftp.open(remote_path, 'w') as f:
-                f.write(data)
+        if chief:
+            _ = collective.broadcast(data)
+        else:
+            data_ = collective.broadcast(None)
+            f = open(remote_path, "w")
+            f.write(data_)
+            f.close()
 
-    def remote_copy(self, local_path, remote_path, hostname):
+     #   with self._get_sftp_client(hostname) as sftp:
+     #       with sftp.open(remote_path, 'w') as f:
+     #           f.write(data)
+
+    def remote_copy(self, local_path, remote_path, hostname, chief):
         """
         Copy a file to a remote directory.
 
@@ -472,8 +495,23 @@ class SSHCluster(Cluster):
             hostname (str): host name or address
         """
         # Make sure directory exists
-        with self._get_ssh_client(hostname) as client:
-            _ = client.exec_command('mkdir -p %s' % remote_path)
 
-        with self._get_sftp_client(hostname) as sftp:
-            sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))
+        if chief:
+            f = open(local_path, "r")
+            _ = collective.broadcast(f)
+            f.close()
+        else:
+            file_ = collective.broadcast(None)
+            if not os.path.isdir(remote_path):
+                os.mkdir(remote_path)
+            f = open(os.path.join(remote_path, os.path.basename(local_path)),"w")
+            for l in file_.readlines():
+                f.write(l)
+            f.close()
+            file_.close()
+
+ #       with self._get_ssh_client(hostname) as client:
+ #           _ = client.exec_command('mkdir -p %s' % remote_path)
+
+ #       with self._get_sftp_client(hostname) as sftp:
+ #           sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))

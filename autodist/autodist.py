@@ -129,6 +129,8 @@ class _AutoDistInterface:
             self._coordinator.launch_clients_chief()
         else: 
             collective.initialize()
+            self._cluster.start_worker()
+            self._coordinator.launch_clients_worker()
         logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
 
 

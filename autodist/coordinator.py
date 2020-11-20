@@ -18,7 +18,7 @@ import sys
 import threading
 import atexit
 import os
-
+import socket
 from autodist.const import ENV, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
 from autodist.utils import logging
@@ -52,8 +52,8 @@ class Coordinator:
 
         Store each new process created into the class so they can be monitored with `join`.
         """
-        atexit.register(self.join)
-
+#        atexit.register(self.join)
+        assert False
         replica_devices = [
             DeviceSpec.from_string(device_string)
             for device_string in self._strategy.graph_config.replicas
@@ -89,9 +89,104 @@ class Coordinator:
                 proc = self.cluster.remote_exec(cmd, hostname=replica_host)
                 self.threads.append(self._proc_wait_async(proc))
 
+    def launch_clients_chief(self):
+        """
+        Launch the user's code on each worker.
+
+        Sets environment variables so that we run the correct AutoDist code paths on workers.
+        (i.e., the non-chief code-paths).
+
+        Store each new process created into the class so they can be monitored with `join`.
+        """
+ #       atexit.register(self.join)
+
+        replica_devices = [
+            DeviceSpec.from_string(device_string)
+            for device_string in self._strategy.graph_config.replicas
+        ]
+        replica_hosts = {d.host_address for d in replica_devices}
+
+        # Assumption: Master node must run one replica.
+        # assert any([is_local_address(h) for h in replica_hosts])
+
+        for replica_host in replica_hosts:
+            # Run the process
+            if not self.cluster.is_chief(replica_host):
+                # Build the command
+                # env = {
+                #    ENV.AUTODIST_WORKER.name: replica_host,
+                #    ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
+                #    ENV.AUTODIST_MIN_LOG_LEVEL.name: ENV.AUTODIST_MIN_LOG_LEVEL.val,
+                #    ENV.AUTODIST_IS_TESTING.name: ENV.AUTODIST_IS_TESTING.val,
+                #    ENV.AUTODIST_PATCH_TF.name: ENV.AUTODIST_PATCH_TF.val,
+                #    ENV.AUTODIST_INTERNAL_TF.name: ENV.AUTODIST_INTERNAL_TF.val,
+                #    ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
+                #    ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
+                #}
+                #cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
+                #cmd_main = ["python"] + sys.argv
+                #cmd = cmd_env + cmd_main
+
+                self.cluster.remote_copy(
+                    local_path=self._strategy.path,
+                    remote_path=DEFAULT_SERIALIZATION_DIR,
+                    hostname=replica_host,
+                    chief=True
+                )
+                #proc = self.cluster.remote_exec(cmd, hostname=replica_host)
+                # self.threads.append(self._proc_wait_async(proc))
+
+    def launch_clients_worker(self):
+  #      atexit.register(self.join)
+
+        replica_devices = [
+            DeviceSpec.from_string(device_string)
+            for device_string in self._strategy.graph_config.replicas
+        ]
+        replica_hosts = {d.host_address for d in replica_devices}
+
+        # Assumption: Master node must run one replica.
+        # assert any([is_local_address(h) for h in replica_hosts])
+
+        for replica_host in replica_hosts:
+            # Run the process
+            if socket.gethostname != replica_host:
+                continue
+            assert not self.cluster.is_chief(replica_host)
+            if not self.cluster.is_chief(replica_host):
+                # Build the command
+                env = {
+                    ENV.AUTODIST_WORKER.name: replica_host,
+                    ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
+                    ENV.AUTODIST_MIN_LOG_LEVEL.name: ENV.AUTODIST_MIN_LOG_LEVEL.val,
+                    ENV.AUTODIST_IS_TESTING.name: ENV.AUTODIST_IS_TESTING.val,
+                    ENV.AUTODIST_PATCH_TF.name: ENV.AUTODIST_PATCH_TF.val,
+                    ENV.AUTODIST_INTERNAL_TF.name: ENV.AUTODIST_INTERNAL_TF.val,
+                    ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
+                    ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
+                }
+
+                cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
+                for k,v in env.items():
+                    os.environ[k] = v
+                #cmd_main = ["python"] + sys.argv
+                
+                #cmd = cmd_env + cmd_main
+
+                self.cluster.remote_copy(
+                    local_path=self._strategy.path,
+                    remote_path=DEFAULT_SERIALIZATION_DIR,
+                    hostname=replica_host,
+                    chief=True
+                )
+
+                #proc = self.cluster.remote_exec(cmd, hostname=replica_host)
+                #self.threads.append(self._proc_wait_async(proc))
+
     def join(self):
         """Wait for all subprocesses of remote workers to be completed."""
         logging.debug('Joining workers...')
+        assert False
         for t in self.threads:
             t.join()
 
@@ -103,7 +198,7 @@ class Coordinator:
             if proc.poll():
                 print('RuntimeError: A remote AutoDist worker raised an exception. See Above.')
                 on_exit()
-
+:
         thread = threading.Thread(target=run_subprocess_in_thread, args=(proc, on_exit))
         thread.start()
         # returns immediately after the thread starts
