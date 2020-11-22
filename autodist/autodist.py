@@ -37,10 +37,10 @@ from autodist.strategy import base
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.utils import logging
 import adaptdl.collective as collective
-
+import socket
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
+logging.info(f"is worker: {IS_AUTODIST_WORKER}")
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
-
 _DEFAULT_AUTODIST = {}
 
 
@@ -98,37 +98,43 @@ class _AutoDistInterface:
         """
         return self._strategy_builder.build(self._original_graph_item, self._resource_spec)
 
-    def _build_or_load_strategy(self):
+    def _build_or_load_strategy(self, load=False):
         self._original_graph_item.prepare()
+        import socket
+        print(socket.gethostbyname(socket.gethostname()), IS_AUTODIST_CHIEF)
         if IS_AUTODIST_CHIEF:
             s = self.build_strategy()
             s.serialize()
         else:
+            if not load:
+                return
+            #return None 
             strategy_id = ENV.AUTODIST_STRATEGY_ID.val
+            print(strategy_id)
             assert strategy_id
             s = base.Strategy.deserialize(strategy_id)
         return s
 
     def _compile_strategy(self, strategy):
-        logging.debug('Raw strategy: %s' % strategy)
+        #logging.debug('Raw strategy: %s' % strategy)
         device_resolver = DeviceResolver(self._cluster)
         compiled_strategy = base.StrategyCompiler(self._original_graph_item) \
             .set_device_resolver(device_resolver.resolve_to_device_str) \
             .compile(strategy)
-        logging.info('Compiled strategy: %s' % compiled_strategy)
+        #logging.info('Compiled strategy: %s' % compiled_strategy)
         return compiled_strategy
 
     def _setup(self, strategy):
         """Prepare for the execution."""
+        logging.info(f"{socket.gethostname()} is chief: {IS_AUTODIST_CHIEF}")
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
-            collective.initialize()
             self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
             self._cluster.start_chief()
             self._coordinator.launch_clients_chief()
-        else: 
-            collective.initialize()
+        else:
+            self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
             self._cluster.start_worker()
             self._coordinator.launch_clients_worker()
         logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
@@ -145,6 +151,7 @@ class _GraphModeInterface(_AutoDistInterface):
     def _build(self):
         strategy = self._build_or_load_strategy()
         self._setup(strategy)  # Put it before transforming to allow multiple works to transform concurrently
+        strategy = self._build_or_load_strategy(load=True)
         compiled_strategy = self._compile_strategy(strategy)
         graph_transformer = GraphTransformer(
             compiled_strategy=compiled_strategy,

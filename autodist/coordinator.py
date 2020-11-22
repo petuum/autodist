@@ -22,7 +22,7 @@ import socket
 from autodist.const import ENV, DEFAULT_SERIALIZATION_DIR
 from autodist.resource_spec import DeviceSpec
 from autodist.utils import logging
-
+import adaptdl.collective as collective
 
 class Coordinator:
     """
@@ -109,54 +109,12 @@ class Coordinator:
         # Assumption: Master node must run one replica.
         # assert any([is_local_address(h) for h in replica_hosts])
 
-        for replica_host in replica_hosts:
+        #for replica_host in replica_hosts:
             # Run the process
-            if not self.cluster.is_chief(replica_host):
+          #  if not self.cluster.is_chief(replica_host):
                 # Build the command
-                # env = {
-                #    ENV.AUTODIST_WORKER.name: replica_host,
-                #    ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
-                #    ENV.AUTODIST_MIN_LOG_LEVEL.name: ENV.AUTODIST_MIN_LOG_LEVEL.val,
-                #    ENV.AUTODIST_IS_TESTING.name: ENV.AUTODIST_IS_TESTING.val,
-                #    ENV.AUTODIST_PATCH_TF.name: ENV.AUTODIST_PATCH_TF.val,
-                #    ENV.AUTODIST_INTERNAL_TF.name: ENV.AUTODIST_INTERNAL_TF.val,
-                #    ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
-                #    ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
-                #}
-                #cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
-                #cmd_main = ["python"] + sys.argv
-                #cmd = cmd_env + cmd_main
-
-                self.cluster.remote_copy(
-                    local_path=self._strategy.path,
-                    remote_path=DEFAULT_SERIALIZATION_DIR,
-                    hostname=replica_host,
-                    chief=True
-                )
-                #proc = self.cluster.remote_exec(cmd, hostname=replica_host)
-                # self.threads.append(self._proc_wait_async(proc))
-
-    def launch_clients_worker(self):
-  #      atexit.register(self.join)
-
-        replica_devices = [
-            DeviceSpec.from_string(device_string)
-            for device_string in self._strategy.graph_config.replicas
-        ]
-        replica_hosts = {d.host_address for d in replica_devices}
-
-        # Assumption: Master node must run one replica.
-        # assert any([is_local_address(h) for h in replica_hosts])
-
-        for replica_host in replica_hosts:
-            # Run the process
-            if socket.gethostname != replica_host:
-                continue
-            assert not self.cluster.is_chief(replica_host)
-            if not self.cluster.is_chief(replica_host):
-                # Build the command
-                env = {
-                    ENV.AUTODIST_WORKER.name: replica_host,
+        env = {
+                    ENV.AUTODIST_WORKER.name: None,
                     ENV.AUTODIST_STRATEGY_ID.name: self._strategy.id,
                     ENV.AUTODIST_MIN_LOG_LEVEL.name: ENV.AUTODIST_MIN_LOG_LEVEL.val,
                     ENV.AUTODIST_IS_TESTING.name: ENV.AUTODIST_IS_TESTING.val,
@@ -164,21 +122,36 @@ class Coordinator:
                     ENV.AUTODIST_INTERNAL_TF.name: ENV.AUTODIST_INTERNAL_TF.val,
                     ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
                     ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
-                }
+        }
+        #cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
+        _ = collective.broadcast(env)
+        _ = collective.broadcast(self._strategy.path)
+        self.cluster.remote_copy(
+                local_path=self._strategy.path,
+                remote_path=DEFAULT_SERIALIZATION_DIR,
+                hostname=None,
+                chief=True
+        )
+                #proc = self.cluster.remote_exec(cmd, hostname=replica_host)
+                # self.threads.append(self._proc_wait_async(proc))
 
-                cmd_env = ['{}={}'.format(k, v) for k, v in env.items()]
-                for k,v in env.items():
-                    os.environ[k] = v
-                #cmd_main = ["python"] + sys.argv
-                
-                #cmd = cmd_env + cmd_main
+    def launch_clients_worker(self):
+  #      atexit.register(self.join)
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
 
-                self.cluster.remote_copy(
-                    local_path=self._strategy.path,
-                    remote_path=DEFAULT_SERIALIZATION_DIR,
-                    hostname=replica_host,
-                    chief=True
-                )
+        env = collective.broadcast(None)
+        env[ENV.AUTODIST_WORKER.name] = local_ip
+        for k,v in env.items():
+            os.environ[k] = str(v)
+        
+        path = collective.broadcast(None)
+        self.cluster.remote_copy(
+            local_path=path,
+            remote_path=DEFAULT_SERIALIZATION_DIR,
+            hostname=None,
+            chief=False
+        )
 
                 #proc = self.cluster.remote_exec(cmd, hostname=replica_host)
                 #self.threads.append(self._proc_wait_async(proc))
@@ -193,12 +166,12 @@ class Coordinator:
     @staticmethod
     def _proc_wait_async(proc, on_exit=lambda: os._exit(1)):
         """Creates a thread to wait on the given proc finishing."""
+        assert False
         def run_subprocess_in_thread(proc, on_exit):
             proc.communicate()
             if proc.poll():
                 print('RuntimeError: A remote AutoDist worker raised an exception. See Above.')
                 on_exit()
-:
         thread = threading.Thread(target=run_subprocess_in_thread, args=(proc, on_exit))
         thread.start()
         # returns immediately after the thread starts

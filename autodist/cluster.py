@@ -136,7 +136,9 @@ class Cluster(metaclass=ABCMeta):
         Returns:
             str: Worker ip or chief address by default.
         """
-        return ENV.AUTODIST_WORKER.val or self._chief
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        return local_ip #ENV.AUTODIST_WORKER.val or self._chief
 
     def get_local_worker_task_index(self):
         """
@@ -145,7 +147,11 @@ class Cluster(metaclass=ABCMeta):
         Returns:
             int: Task index
         """
-        return [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
+        logging.info(f"full address {self._full_addresses}")
+        logging.info(f"local address {self.get_local_address()}") 
+        return_ =  [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
+        logging.info(f"returning {return_}")
+        return return_
 
     def get_local_session_target(self):
         """
@@ -203,7 +209,7 @@ class Cluster(metaclass=ABCMeta):
                 else:  # remote
                     self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                    bash = envs + envs_cuda + ['python', '-u', file] + args
+                    #bash = envs + envs_cuda + ['python', '-u', file] + args
                     logging.info("Launching tf.server on %s" % address)
                     proc = self.remote_exec(bash, hostname=address)
                     # The above line immediately follows the Popen
@@ -226,7 +232,7 @@ class Cluster(metaclass=ABCMeta):
         #   (to follow the python assumption that
         #   lower level modules will normally be imported
         #   before higher level modules and thus must be cleaned up later).
-        atexit.register(self.terminate)
+        #atexit.register(self.terminate)
         envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
@@ -244,6 +250,7 @@ class Cluster(metaclass=ABCMeta):
                     json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
                     cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
                     # pylint: disable=subprocess-popen-preexec-fn
+                    logging.info("cmd at chief: %s", cmd)
                     proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
                     self.subprocesses.append(proc)
                     # The above line immediately follows the Popen
@@ -251,9 +258,9 @@ class Cluster(metaclass=ABCMeta):
                     logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
                         full_address, job_name, task_index
                     ))
-                else:  # remote
-                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
-                    file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+               # else:  # remote
+        self.remote_pre_start_tf_server(None, tf_server_starter_filepath=module_file,chief=True)
+        file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
                     # bash = envs + envs_cuda + ['python', '-u', file] + args
                     # logging.info("Launching tf.server on %s" % address)
                     # proc = self.remote_exec(bash, hostname=address)
@@ -278,7 +285,7 @@ class Cluster(metaclass=ABCMeta):
         #   (to follow the python assumption that
         #   lower level modules will normally be imported
         #   before higher level modules and thus must be cleaned up later).
-        atexit.register(self.terminate)
+        #atexit.register(self.terminate)
         envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
@@ -286,7 +293,9 @@ class Cluster(metaclass=ABCMeta):
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
-                if socket.gethostname() != address:
+                hostname = socket.gethostname()
+                local_ip = socket.gethostbyname(hostname)
+                if local_ip != address:
                     continue
                 args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
                         '--cpu_device_num=%d' % len(self._cpu_devices[address])]
@@ -294,12 +303,14 @@ class Cluster(metaclass=ABCMeta):
                     envs_cuda = []
                 else:
                     envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
-                assert not self.is_chief(address):
+                assert not self.is_chief(address)
                 self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file, chief=False)
-                file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                bash = envs + envs_cuda + ['python', '-u', file] + args
+                #file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+                #bash = envs + envs_cuda + ['python', '-u', file] + args
+                
+                cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
                 logging.info("Launching tf.server on %s" % address)
-                proc = self.local_exec(bash, address)
+                proc = self.local_exec(cmd, address)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.
                 self.subprocesses.append(proc)
@@ -311,7 +322,7 @@ class Cluster(metaclass=ABCMeta):
         for p in self.subprocesses:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
-    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, working_dir=DEFAULT_WORKING_DIR, chief):
+    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, chief, working_dir=DEFAULT_WORKING_DIR):
         """
         Prepare to start a TensorFlow server remotely.
 
@@ -320,13 +331,13 @@ class Cluster(metaclass=ABCMeta):
             tf_server_starter_filepath (str): local starter file path
             working_dir (str): remote working directory
         """
-        logging.info("Copying necessary files to %s" % hostname)
-        self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief)
+        #logging.info("Copying necessary files to %s" % hostname)
+        self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief=chief)
         self.remote_file_write(
             remote_path=os.path.join(working_dir, 'cluster_spec.json'),
             data=json.dumps(self.cluster_spec),
             hostname=hostname,
-            chief
+            chief=chief
         )
 
     @abstractmethod
@@ -445,24 +456,26 @@ class SSHCluster(Cluster):
         return proc
 
     def local_exec(self, args, hostname):
-        cmd_list = []
-        ssh_config = self._ssh_conf[hostname]
-        if ssh_config.python_venv:
-            cmd_list.append('%s;' % ssh_config.python_venv)
-        if ssh_config.env:
-            cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
-        full_cmd = ' '.join(cmd_list + args)
+        #cmd_list = []
+        #ssh_config = self._ssh_conf[hostname]
+        #if ssh_config.python_venv:
+        #    cmd_list.append('%s;' % ssh_config.python_venv)
+        #if ssh_config.env:
+        #    cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
+        full_cmd = ' '.join(args)
 
-        remote_cmd = '\'bash -c "{}"\' </dev/null' \
-            .format(full_cmd)
+        logging.info(full_cmd)
+        #remote_cmd = '\'bash -c "{}"\' </dev/null' \
+        #    .format(full_cmd)
 
-        logging.debug('$ %s' % remote_cmd)
+        logging.debug('$ %s' % full_cmd)
 
         if ENV.AUTODIST_DEBUG_REMOTE.val:
             return None
 
         # pylint: disable=subprocess-popen-preexec-fn
-        proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
+        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
+        #proc_1 = subprocess.Popen("/usr/bin/python3 /root/autodist/examples/sleep.py", shell=True, preexec_fn=os.setsid)
         return proc
     def remote_file_write(self, remote_path, data, hostname, chief):
         """
@@ -498,17 +511,17 @@ class SSHCluster(Cluster):
 
         if chief:
             f = open(local_path, "r")
-            _ = collective.broadcast(f)
+            lines = f.readlines()
+            _ = collective.broadcast(lines)
             f.close()
         else:
-            file_ = collective.broadcast(None)
+            lines = collective.broadcast(None)
             if not os.path.isdir(remote_path):
                 os.mkdir(remote_path)
             f = open(os.path.join(remote_path, os.path.basename(local_path)),"w")
-            for l in file_.readlines():
+            for l in lines:
                 f.write(l)
             f.close()
-            file_.close()
 
  #       with self._get_ssh_client(hostname) as client:
  #           _ = client.exec_command('mkdir -p %s' % remote_path)

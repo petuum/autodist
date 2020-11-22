@@ -37,7 +37,6 @@ from utils import common_flags
 from utils import input_pipeline
 from utils import bert_utils
 import adaptdl.torch as adl
-#import adaptdl
 import adaptdl.env as env
 import adaptdl.torch as adl
 adl.write_config()

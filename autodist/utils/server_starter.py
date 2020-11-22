@@ -56,6 +56,7 @@ def gen_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: int
         cpu_device_num: The number of CPU devices
     """
     _clean_stale_servers()
+    logging.info("cleaned server.")
 
     # TODO: The following config should be less hard coded ad based on strategy
     experimental = config_pb2.ConfigProto.Experimental(
@@ -87,9 +88,11 @@ def start_server(cluster_spec, job_name: str, task_index: int, cpu_device_num: i
     """
     s = gen_server(cluster_spec, job_name, task_index, cpu_device_num)
     s.join()
+    logging.info("joined server.")
 
 
 if __name__ == '__main__':
+    logging.info("started joining")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--job_name",
