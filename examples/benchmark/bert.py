@@ -29,7 +29,7 @@ from absl import flags
 from absl import logging
 
 from utils.logs import logger
-from utils.misc import keras_utils
+from utils.misc import keras_utils, gen_yml
 
 from utils import bert_modeling as modeling
 from utils import bert_models
@@ -39,7 +39,8 @@ from utils import bert_utils
 import adaptdl.torch as adl
 import adaptdl.env as env
 import adaptdl.torch as adl
-adl.write_config()
+
+gen_yml.generate()
 
 #########################################################################
 # Import AutoDist and Strategy
