@@ -87,7 +87,7 @@ class ENV(Enum):
     def val(self):
         """Return the output of the lambda on the system's value in the environment."""
         # pylint: disable=invalid-envvar-value, unpacking-non-sequence
-        if self.name == "AUTODIST_WORKER" and self.ADAPTDL.val():
+        if self.name == "AUTODIST_WORKER" and self.ADAPTDL.val:
             return self.val_autodist_worker
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
