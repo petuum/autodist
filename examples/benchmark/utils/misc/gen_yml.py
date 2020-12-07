@@ -28,7 +28,8 @@ def generate():
         key = env.job_id()
         group = env.num_restarts()
         while True:
-            response = requests.get(url=f"{url}/discover_gpu/{key}/{group}")
+            response = requests.get(url=f"{url}/discover/{key}/{group}", 
+                                    params={"gpu" : True})
             if response.status_code != 408:  # Timeout.
                 break
         response.raise_for_status()

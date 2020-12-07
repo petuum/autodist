@@ -40,14 +40,15 @@ import warnings
 from abc import ABCMeta, abstractmethod
 
 import paramiko
+
 import adaptdl.collective as collective
+import socket
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, ENV
 from autodist.resource_spec import ResourceSpec
 from autodist.utils import logging
-import socket
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
-
+IS_ADAPTDL = bool(ENV.ADAPTDL.val)
 
 class Cluster(metaclass=ABCMeta):
     """Cluster manager for TensorFlow servers."""
@@ -136,9 +137,12 @@ class Cluster(metaclass=ABCMeta):
         Returns:
             str: Worker ip or chief address by default.
         """
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
-        return local_ip #ENV.AUTODIST_WORKER.val or self._chief
+        if IS_ADAPTDL:
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname)
+            return local_ip 
+
+        return ENV.AUTODIST_WORKER.val or self._chief
 
     def get_local_worker_task_index(self):
         """
@@ -147,11 +151,14 @@ class Cluster(metaclass=ABCMeta):
         Returns:
             int: Task index
         """
-        logging.info(f"full address {self._full_addresses}")
-        logging.info(f"local address {self.get_local_address()}") 
-        return_ =  [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
-        logging.info(f"returning {return_}")
-        return return_
+        if IS_ADAPTDL:
+            logging.info(f"full address {self._full_addresses}")
+            logging.info(f"local address {self.get_local_address()}") 
+            return_ =  [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
+            logging.info(f"returning {return_}")
+            return return_
+
+        return [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
 
     def get_local_session_target(self):
         """
@@ -172,7 +179,7 @@ class Cluster(metaclass=ABCMeta):
         """
         # pylint: disable=import-outside-toplevel
         from autodist.utils import server_starter
-        assert False
+
         # atexit registration should be placed
         #   - before the beginning of the start
         #   (to ensure the clean termination if the start fails in its half way); and
@@ -185,7 +192,7 @@ class Cluster(metaclass=ABCMeta):
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
         module_file = server_starter.__file__
-        print(self.cluster_spec)
+
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 address = full_address.split(':')[0]
@@ -207,9 +214,9 @@ class Cluster(metaclass=ABCMeta):
                         full_address, job_name, task_index
                     ))
                 else:  # remote
-                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
+                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file,chief=None)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                    #bash = envs + envs_cuda + ['python', '-u', file] + args
+                    bash = envs + envs_cuda + ['python', '-u', file] + args
                     logging.info("Launching tf.server on %s" % address)
                     proc = self.remote_exec(bash, hostname=address)
                     # The above line immediately follows the Popen
@@ -219,20 +226,10 @@ class Cluster(metaclass=ABCMeta):
     # pylint: disable=too-many-locals
     def start_chief(self):
         """
-        Start tf.servers on all nodes.
-
-        Note that this only runs (and only should run) on the chief node.
+        Start tf.servers on all nodes. AdaptDL version. Run on chief.
         """
         # pylint: disable=import-outside-toplevel
         from autodist.utils import server_starter
-        # atexit registration should be placed
-        #   - before the beginning of the start
-        #   (to ensure the clean termination if the start fails in its half way); and
-        #   - at the same module as the start
-        #   (to follow the python assumption that
-        #   lower level modules will normally be imported
-        #   before higher level modules and thus must be cleaned up later).
-        #atexit.register(self.terminate)
         envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
@@ -253,39 +250,19 @@ class Cluster(metaclass=ABCMeta):
                     logging.info("cmd at chief: %s", cmd)
                     proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
                     self.subprocesses.append(proc)
-                    # The above line immediately follows the Popen
-                    # to ensure no gap for termination failure due to the empty proc list.
                     logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
                         full_address, job_name, task_index
                     ))
-               # else:  # remote
         self.remote_pre_start_tf_server(None, tf_server_starter_filepath=module_file,chief=True)
         file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                    # bash = envs + envs_cuda + ['python', '-u', file] + args
-                    # logging.info("Launching tf.server on %s" % address)
-                    # proc = self.remote_exec(bash, hostname=address)
-                    # The above line immediately follows the Popen
-                    # to ensure no gap for termination failure due to the empty proc list.
-                    # self.subprocesses.append(proc)
 
     # pylint: disable=too-many-locals
     def start_worker(self):
         """
-        Start tf.servers on all nodes.
-
-        Note that this only runs (and only should run) on the chief node.
+        Start tf.servers on all nodes. AdaptDL version. Run on non-chief.
         """
         # pylint: disable=import-outside-toplevel
         from autodist.utils import server_starter
-
-        # atexit registration should be placed
-        #   - before the beginning of the start
-        #   (to ensure the clean termination if the start fails in its half way); and
-        #   - at the same module as the start
-        #   (to follow the python assumption that
-        #   lower level modules will normally be imported
-        #   before higher level modules and thus must be cleaned up later).
-        #atexit.register(self.terminate)
         envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
         envs = ['{}={}'.format(k, v) for k, v in envs.items()]
         module_name = server_starter.__name__
@@ -305,14 +282,10 @@ class Cluster(metaclass=ABCMeta):
                     envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
                 assert not self.is_chief(address)
                 self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file, chief=False)
-                #file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
-                #bash = envs + envs_cuda + ['python', '-u', file] + args
-                
+
                 cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
                 logging.info("Launching tf.server on %s" % address)
                 proc = self.local_exec(cmd, address)
-                    # The above line immediately follows the Popen
-                    # to ensure no gap for termination failure due to the empty proc list.
                 self.subprocesses.append(proc)
                 assert len(self.subprocesses) <= 1
 
@@ -331,14 +304,24 @@ class Cluster(metaclass=ABCMeta):
             tf_server_starter_filepath (str): local starter file path
             working_dir (str): remote working directory
         """
-        #logging.info("Copying necessary files to %s" % hostname)
-        self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief=chief)
-        self.remote_file_write(
-            remote_path=os.path.join(working_dir, 'cluster_spec.json'),
-            data=json.dumps(self.cluster_spec),
-            hostname=hostname,
-            chief=chief
-        )
+        logging.info("Copying necessary files to %s" % hostname)
+        if IS_ADAPTDL:
+            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief=chief)
+            self.remote_file_write(
+                remote_path=os.path.join(working_dir, 'cluster_spec.json'),
+                data=json.dumps(self.cluster_spec),
+                hostname=hostname,
+                chief=chief
+            )
+        else:
+            assert chief is None
+            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief=None)
+            self.remote_file_write(
+                remote_path=os.path.join(working_dir, 'cluster_spec.json'),
+                data=json.dumps(self.cluster_spec),
+                hostname=hostname,
+                chief=None
+            )
 
     @abstractmethod
     def remote_exec(self, args, hostname):
@@ -394,12 +377,12 @@ class SSHCluster(Cluster):
         Returns:
             Yields a Paramiko SSHClient.
         """
-        assert False
         ssh_config = self._ssh_conf[hostname]
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy)
         client.connect(hostname=hostname, port=ssh_config.port, username=ssh_config.username, pkey=ssh_config.pkey)
+        assert not IS_ADAPTDL
         yield client
         client.close()
 
@@ -414,7 +397,6 @@ class SSHCluster(Cluster):
         Returns:
             Yields a Paramiko SFTPClient.
         """
-        assert False
         ssh_config = self._ssh_conf[hostname]
         t = paramiko.Transport((hostname, ssh_config.port))
         t.connect(username=ssh_config.username, pkey=ssh_config.pkey)
@@ -434,7 +416,6 @@ class SSHCluster(Cluster):
         Returns:
             Process: process handle
         """
-        assert False
         cmd_list = []
         ssh_config = self._ssh_conf[hostname]
         if ssh_config.python_venv:
@@ -455,28 +436,46 @@ class SSHCluster(Cluster):
         proc = subprocess.Popen(remote_cmd, shell=True, preexec_fn=os.setsid)
         return proc
 
-    def local_exec(self, args, hostname):
-        #cmd_list = []
-        #ssh_config = self._ssh_conf[hostname]
-        #if ssh_config.python_venv:
-        #    cmd_list.append('%s;' % ssh_config.python_venv)
-        #if ssh_config.env:
-        #    cmd_list.extend(['%s=%s' % (k, v) for k, v in ssh_config.env.items()])
-        full_cmd = ' '.join(args)
+    def remote_file_write(self, remote_path, data, hostname):
+        """
+        Write a remote file.
 
-        logging.info(full_cmd)
-        #remote_cmd = '\'bash -c "{}"\' </dev/null' \
-        #    .format(full_cmd)
+        Args:
+            remote_path (str): remote file path
+            data (str): data to be written
+            hostname (str): host name or address
+        """
+        with self._get_sftp_client(hostname) as sftp:
+            with sftp.open(remote_path, 'w') as f:
+                f.write(data)
 
-        logging.debug('$ %s' % full_cmd)
+    def remote_copy(self, local_path, remote_path, hostname):
+        """
+        Copy a file to a remote directory.
 
-        if ENV.AUTODIST_DEBUG_REMOTE.val:
-            return None
+        Args:
+            local_path (str): local file path to be copied
+            remote_path (str): remote directory path
+            hostname (str): host name or address
+        """
+        # Make sure directory exists
+        with self._get_ssh_client(hostname) as client:
+            _ = client.exec_command('mkdir -p %s' % remote_path)
 
-        # pylint: disable=subprocess-popen-preexec-fn
-        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
-        #proc_1 = subprocess.Popen("/usr/bin/python3 /root/autodist/examples/sleep.py", shell=True, preexec_fn=os.setsid)
-        return proc
+        with self._get_sftp_client(hostname) as sftp:
+            sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))
+
+
+class ADAPTDLCluster(Cluster):
+    """An AutoDist Cluster Based on AdaptDL."""
+
+    def __init__(self, resource_spec):
+        assert IS_ADAPTDL
+        super().__init__(resource_spec)
+    
+    def remote_exec(self, args, hostname):
+        pass
+
     def remote_file_write(self, remote_path, data, hostname, chief):
         """
         Write a remote file.
@@ -485,6 +484,7 @@ class SSHCluster(Cluster):
             remote_path (str): remote file path
             data (str): data to be written
             hostname (str): host name or address
+            chief (boolean): whether this is autodist chief
         """
         if chief:
             _ = collective.broadcast(data)
@@ -494,10 +494,6 @@ class SSHCluster(Cluster):
             f.write(data_)
             f.close()
 
-     #   with self._get_sftp_client(hostname) as sftp:
-     #       with sftp.open(remote_path, 'w') as f:
-     #           f.write(data)
-
     def remote_copy(self, local_path, remote_path, hostname, chief):
         """
         Copy a file to a remote directory.
@@ -506,6 +502,7 @@ class SSHCluster(Cluster):
             local_path (str): local file path to be copied
             remote_path (str): remote directory path
             hostname (str): host name or address
+            chief (boolean): whether this is autodist chief
         """
         # Make sure directory exists
 
@@ -522,9 +519,3 @@ class SSHCluster(Cluster):
             for l in lines:
                 f.write(l)
             f.close()
-
- #       with self._get_ssh_client(hostname) as client:
- #           _ = client.exec_command('mkdir -p %s' % remote_path)
-
- #       with self._get_sftp_client(hostname) as sftp:
- #           sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))
