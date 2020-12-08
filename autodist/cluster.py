@@ -40,15 +40,16 @@ import warnings
 from abc import ABCMeta, abstractmethod
 
 import paramiko
-
-import adaptdl.collective as collective
-import socket
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, ENV
 from autodist.resource_spec import ResourceSpec
 from autodist.utils import logging
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
 IS_ADAPTDL = bool(ENV.ADAPTDL.val)
+if IS_ADAPTDL:
+    import adaptdl.collective as collective
+    import socket
+
 
 class Cluster(metaclass=ABCMeta):
     """Cluster manager for TensorFlow servers."""
@@ -154,7 +155,7 @@ class Cluster(metaclass=ABCMeta):
         if IS_ADAPTDL:
             logging.info(f"full address {self._full_addresses}")
             logging.info(f"local address {self.get_local_address()}") 
-            return_ =  [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
+            return_ = [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
             logging.info(f"returning {return_}")
             return return_
 
@@ -214,7 +215,7 @@ class Cluster(metaclass=ABCMeta):
                         full_address, job_name, task_index
                     ))
                 else:  # remote
-                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file,chief=None)
+                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file, chief=False)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
                     bash = envs + envs_cuda + ['python', '-u', file] + args
                     logging.info("Launching tf.server on %s" % address)
@@ -225,9 +226,7 @@ class Cluster(metaclass=ABCMeta):
 
     # pylint: disable=too-many-locals
     def start_chief(self):
-        """
-        Start tf.servers on all nodes. AdaptDL version. Run on chief.
-        """
+        """Start tf.servers on all nodes. AdaptDL version. Run on chief."""
         # pylint: disable=import-outside-toplevel
         from autodist.utils import server_starter
         envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
@@ -253,14 +252,11 @@ class Cluster(metaclass=ABCMeta):
                     logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
                         full_address, job_name, task_index
                     ))
-        self.remote_pre_start_tf_server(None, tf_server_starter_filepath=module_file,chief=True)
-        file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+        self.remote_pre_start_tf_server(None, tf_server_starter_filepath=module_file, chief=True)
 
     # pylint: disable=too-many-locals
     def start_worker(self):
-        """
-        Start tf.servers on all nodes. AdaptDL version. Run on non-chief.
-        """
+        """Start tf.servers on all nodes. AdaptDL version. Run on non-chief."""
         # pylint: disable=import-outside-toplevel
         from autodist.utils import server_starter
         envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
@@ -302,11 +298,14 @@ class Cluster(metaclass=ABCMeta):
         Args:
             hostname (str): host name or address
             tf_server_starter_filepath (str): local starter file path
+            chief (bool): indicator that this process is on chief or not. Only apply with adaptDL.
             working_dir (str): remote working directory
         """
         logging.info("Copying necessary files to %s" % hostname)
         if IS_ADAPTDL:
-            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief=chief)
+            # pylint: disable=unexpected-keyword-arg
+            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir,
+                             hostname=hostname, chief=chief)
             self.remote_file_write(
                 remote_path=os.path.join(working_dir, 'cluster_spec.json'),
                 data=json.dumps(self.cluster_spec),
@@ -314,13 +313,12 @@ class Cluster(metaclass=ABCMeta):
                 chief=chief
             )
         else:
-            assert chief is None
-            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname, chief=None)
+            assert chief is False
+            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname)
             self.remote_file_write(
                 remote_path=os.path.join(working_dir, 'cluster_spec.json'),
                 data=json.dumps(self.cluster_spec),
-                hostname=hostname,
-                chief=None
+                hostname=hostname
             )
 
     @abstractmethod
@@ -472,10 +470,41 @@ class ADAPTDLCluster(Cluster):
     def __init__(self, resource_spec):
         assert IS_ADAPTDL
         super().__init__(resource_spec)
-    
-    def remote_exec(self, args, hostname):
-        pass
 
+    def remote_exec(self, args, hostname):
+        """
+        Execute a bash script remotely. disabled in AdaptDL.
+
+        Args:
+            args (list): bash commands
+            hostname (str): host name or address
+
+        Returns:
+            None
+        """
+        return
+
+    # pylint: disable=no-self-use
+    def local_exec(self, args, hostname):
+        """
+        Execute a bash script locally.
+
+        Args:
+            args (list): bash commands
+            hostname (str): host name or address
+
+        Returns:
+            Process: process handle
+        """
+        full_cmd = ' '.join(args)
+        logging.info(full_cmd)
+        if ENV.AUTODIST_DEBUG_REMOTE.val:
+            return None
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
+        return proc
+
+    # pylint: disable=arguments-differ
     def remote_file_write(self, remote_path, data, hostname, chief):
         """
         Write a remote file.
@@ -494,6 +523,7 @@ class ADAPTDLCluster(Cluster):
             f.write(data_)
             f.close()
 
+    # pylint: disable=arguments-differ
     def remote_copy(self, local_path, remote_path, hostname, chief):
         """
         Copy a file to a remote directory.
@@ -515,7 +545,7 @@ class ADAPTDLCluster(Cluster):
             lines = collective.broadcast(None)
             if not os.path.isdir(remote_path):
                 os.mkdir(remote_path)
-            f = open(os.path.join(remote_path, os.path.basename(local_path)),"w")
-            for l in lines:
-                f.write(l)
+            f = open(os.path.join(remote_path, os.path.basename(local_path)), "w")
+            for line in lines:
+                f.write(line)
             f.close()

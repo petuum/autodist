@@ -29,13 +29,18 @@ from absl import flags
 from absl import logging
 
 from utils.logs import logger
-from utils.misc import keras_utils
+from utils.misc import keras_utils, gen_yml
 
 from utils import bert_modeling as modeling
 from utils import bert_models
 from utils import common_flags
 from utils import input_pipeline
 from utils import bert_utils
+import adaptdl.torch as adl
+import adaptdl.env as env
+import adaptdl.torch as adl
+
+gen_yml.generate()
 
 #########################################################################
 # Import AutoDist and Strategy
@@ -197,8 +202,8 @@ def main(_):
     else:
         os.environ['AUTODIST_PATCH_TF'] = 'False'
     resource_spec_file = os.path.join(
-        os.path.dirname(__file__),
-        '../resource_spec.yml')
+        env.share_path(),
+        'resource_spec.yml')
 
     if FLAGS.autodist_strategy == 'PS':
         strategy = AutoDist(

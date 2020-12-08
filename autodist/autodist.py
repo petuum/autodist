@@ -37,8 +37,6 @@ from autodist.strategy import base
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.utils import logging
 
-import adaptdl.collective as collective
-import socket
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 IS_ADAPTDL = bool(ENV.ADAPTDL.val)
@@ -110,7 +108,7 @@ class _AutoDistInterface:
             s.serialize()
         else:
             if IS_ADAPTDL and not load:
-                return
+                return None
             strategy_id = ENV.AUTODIST_STRATEGY_ID.val
             assert strategy_id
             s = base.Strategy.deserialize(strategy_id)

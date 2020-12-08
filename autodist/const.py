@@ -23,8 +23,6 @@ influence AutoDist behavior.
 from enum import Enum, auto
 
 import os
-import socket
-import adaptdl.env as env
 # Below consts can be modified if necessary.
 # Note that if one of these consts requires frequent modification,
 # it should probably be moved into `ENV`.
@@ -86,13 +84,17 @@ class ENV(Enum):
     @property
     def val(self):
         """Return the output of the lambda on the system's value in the environment."""
-        # pylint: disable=invalid-envvar-value, unpacking-non-sequence
+        # pylint: disable=invalid-envvar-value, unpacking-non-sequence, comparison-with-callable
         if self.name == "AUTODIST_WORKER" and self.ADAPTDL.val:
-            return self.val_autodist_worker
+            return self.val_autodist_worker()
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
 
+    # pylint: disable=no-self-use, import-outside-toplevel
     def val_autodist_worker(self):
+        """Evaluate autodist_worker in AdaptDL."""
+        import adaptdl.env as env
+        import socket
         f = open(os.path.join(env.share_path(), "resource_spec.yml"))
         lines = f.readlines()
         line_chief = lines[1]
