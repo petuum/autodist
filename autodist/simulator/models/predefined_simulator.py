@@ -124,7 +124,6 @@ class PredefinedSimulator(SimulatorBase):
 
 	def create_features(self, strategy: Strategy, resource_spec: ResourceSpec, cluster: SSHCluster,
 	                    device_resolver: DeviceResolver):
-		# var_sync_time, vars, resource = self.predefined_sync_time(strategy, resource_spec)
 
 		vars, resource = self.extract_pre_feature(strategy=strategy, resource_spec=resource_spec,
 		                                          cluster=cluster, device_resolver=device_resolver)
