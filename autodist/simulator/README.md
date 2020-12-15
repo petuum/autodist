@@ -46,5 +46,11 @@ Run: ``python simulate.py``.
 
 ## Read a strategy 
 
-Use ``strategy = base.Strategy.deserialize(strategy_file)`` to read a strategy stored as ``strategy_file``. 
+Use 
+
+``from autodist.strategy import base``
+
+``strategy = base.Strategy.deserialize(strategy_file)`` 
+
+to read a strategy from ``strategy_file``. 
 
