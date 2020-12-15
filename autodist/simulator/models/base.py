@@ -395,9 +395,9 @@ class SimulatorBase:
                 ip_j = devices[j].split(':')[0]
                 if ip_i != ip_j:
                     network_bandwidth[resolved_devices[i]][resolved_devices[j]] \
-                        = GIGABITS * 20  # resource_spec.network_bandwidth[ip_i]    # todo: solve.
+                        = GIGABITS * resource_spec.network_bandwidth[ip_i]    # todo: solve.
                     network_bandwidth[resolved_devices[j]][resolved_devices[i]] \
-                        = GIGABITS * 20  # resource_spec.network_bandwidth[ip_j]
+                        = GIGABITS * resource_spec.network_bandwidth[ip_j]
                 else:
                     network_bandwidth[resolved_devices[i]][resolved_devices[j]] = GIGABITS * gpu_cpu_bw
                     network_bandwidth[resolved_devices[j]][resolved_devices[i]] = GIGABITS * gpu_cpu_bw
