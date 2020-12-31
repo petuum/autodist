@@ -484,8 +484,8 @@ class ADAPTDLCluster(Cluster):
         """
         return
 
-    # pylint: disable=no-self-use
-    def local_exec(self, args, hostname):
+    @staticmethod
+    def local_exec(args, hostname):
         """
         Execute a bash script locally.
 
@@ -504,8 +504,7 @@ class ADAPTDLCluster(Cluster):
         proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
         return proc
 
-    # pylint: disable=arguments-differ
-    def remote_file_write(self, remote_path, data, hostname, chief):
+    def remote_file_write(self, remote_path, data, hostname, **kwargs):
         """
         Write a remote file.
 
@@ -515,7 +514,7 @@ class ADAPTDLCluster(Cluster):
             hostname (str): host name or address
             chief (boolean): whether this is autodist chief
         """
-        if chief:
+        if kwargs["chief"]:
             _ = collective.broadcast(data)
         else:
             data_ = collective.broadcast(None)
@@ -523,8 +522,7 @@ class ADAPTDLCluster(Cluster):
             f.write(data_)
             f.close()
 
-    # pylint: disable=arguments-differ
-    def remote_copy(self, local_path, remote_path, hostname, chief):
+    def remote_copy(self, local_path, remote_path, hostname, **kwargs):
         """
         Copy a file to a remote directory.
 
@@ -536,7 +534,7 @@ class ADAPTDLCluster(Cluster):
         """
         # Make sure directory exists
 
-        if chief:
+        if kwargs["chief"]:
             f = open(local_path, "r")
             lines = f.readlines()
             _ = collective.broadcast(lines)

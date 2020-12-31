@@ -90,8 +90,9 @@ class ENV(Enum):
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
 
-    # pylint: disable=no-self-use, import-outside-toplevel
-    def val_autodist_worker(self):
+    # pylint: disable=import-outside-toplevel
+    @staticmethod
+    def val_autodist_worker():
         """Evaluate autodist_worker in AdaptDL."""
         import adaptdl.env as env
         import socket

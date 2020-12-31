@@ -107,6 +107,10 @@ class _AutoDistInterface:
             s = self.build_strategy()
             s.serialize()
         else:
+            # At AdaptDL mode, when the worker pass through this before
+            # the chief has created the strategy, this should returns
+            # nothing. Later, when the chief has created the strategy,
+            # it can load it.
             if IS_ADAPTDL and not load:
                 return None
             strategy_id = ENV.AUTODIST_STRATEGY_ID.val
@@ -115,12 +119,12 @@ class _AutoDistInterface:
         return s
 
     def _compile_strategy(self, strategy):
-        #logging.debug('Raw strategy: %s' % strategy)
+        logging.debug('Raw strategy: %s' % strategy)
         device_resolver = DeviceResolver(self._cluster)
         compiled_strategy = base.StrategyCompiler(self._original_graph_item) \
             .set_device_resolver(device_resolver.resolve_to_device_str) \
             .compile(strategy)
-        #logging.info('Compiled strategy: %s' % compiled_strategy)
+        logging.info('Compiled strategy: %s' % compiled_strategy)
         return compiled_strategy
 
     def _setup(self, strategy):

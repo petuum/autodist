@@ -204,7 +204,6 @@ class ResourceSpec:
             gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
             self._add_device(gpu)
         self.__ssh_group[host_address] = node.get('ssh_config')
-        print(node.get('ssh_config'))
         if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
             raise ValueError("Need to define SSH groups for all non-chief nodes.")
         # handle network bandwidth (optional)
