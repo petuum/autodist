@@ -76,7 +76,7 @@ flags.DEFINE_boolean(
     default=True,
     help='AUTODIST_PATCH_TF')
 
-flags.DEFINE_boolean(name='proxy', default=True, help='turn on off the proxy')
+flags.DEFINE_boolean(name='proxy', default=False, help='turn on off the proxy')
 
 
 common_flags.define_common_bert_flags()
