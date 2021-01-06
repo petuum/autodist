@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
+from iterator import MyIterator
 
 ############################################################
 # Step 1: Construct AutoDist with ResourceSpec
@@ -18,29 +19,8 @@ test_labels = test_labels[:512]
 train_images = train_images / np.float32(255)
 test_images = test_images / np.float32(255)
 
-# print(train_images.shape)
-
 BATCH_SIZE = 64
 EPOCHS = 3
-
-class MyIterator:
-
-    def __init__(self, data, labels, batch_size = 64):
-        if len(data) != len(labels):
-            raise ValueError("Length of data doesn't match length of labels.")
-        self.data = data
-        self.labels = labels
-        self.batch_size = batch_size
-        self.index = 0
-
-    def __next__(self):
-        x = self.data[self.index : self.index+self.batch_size]
-        y = self.labels[self.index : self.index+self.batch_size]
-        self.index += self.batch_size
-        if self.index + self.batch_size >= len(self.labels):
-            self.index = 0
-
-        return (x,y)
 
 #############################################################
 # Step 2: Build with Graph mode, and put it under AutoDist scope
@@ -94,15 +74,7 @@ with tf.Graph().as_default(), autodist.scope():
 
         input = next(train_iterator)
         print("current batch_size: {}".format(len(input[1])))
+        print("currrent lr: {}".format(sess.run(optimizer.lr)))
         loss, _ = sess.run(fetches, feed_dict = {x: input[0], y: input[1]})
         print(f"train_loss: {loss}")
 
-    # for epoch in range(EPOCHS):
-    #     if epoch == 2:
-    #         BATCH_SIZE = 128
-    #     j = 0
-    #     for _ in range(512//BATCH_SIZE):
-    #         loss, _ = sess.run(fetches, feed_dict = {x: train_images[j:j+BATCH_SIZE], y: train_labels[j:j+BATCH_SIZE]})
-    #         j += BATCH_SIZE
-    #         print(f"train_loss: {loss}")
-    #     print("Finish epoch {}".format(epoch))
