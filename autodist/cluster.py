@@ -477,7 +477,7 @@ class ADAPTDLCluster(Cluster):
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
         return local_ip 
-    
+
     def remote_exec(self, args, hostname):
         """
         Execute a bash script remotely. disabled in AdaptDL.
