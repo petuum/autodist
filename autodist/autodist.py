@@ -159,7 +159,7 @@ class _GraphModeInterface(_AutoDistInterface):
     def _build(self):
         strategy = self._build_or_load_strategy()
         self._setup(strategy)  # Put it before transforming to allow multiple works to transform concurrently
-        if IS_ADAPTDL:
+        if IS_ADAPTDL and not IS_AUTODIST_CHIEF:
             strategy = self._build_or_load_strategy(load=True)
         compiled_strategy = self._compile_strategy(strategy)
         graph_transformer = GraphTransformer(
