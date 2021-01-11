@@ -138,11 +138,6 @@ class Cluster(metaclass=ABCMeta):
         Returns:
             str: Worker ip or chief address by default.
         """
-        if IS_ADAPTDL:
-            hostname = socket.gethostname()
-            local_ip = socket.gethostbyname(hostname)
-            return local_ip 
-
         return ENV.AUTODIST_WORKER.val or self._chief
 
     def get_local_worker_task_index(self):
@@ -471,22 +466,18 @@ class ADAPTDLCluster(Cluster):
         assert IS_ADAPTDL
         super().__init__(resource_spec)
 
-    def get_local_address(self):
+    @staticmethod
+    def get_local_address():
         """
         Get the local (ip) address.
 
-        If labelled as AUTODIST_WORKER by the environment variable,
-        the value of it is the address of the local node;
-        otherwise the local node is chief.
-
         Returns:
-            str: Worker ip or chief address by default.
+            str: local ip
         """
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
         return local_ip 
-
-        return ENV.AUTODIST_WORKER.val or self._chief
+    
     def remote_exec(self, args, hostname):
         """
         Execute a bash script remotely. disabled in AdaptDL.
