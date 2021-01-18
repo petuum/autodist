@@ -172,4 +172,5 @@ class RayCoordinator(Coordinator):
         logging.info('Joining workers...')
         for hostname, pid in self._pids.items():
             self.cluster.remote_join(pid, hostname)
+        self._pids.clear()
 

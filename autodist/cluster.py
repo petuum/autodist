@@ -382,6 +382,7 @@ class SSHCluster(Cluster):
 import asyncio
 import ray
 import yaml
+import time
 
 
 @ray.remote
@@ -414,11 +415,13 @@ class NodeActor(object):
 
     def join(self, pid):
         self._proc_dict[pid].wait()
+        del self._proc_dict[pid]
 
     def kill(self):
         logging.info('Terminating the Ray node...')
         for pid, p in self._proc_dict.items():
             os.killpg(os.getpgid(pid), signal.SIGTERM)
+        self._proc_dict.clear()
 
     def file_write(self, remote_path, data):
         with open(remote_path, 'w') as f:
@@ -562,6 +565,7 @@ class RayCluster(Cluster):
                 bash = envs + envs_cuda + ['python', '-u', file] + args
                 logging.info(f"Launching tf.server on {address} with {bash}")
                 self.remote_exec(bash, hostname=address)
+        time.sleep(30)
 
     def terminate(self):
         # call actor methods to cleanup tf servers
@@ -570,4 +574,5 @@ class RayCluster(Cluster):
             ray.get(actor.kill.remote())
             ray.get(actor.send.remote())
 
+        self._actor_dict.clear()
         ray.shutdown()
