@@ -417,8 +417,8 @@ class NodeActor(object):
 
     def kill(self):
         logging.info('Terminating the Ray node...')
-        for p in self._proc_list:
-            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+        for pid, p in self._proc_dict.items():
+            os.killpg(os.getpgid(pid), signal.SIGTERM)
 
     def file_write(self, remote_path, data):
         with open(remote_path, 'w') as f:
@@ -521,7 +521,7 @@ class RayCluster(Cluster):
         with open(local_path,"r") as f:
             data = f.read()
 
-        self.remote_file_write(remote_path, data, hostname)
+        self.remote_file_write(os.path.join(remote_path, os.path.basename(local_path)), data, hostname)
 
     # pylint: disable=too-many-locals
     def start(self):
