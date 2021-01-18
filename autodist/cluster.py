@@ -382,6 +382,7 @@ class SSHCluster(Cluster):
 import asyncio
 import ray
 import yaml
+import socket
 import time
 
 
@@ -406,9 +407,26 @@ class NodeActor(object):
     def execute_cmd(self, args):
         cmd_list = []
         full_cmd = ' '.join(cmd_list + args)
-        logging.info(f"launch remote cmd {full_cmd}")
+        logging.info(f"exec remote cmd {full_cmd}")
         # pylint: disable=subprocess-popen-preexec-fn
         proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
+        pid = proc.pid
+        self._proc_dict[pid] = proc
+        return pid
+
+    def launch_tf_server(self, args):
+        cmd_list = []
+        full_cmd = ' '.join(cmd_list + args)
+        logging.info(f"launch {full_cmd}")
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while True:
+            line = proc.stderr.readline().decode()
+            print(f"LOG {line}")
+            if "Started server with target" in line:
+                break
+
         pid = proc.pid
         self._proc_dict[pid] = proc
         return pid
@@ -552,7 +570,7 @@ class RayCluster(Cluster):
 
         for job_name, tasks in self.cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
-                address = full_address.split(':')[0]
+                address, port = full_address.split(':')
                 args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
                         '--cpu_device_num=%d' % len(self._cpu_devices[address])]
                 if address in self._gpu_devices:
@@ -564,8 +582,10 @@ class RayCluster(Cluster):
                 file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
                 bash = envs + envs_cuda + ['python', '-u', file] + args
                 logging.info(f"Launching tf.server on {address} with {bash}")
-                self.remote_exec(bash, hostname=address)
-        time.sleep(30)
+                # self.remote_exec(bash, hostname=address)
+                ray.get(self._actor_dict[address].launch_tf_server.remote(bash))
+
+        # time.sleep(10)
 
     def terminate(self):
         # call actor methods to cleanup tf servers
