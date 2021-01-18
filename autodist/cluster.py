@@ -433,9 +433,10 @@ class RayCluster(Cluster):
         if not resource_spec:
             # init the ray cluster
             # create the resource spec from ray nodes
+            print("Init Ray Cluster")
             self._init_ray_actors()
             resource_spec = ResourceSpec(
-                resource_file=DEFAULT_WORKING_DIR + "resource_sepc.yml")
+                resource_file=os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"))
 
         super().__init__(resource_spec)
 
@@ -451,7 +452,7 @@ class RayCluster(Cluster):
             print(f"Node {node}")
             node_ip = node["NodeManagerAddress"]
             gpu_count = node["Resources"].get("GPU")
-            if not gpu_count or not node["alive"]:
+            if not gpu_count or not node["Alive"]:
                continue
             gpu_list.append((gpu_count, node_ip))
 
@@ -479,7 +480,7 @@ class RayCluster(Cluster):
         print(resource_yaml)
         for node_ip, actor in self._actor_dict.items():
             ray.get(actor.file_write.remote(
-                DEFAULT_WORKING_DIR + "resource_sepc.yml", resource_yaml))
+                os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"), resource_yaml))
 
     def remote_exec(self, args, hostname):
         """
