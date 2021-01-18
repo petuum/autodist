@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # It includes the derived work based on:
 #
@@ -31,7 +31,6 @@ from absl import logging
 from utils.logs import logger
 from utils.misc import keras_utils
 
-from utils import optimization
 from utils import bert_modeling as modeling
 from utils import bert_models
 from utils import common_flags
@@ -63,8 +62,6 @@ flags.DEFINE_integer('train_batch_size', 8, 'Total batch size for training.')
 flags.DEFINE_integer('chunk_size', 256, 'The chunk size for training.')
 flags.DEFINE_integer('num_steps_per_epoch', 1000,
                      'Total number of training steps to run per epoch.')
-flags.DEFINE_float('warmup_steps', 10,
-                   'Warmup steps for Adam weight decay optimizer.')
 flags.DEFINE_string(
     name='autodist_strategy',
     default='PS',
@@ -73,10 +70,7 @@ flags.DEFINE_boolean(
     name='autodist_patch_tf',
     default=True,
     help='AUTODIST_PATCH_TF')
-flags.DEFINE_string(
-    name='optimizer',
-    default='AdamDecay',
-    help='the optimizer to be chosen')
+
 flags.DEFINE_boolean(name='proxy', default=True, help='turn on off the proxy')
 
 
@@ -122,7 +116,6 @@ def run_customized_training(strategy,
                             steps_per_loop,
                             epochs,
                             initial_lr,
-                            warmup_steps,
                             input_files,
                             train_batch_size):
     """Run BERT pretrain model training using low-level API."""
@@ -140,11 +133,8 @@ def run_customized_training(strategy,
         """Gets a pretraining model."""
         pretrain_model, core_model = bert_models.pretrain_model(
             bert_config, max_seq_length, max_predictions_per_seq)
-        if FLAGS.optimizer == 'AdamDecay':
-            pretrain_model.optimizer = optimization.create_optimizer(
-                initial_lr, steps_per_epoch * epochs, warmup_steps)
-        else:
-            pretrain_model.optimizer = tf.optimizers.Adam(lr=initial_lr)
+
+        pretrain_model.optimizer = tf.optimizers.Adam(lr=initial_lr)
         if FLAGS.fp16_implementation == 'graph_rewrite':
             pretrain_model.optimizer = tf.train.experimental.enable_mixed_precision_graph_rewrite(
                 pretrain_model.optimizer)
@@ -190,7 +180,6 @@ def run_bert_pretrain(strategy, gpu_num=1, node_num=1):
         FLAGS.steps_per_loop,
         FLAGS.num_train_epochs,
         FLAGS.learning_rate,
-        FLAGS.warmup_steps,
         FLAGS.input_files,
         FLAGS.train_batch_size * gpu_num * node_num)
 

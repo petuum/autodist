@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,7 +88,9 @@ class AllReduceSynchronizer(Synchronizer):
 
         # Throw an error if the variable is sparse
         master_op_name = ops.prepend_name_scope(var_op_name, replica_prefix(0))
-        grad, _, _ = graph_item.var_op_name_to_grad_info[master_op_name]
+        graph_item.updated = True
+        grad, _, _ = graph_item.var_op_name_to_grad_info_v2[master_op_name]
+        graph_item.var_queried.append(master_op_name)
         with item.graph.as_default():
             self._share_initializer(item, var_op_name, master_replica=0)
             if isinstance(grad, ops.IndexedSlices):
@@ -115,7 +117,8 @@ class AllReduceSynchronizer(Synchronizer):
 
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
-            grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
+            graph_item.updated = True
+            grad, _, _ = graph_item.var_op_name_to_grad_info_v2[op_name]
             # TODO (Tairui): (3) Merge of reduction for performance
             grad_consumers = get_consumers(grad.op)  # this line must happen before the reduction
 
@@ -140,7 +143,8 @@ class AllReduceSynchronizer(Synchronizer):
             raise ValueError('CollectiveOps requires collective group size > 1')
         for i in range(0, self.num_replicas):
             op_name = ops.prepend_name_scope(var_op_name, replica_prefix(i))
-            grad, _, _ = graph_item.var_op_name_to_grad_info[op_name]
+            graph_item.updated = True
+            grad, _, _ = graph_item.var_op_name_to_grad_info_v2[op_name]
             # TODO (Tairui): (3) Merge of reduction for performance
             indices_c_ops = grad.indices.consumers()
             indices_cc_ops = get_control_consumers(grad.indices.op)

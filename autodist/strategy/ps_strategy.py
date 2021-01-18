@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ class PS(StrategyBuilder):
                 expr.graph_config.replicas.extend(v)
 
         # find all variables
-        variables = graph_item.get_trainable_variables()
+        variables = graph_item.trainable_var_op_to_var.values()
         reduction_device_name = [k for k, _ in resource_spec.cpu_devices][0]
 
         # Mark each variable to be synchronized with a Parameter Server

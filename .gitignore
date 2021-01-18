@@ -87,7 +87,6 @@ tags
 
 # project-specifc
 **/data
-**/logs*
 docs/_build/
 docs/api/
 docs/symlink*

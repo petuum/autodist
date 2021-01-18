@@ -1,6 +1,7 @@
 import pytest
 import textwrap
 
+
 @pytest.fixture
 def tmp_resource_spec(tmp_path):
     p = tmp_path / "resource_spec.yml"
@@ -12,6 +13,7 @@ def tmp_resource_spec(tmp_path):
         """
     ))
     return p
+
 
 def test_single_process(tmp_resource_spec):
     from autodist import AutoDist

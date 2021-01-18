@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -206,13 +206,12 @@ class ResourceSpec:
         self.__ssh_group[host_address] = node.get('ssh_config')
         if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
             raise ValueError("Need to define SSH groups for all non-chief nodes.")
-        # network bandwidth
+        # handle network bandwidth (optional)
         if node.get('network_bandwidth'):
             self.__network_bandwidth[host_address] = node.get('network_bandwidth')
         else:
-            # TODO (Hao): we could also raise ValueError here.
-            logging.warning('Bandwidth for {} is undefined and set as default. '
-                            'Caution when using AutoStrategy.'.format(host_address))
+            logging.debug('The bandwidth for {} is undefined and set as default (1 GBE). '
+                          'Caution: AutoStrategy might be inaccurate.'.format(host_address))
             self.__network_bandwidth[host_address] = 1
 
 
@@ -245,26 +244,6 @@ class DeviceSpec:
             return self.host_address + ':' + DeviceType.CPU.name + ':' + str(self.device_index)
         else:
             return self.host_address + ':' + self.device_type.name + ':' + str(self.device_index)
-
-    def connectivity_with(self, device_spec):
-        """
-        Connectivity.
-
-        TODO (hao.zhang): why func rather than an precalculated adjacency list.
-        """
-        if self.host_address is not device_spec.host_address:
-            return Connectivity.ETHERNET
-        # on the same pyhsical node
-        elif self.device_type is not device_spec.device_type:
-            return Connectivity.CPU_TO_GPU
-        # have the same type of devices
-        elif self.device_type is DeviceType.CPU:
-            return Connectivity.SAME
-        # both are GPUs
-        elif self.device_index is device_spec.device_index:
-            return Connectivity.SAME
-        else:
-            return Connectivity.GPU_TO_GPU_LOCAL
 
     @classmethod
     def from_string(cls, name_string):

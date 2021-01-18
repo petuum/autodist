@@ -1,7 +1,10 @@
-def myflag = false
+def flagChiefDone = false
+
+def flagWorkerLaunched = false
 
 pipeline {
     options {
+        disableConcurrentBuilds()
         timeout(time: 2, unit: 'HOURS')
     }
 
@@ -53,7 +56,7 @@ pipeline {
                         }
                     }
                     steps{
-                        /* .. remove "--run-integration" to have a mini test ..*/
+                        // .. remove "--run-integration" to have a mini test ..
                         sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf1"
                     }
                     post {
@@ -73,7 +76,7 @@ pipeline {
                         }
                     }
                     steps{
-                        /* .. remove "--run-integration" to have a mini test ..*/
+                        // .. remove "--run-integration" to have a mini test ..
                         sh "cd tests && python3 -m pytest -s --run-integration --junitxml=test_local.xml --cov=autodist --cov-branch --cov-report term-missing --ignore=integration/test_dist.py . && mv .coverage .coverage.local.tf2"
                     }
                     post {
@@ -93,14 +96,14 @@ pipeline {
                     }
                     steps {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
-                        sh 'sleep 5'
+                        waitUntil {script {return flagWorkerLaunched}}
                         sh 'docker run --gpus all --network=host -v /shared/.ssh:/root/.ssh:ro -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "python3 -m pytest -s --junitxml=test_dist.xml integration/test_dist.py"'
-                        echo "${myflag}"
-                        script {myflag = true}
-                        echo "${myflag}"
+                        echo "${flagChiefDone}"
                     }
                     post {
                         always {
+                            script {flagChiefDone = true}
+                            echo "${flagChiefDone}"
                             junit allowEmptyResults: true, testResults: 'tests/test_dist.xml'
                             stash includes: 'tests/.coverage.*', name: 'testcov_distributed_chief'
                         }
@@ -114,9 +117,9 @@ pipeline {
                         sh 'docker pull ${DOCKER_REGISTRY}:tf2'
                         sh 'docker rm -f worker || true'
                         sh 'docker run --gpus all --name worker -d --privileged --network=host -v /shared/.ssh:/root/.ssh -v $(pwd)/tests:/mnt -e COVERAGE_PROCESS_START=/mnt/integration/dist.coveragerc ${DOCKER_REGISTRY}:tf2 bash -c "env | grep COVERAGE >> /etc/environment && /usr/sbin/sshd -p 12345; sleep infinity"'
-                        echo "${myflag}"
-                        waitUntil {script {return myflag}}
-                        echo "${myflag}"
+                        script {flagWorkerLaunched = true}
+                        echo "${flagChiefDone}"
+                        waitUntil {script {return flagChiefDone}}
                     }
                     post {
                         always {
@@ -141,15 +144,28 @@ pipeline {
                     unstash 'testcov_local_tf2'
                     unstash 'testcov_distributed_chief'
                     unstash 'testcov_distributed_worker'
-                    sh 'coverage combine tests/'
-                    sh 'coverage report'
-                    sh 'coverage html -d htmlcov'
-                    sh "tar -zcvf htmlcov.tar.gz htmlcov"
+
+                    sh """#!/bin/bash
+                          coverage combine tests/
+                          coverage report
+                          coverage html -d htmlcov
+                          tar -zcvf htmlcov.tar.gz htmlcov
+
+                          # Create JSON to dynamically get total coverage percentage
+                          total_coverage_line=\$(grep '<span class="pc_cov">.*%</span>' htmlcov/index.html | head -n 1)
+                          capture_regex='<span class="pc_cov">(.*)?</span>'
+
+                          if [[ \${total_coverage_line} =~ \${capture_regex} ]]; then
+                              pct="\${BASH_REMATCH[@]:1}"
+                              echo '{"total_coverage_pct":"'\${pct}'"}' > jenkinscovdata.json 
+                          fi
+                    """
                 }
             }
             post {
                 success {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage-report/htmlcov.tar.gz', fingerprint: true
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage-report/jenkinscovdata.json', fingerprint: true
                 }
             }
         }

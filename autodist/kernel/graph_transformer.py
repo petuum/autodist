@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -146,8 +146,10 @@ class GraphTransformer:
             GraphItem
         """
         new_graph_item = graph_item
+        new_graph_item.set_optimize()
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.in_graph_apply(new_graph_item, var_name)
+        new_graph_item.reset_optimize()
         return new_graph_item
 
     def _between_graph_apply(self, multi_gpu_graph_item: GraphItem):
@@ -161,8 +163,10 @@ class GraphTransformer:
             GraphItem
         """
         new_graph_item = multi_gpu_graph_item
+        new_graph_item.set_optimize()
         for var_name, syncer in self._synchronizers.items():
             new_graph_item = syncer.between_graph_apply(new_graph_item, var_name)
+        new_graph_item.reset_optimize()
         self._prune_colocation_groups(new_graph_item)
         # TODO: make this work
         # update_shard_values_for_worker(num_workers, worker_id)

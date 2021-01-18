@@ -35,7 +35,9 @@ resource_specs = [
 strategies = [
     PS(),
     PartitionedPS(local_proxy_variable=True),
-    AllReduce(chunk_size=1),
+    AllReduce(chunk_size=1, all_reduce_spec='NCCL', compressor='NoneCompressor'),
+    AllReduce(chunk_size=1, all_reduce_spec='NCCL', compressor='HorovodCompressor'),
+    AllReduce(chunk_size=1, all_reduce_spec='RING', compressor='HorovodCompressorEF'),
     PSLoadBalancing(local_proxy_variable=True),
     Parallax(local_proxy_variable=True),
     PartitionedAR(),

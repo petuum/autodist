@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -658,19 +658,6 @@ class VariablePartitioner(Kernel):
         return new_graph_item
 
     @staticmethod
-    def _split_indexed_slices(sp_input=None, num_split=None, dim_size=0, name=None):
-        size_per_shard = dim_size // num_split
-        all_indices = list(range(dim_size))
-        indices = [all_indices[0:i * size_per_shard] + all_indices[(i + 1) * size_per_shard:] for i in range(num_split)]
-        split_grads = []
-        for i in range(0, num_split):
-            # `sparse_mask` op might have severe performance issue when the length of the embedding is huge.
-            s = array_ops.sparse_mask(sp_input, indices[i], name=name + f"-{i}")
-            s._indices = math_ops.floormod(s.indices, size_per_shard, name=name + f"-{i}/mod")
-            split_grads.append(s)
-        return split_grads
-
-    @staticmethod
     def _split_indexed_slices_v2(sp_input=None, num_split=None, dim_size=0, name=None):
         ids_per_partition = dim_size // num_split
         extras = dim_size % num_split
@@ -694,18 +681,6 @@ class VariablePartitioner(Kernel):
                     else:
                         s._indices = math_ops.floor_mod(s.indices - extras, ids_per_partition)
                 split_grads.append(s)
-        return split_grads
-
-    @staticmethod
-    def _split_tensor(value, num_splits, shape, axis=0, name=None):
-        # This implementation has problems with scope_allocator optimization. When two collective
-        # ops from two different merge scopes take the input from the same split operation (below)
-        # scope_allocator will be abandoned.
-        size_per_partition = shape[axis] // num_splits
-        extras = shape[axis] % num_splits
-        split_list = [size_per_partition + 1 if i < extras else size_per_partition
-                      for i in range(num_splits)]
-        split_grads = array_ops.split(value, split_list, axis, name=name)
         return split_grads
 
     @staticmethod

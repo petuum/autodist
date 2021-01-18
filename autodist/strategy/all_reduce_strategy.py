@@ -1,4 +1,4 @@
-# Copyright 2020 Petuum. All Rights Reserved.
+# Copyright 2020 Petuum, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,17 +28,21 @@ class AllReduce(StrategyBuilder):
     This strategy does not support synchronizing sparse updates with >1 nodes due to the TF AllGather bug.
     """
 
-    def __init__(self, chunk_size=128):
+    def __init__(self, chunk_size=128, all_reduce_spec='NCCL', compressor='NoneCompressor'):
         """
         Init function.
 
         Args:
             chunk_size (int): chunk_size is a positive integer indicating how many variables will be merged
                               sequentially as a group by scoped allocator.
+            all_reduce_spec (str): 'AUTO', 'NCCL', 'RING'.
+            compressor (str): Gradient compression algorithm to use.
         """
         if chunk_size < 1:
             raise ValueError('The chunk_size must be greater than zero.')
         self.chunk_size = chunk_size 
+        self.all_reduce_spec = all_reduce_spec
+        self.compressor = compressor
 
     def build(self, graph_item, resource_spec):
         """Generate the strategy."""
@@ -51,18 +55,21 @@ class AllReduce(StrategyBuilder):
                 expr.graph_config.replicas.extend(v)    
 
         # find all variables
-        variables = graph_item.get_trainable_variables()
+        variables = graph_item.trainable_var_op_to_var.values()
 
         # Mark each variable to be synchronized with allreduce
         for i, var in enumerate(variables):
             group_id = i // self.chunk_size
-            node_config = self._gen_all_reduce_node_config(var.name, group=group_id)
+            node_config = self._gen_all_reduce_node_config(var.name, 
+                                                           group=group_id,
+                                                           all_reduce_spec=self.all_reduce_spec,
+                                                           compressor=self.compressor)
             expr.node_config.append(node_config)
 
         return expr
 
     @staticmethod
-    def _gen_all_reduce_node_config(var_name, group=0, all_reduce_spec="NCCL", compressor="PowerSGDCompressor"):
+    def _gen_all_reduce_node_config(var_name, group=0, all_reduce_spec="NCCL", compressor="NoneCompressor"):
         """
         Creates a NodeConfig specifying synchronization with AllReduce.
 
