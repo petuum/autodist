@@ -96,7 +96,7 @@ class Cluster(metaclass=ABCMeta):
             _gpu_devices.setdefault(device[0].split(':')[0], []).append(':'.join(device[0].split(':')[1:]))
         return _gpu_devices
 
-    def get_reource_spec(self):
+    def get_resource_spec(self):
         return self._resource_spec
 
     def is_chief(self, address=None):
@@ -379,9 +379,10 @@ class SSHCluster(Cluster):
 
 
 # Ray related contents
-
+import asyncio
 import ray
 import yaml
+
 
 @ray.remote
 class NodeActor(object):
@@ -438,7 +439,7 @@ class RayCluster(Cluster):
 
         super().__init__(resource_spec)
 
-    def _init_ray_actors():
+    def _init_ray_actors(self):
         ray_head_address = os.getenv("RAY_HEAD_ADDRESS")
         if ray_head_address and not ray.is_initialized():
             ray.init(address=ray_head_address)
@@ -450,12 +451,12 @@ class RayCluster(Cluster):
             print(f"Node {node}")
             node_ip = node["NodeManagerAddress"]
             gpu_count = node["Resources"].get("GPU")
-            if not gpu_count:
+            if not gpu_count or not node["alive"]:
                continue
             gpu_list.append((gpu_count, node_ip))
 
-        gpu_list = reversed(sorted(gpu_list))
-        print(gpu_list)
+        gpu_list = [t for t in reversed(sorted(gpu_list))]
+        print(f"gpu_list {gpu_list}")
         for gpu_count, _ in gpu_list:
             actor = NodeActor.options(num_gpus=gpu_count).remote()
             actor.wait.remote()
@@ -464,15 +465,18 @@ class RayCluster(Cluster):
             self._actor_dict[node_ip] = actor
 
         chief_address = ray._private.services.get_node_ip_address()
-        resource_dict = []
+        print(f"chief address: {chief_address} ")
+        resource_dict = {}
         resource_dict["nodes"] = []
         for gpu_count, node_ip in gpu_list:
-            node_dict = {"address": node_ip, "gpus": [i for i in range(gpu_count)] }
+            node_dict = {"address": node_ip, "gpus": [i for i in range(int(gpu_count))] }
             if node_ip is chief_address:
                 node_dict["chief"] = True
             resource_dict["nodes"].append(node_dict)
 
         resource_yaml = yaml.dump(resource_dict)
+        print("resource yaml")
+        print(resource_yaml)
         for node_ip, actor in self._actor_dict.items():
             ray.get(actor.file_write.remote(
                 DEFAULT_WORKING_DIR + "resource_sepc.yml", resource_yaml))

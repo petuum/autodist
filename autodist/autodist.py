@@ -23,9 +23,9 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
-from autodist.cluster import Cluster, SSHCluster
+from autodist.cluster import Cluster, SSHCluster, RayCluster
 from autodist.const import ENV
-from autodist.coordinator import Coordinator
+from autodist.coordinator import Coordinator, RayCoordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.graph_transformer import GraphTransformer
