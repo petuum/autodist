@@ -82,7 +82,7 @@ class _AutoDistInterface:
         else:
             # create resource spec with the file in DEFAULT_WORKING_DIR
             self._resource_spec = ResourceSpec(
-                resource_file=DEFAULT_WORK_DIR + "resource_spec.yml")
+                resource_file=os.path.join(DEFAULT_WORK_DIR, "resource_spec.yml"))
             self._cluster: Cluster = RayCluster(self._resource_spec)
         self._coordinator: Coordinator
 
