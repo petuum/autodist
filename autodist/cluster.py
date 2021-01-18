@@ -471,7 +471,7 @@ class RayCluster(Cluster):
         resource_dict["nodes"] = []
         for gpu_count, node_ip in gpu_list:
             node_dict = {"address": node_ip, "gpus": [i for i in range(int(gpu_count))] }
-            if node_ip is chief_address:
+            if node_ip == chief_address:
                 node_dict["chief"] = True
             resource_dict["nodes"].append(node_dict)
 
