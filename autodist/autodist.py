@@ -24,7 +24,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
 from autodist.cluster import Cluster, SSHCluster, RayCluster
-from autodist.const import ENV
+from autodist.const import ENV, DEFAULT_WORKING_DIR
 from autodist.coordinator import Coordinator, RayCoordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.device.resolver import DeviceResolver
@@ -82,7 +82,7 @@ class _AutoDistInterface:
         else:
             # create resource spec with the file in DEFAULT_WORKING_DIR
             self._resource_spec = ResourceSpec(
-                resource_file=os.path.join(DEFAULT_WORK_DIR, "resource_spec.yml"))
+                resource_file=os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"))
             self._cluster: Cluster = RayCluster(self._resource_spec)
         self._coordinator: Coordinator
 
