@@ -4,10 +4,12 @@ import os
 import numpy as np
 import tensorflow as tf
 
+
 from autodist import AutoDist
 from autodist.strategy import PS, PSLoadBalancing, PartitionedPS, AllReduce, Parallax
 
 resource_spec_file = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
+
 
 def main(_):
     autodist = AutoDist(resource_spec_file, AllReduce(128))
@@ -72,4 +74,3 @@ def main(_):
 
 
 main(sys.argv)
-
