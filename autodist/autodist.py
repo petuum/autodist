@@ -72,18 +72,19 @@ class _AutoDistInterface:
         self._transformed_graph_item = None
         self._remapper = None
         self._built = None  # Ref to the built GraphDef
-        # temporarily diable this line for the SSH cluster
-        # self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
-        # self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
-        # init ray cluster here and return the resource spec of Ray cluster
-        if IS_AUTODIST_CHIEF:
-            self._cluster: Cluster = RayCluster()
-            self._resource_spec = self._cluster.get_resource_spec()
-        else:
-            # create resource spec with the file in DEFAULT_WORKING_DIR
-            self._resource_spec = ResourceSpec(
-                resource_file=os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"))
-            self._cluster: Cluster = RayCluster(self._resource_spec)
+        if resource_spec_file:
+            self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
+            self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
+        else :
+            # init ray cluster here and return the resource spec of Ray cluster
+            if IS_AUTODIST_CHIEF:
+                self._cluster: Cluster = RayCluster()
+                self._resource_spec = self._cluster.get_resource_spec()
+            else:
+                # create resource spec with the file in DEFAULT_WORKING_DIR
+                self._resource_spec = ResourceSpec(
+                    resource_file=os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"))
+                self._cluster: Cluster = RayCluster(self._resource_spec)
         self._coordinator: Coordinator
 
     @tf_contextlib.contextmanager
@@ -131,9 +132,11 @@ class _AutoDistInterface:
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
-            # self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
+            if isinstance(self._cluster, RayCluster):
             # Switch to Ray coordinator temporarily
-            self._coordinator = RayCoordinator(strategy=strategy, cluster=self._cluster)
+                self._coordinator = RayCoordinator(strategy=strategy, cluster=self._cluster)
+            else:
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
             self._cluster.start()
             self._coordinator.launch_clients()
         logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
