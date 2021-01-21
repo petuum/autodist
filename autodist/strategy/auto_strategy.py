@@ -55,6 +55,6 @@ class AutoStrategy(AutoStrategyBase):
         candidates = self.propose_n(graph_item, resource_spec, self._num_proposals)
 
         # Assess all candidates and simply pick the highest-scored one
-        features, scores = self._simulator.inference(candidates)
+        scores = [self._simulator.simulate(c, graph_item, resource_spec) for c in candidates]
         best_index = scores.index(min(scores))
         return candidates[best_index]

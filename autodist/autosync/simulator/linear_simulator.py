@@ -41,15 +41,16 @@ class LinearSimulator(PredefinedSimulator):
 
         # For loading weights of the linear model.
         self._checkpoint = checkpoint
+        self._weights = None
         if self._checkpoint:
             try:
-                self._weight = self.load_checkpoint(checkpoint)
+                self._weights = self.load_checkpoint(checkpoint)
             except ValueError:
                 logging.warning('self._checkpoint is invalid')
-                self._weight = None
+                self._weights = None
 
         # TODO(Hao): add the default weights here.
-        self._default_weights = None
+        self._default_weights = ([1] * 12, 1)
 
     def simulate(self,
                  strategy,
@@ -91,7 +92,7 @@ class LinearSimulator(PredefinedSimulator):
         elif self._weights:
             weights = self._weights
         else:
-            weights = self._default_weight
+            weights = self._default_weights
 
         cost = self.inference(np.array(x), weights)
         return cost
@@ -101,7 +102,7 @@ class LinearSimulator(PredefinedSimulator):
 
         Args:
             x: features extracts from a (strategy, graph_item, resource_spec).
-            weight: trained linear model weight.
+            weights: trained linear model weight.
 
         Returns:
             float: ranking score.
@@ -111,7 +112,7 @@ class LinearSimulator(PredefinedSimulator):
 
         assert len(weights) == 2
         W, b = weights
-        cost = np.array(W) * x.T + np.array(b)
+        cost = np.dot(W, x) + b
         return cost
 
     def load_checkpoint(self, checkpoint):

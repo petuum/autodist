@@ -34,10 +34,8 @@ class AutoStrategyBase(StrategyBuilder):
                  simulator=None,
                  train_simulator=False):
         # space and heuristics params
-        if not space:
-            self._space = default_space
-        if not heuristics:
-            self._heuristics = default_heuristics
+        self._space = space or default_space
+        self._heuristics = heuristics or default_heuristics
 
         # params
         self._num_proposals = num_proposals

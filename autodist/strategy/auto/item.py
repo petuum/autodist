@@ -24,8 +24,8 @@ from autodist.kernel.device.resolver import DeviceResolver
 from autodist.graph_item import cached_property
 from autodist.strategy.base import byte_size_load_fn
 from autodist.utils import logging
-from autodist.cluster import SSHCluster
 from autodist.autosync.simulator.utils import GPU_TO_CPU_BANDWIDTH, GIGABITS, get_dtype_bits
+from autodist.autodist import get_default_autodist
 
 
 class VarType(Enum):
@@ -44,11 +44,11 @@ class VariableItem:
         self._var_op_name = get_op_name(var.name)
         self._grad = graph_item.var_op_name_to_grad_info[self._var_op_name][0]
 
-        self._config = None
+        self._node_config = None
         if node_config:
             self.update_config(node_config)
-        else:
-            logging.warning('Item with name {} has empty config.'.format(self.name))
+        # else:
+        #     logging.warning('Item with name {} has empty config.'.format(self.name))
 
     def update_config(self, config):
         """
@@ -57,7 +57,7 @@ class VariableItem:
         Args:
             config:
         """
-        assert not config
+        # assert not config
         self._node_config = config
 
     @property
@@ -166,7 +166,6 @@ class VariableItem:
             # estimate the embedding of this partition simply using a proportional formula
             return sparse_data_size * float(self.size) / float(self.original_size)
 
-    @property
     def bits_to_transfer(self, batch_size_per_gpu=1, seq_len=1):
         """
         Estimate the bits to transfer across the network per iteration.
@@ -245,7 +244,7 @@ class VariableItem:
         if self._node_config.partitioner:
             logging.warning('This variable will be partitioned')
             return None
-        return getattr(self._node_config, self._node_config.WhichOneOf('synchronizer'))
+        return getattr(self._node_config, self._node_config.WhichOneof('synchronizer'))
 
     @property
     def group(self):
@@ -295,7 +294,7 @@ class VariableItem:
     def device(self, resolver):
         device_str = self.reduction_destination if self.reduction_destination else self.var.device
         if device_str:
-            device_str =  resolver.resolve_to_device_str(device_str)
+            device_str = resolver.resolve_to_device_str(device_str)
         return device_str
     
     @property
@@ -392,7 +391,7 @@ class PartItem(VariableItem):
             raise ValueError('Node config is unset.')
         if not self._node_config.partitioner:
             raise ValueError('Partitioner field is empty for a variable partition.')
-        return getattr(self._node_config, self._node_config.WhichOneOf('synchronizer'))
+        return getattr(self._node_config, self._node_config.WhichOneof('synchronizer'))
 
     @property
     def group(self):
@@ -463,7 +462,7 @@ class ResourceItem:
 
     def __init__(self, resource_spec):
         self._resource_spec = resource_spec
-        self._cluster = SSHCluster(resource_spec)
+        self._cluster = get_default_autodist()._cluster
         self._device_resolver = DeviceResolver(self._cluster)
 
     @property
@@ -559,4 +558,4 @@ class ResourceItem:
     @cached_property
     def min_bandwidth(self):
         """Return the minimum bandwidth (bottleneck) of all p2p connections on this cluster."""
-        return min([min(v.values()) for k, v in self.p2p_bandwidth])
+        return min([min(v.values()) for k, v in self.p2p_bandwidth.items()])

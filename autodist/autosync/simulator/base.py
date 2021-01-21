@@ -37,20 +37,20 @@ class SimulatorBase:
         """
         # check if it is a path
         self._graph_item = None
-        if isinstance(graph_item, GraphItem):
-            self._graph_item = graph_item
-        elif isinstance(graph_item, str) and os.path.exists(graph_item):
-            self._graph_item = GraphItem.deserialize(graph_item)
-        else:
-            raise ValueError("Invalid graph_item: {}".format(graph_item))
+        # if isinstance(graph_item, GraphItem):
+        #     self._graph_item = graph_item
+        # elif isinstance(graph_item, str) and os.path.exists(graph_item):
+        #     self._graph_item = GraphItem.deserialize(graph_item)
+        # else:
+        #     raise ValueError("Invalid graph_item: {}".format(graph_item))
 
         self._resource_spec = None
-        if isinstance(resource_spec, ResourceSpec):
-            self._resource_spec = resource_spec
-        elif isinstance(resource_spec, str) and os.path.exists(resource_spec):
-            self._resource_spec = ResourceSpec(resource_spec)
-        else:
-            raise ValueError("Invalid resource_spec: {}".format(resource_spec))
+        # if isinstance(resource_spec, ResourceSpec):
+        #     self._resource_spec = resource_spec
+        # elif isinstance(resource_spec, str) and os.path.exists(resource_spec):
+        #     self._resource_spec = ResourceSpec(resource_spec)
+        # else:
+        #     raise ValueError("Invalid resource_spec: {}".format(resource_spec))
 
     def update_graph_item(self, graph_item):
         """Change the default graph_item with this simulator."""
@@ -124,7 +124,6 @@ class SimulatorBase:
                 resource_spec = self._resource_spec
         if not strategy:
             raise ValueError('No strategy provided.')
-
         resource_item = ResourceItem(resource_spec)
         name_to_var = {var.name: var for var_op, var in graph_item.trainable_var_op_to_var.items()}
 

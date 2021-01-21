@@ -22,7 +22,7 @@ from autodist.kernel.common.utils import get_op_name
 from autodist.kernel.partitioner import PartitionerConfig
 from autodist.proto import strategy_pb2, synchronizers_pb2
 from autodist.strategy.base import Strategy
-from autodist.strategy.auto.item import VariableItem, PartItem
+from autodist.strategy.auto.item import VariableItem, PartItem, VarType
 from autodist.strategy.auto.ps_load_balancer import greedy_load_balancer, christy_load_balancer
 from autodist.strategy.auto.ar_group_assigner import chunk_group_assigner, christy_group_assigner, \
     ordered_balanced_group_assigner

@@ -189,7 +189,7 @@ class PredefinedSimulator(SimulatorBase):
             tuple(Dict): a dict of potential impacting factors for send and recv time, respectively.
         """
         bits_to_transfer = var_item.bits_to_transfer(self._batch_size_per_gpu, self._seq_len)
-        placement = var_item.device
+        placement = var_item.device(resource_item.device_resolver)
         p2p_bandwidth = resource_item.p2p_bandwidth
         max_num_local_gpu_replica = resource_item.max_num_local_gpu_replica
         num_local_replica_on_each_worker = [resource_item.num_local_gpu_replica_on(host)
