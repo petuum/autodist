@@ -15,7 +15,7 @@
 """AllReduce StrategyBuilder."""
 
 from autodist.strategy.base import Strategy, StrategyBuilder
-from autodist.proto import strategy_pb2, synchronizers_pb2
+from autodist.proto import strategy_pb2, synchronizers_pb2, compressor_pb2
 
 
 class AllReduce(StrategyBuilder):
@@ -85,6 +85,6 @@ class AllReduce(StrategyBuilder):
         node = strategy_pb2.Strategy.Node()
         node.var_name = var_name
         node.AllReduceSynchronizer.spec = synchronizers_pb2.AllReduceSynchronizer.Spec.Value(all_reduce_spec)
-        node.AllReduceSynchronizer.compressor = synchronizers_pb2.AllReduceSynchronizer.Compressor.Value(compressor)
+        node.compressor.type = compressor_pb2.Compressor.Type.Value(compressor)
         node.AllReduceSynchronizer.group = group
         return node

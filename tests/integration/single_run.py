@@ -10,6 +10,7 @@ from autodist.strategy.ps_strategy import PS
 from autodist.strategy.partitioned_all_reduce_strategy import PartitionedAR
 from autodist.strategy.uneven_partition_ps_strategy import UnevenPartitionedPS
 from autodist.strategy.random_axis_partition_all_reduce_strategy import RandomAxisPartitionAR
+from autodist.strategy.poseidon_strategy import Poseidon
 
 STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'PS': PS(sync=True),
@@ -23,7 +24,8 @@ STRATEGIES_FOR_DISTRIBUTED_TESTS = {
     'ParallaxProxy': Parallax(local_proxy_variable=True),
     'PartitionedAR': PartitionedAR(),
     'RandomAxisPartitionAR': RandomAxisPartitionAR(chunk_size=4),
-    'UnevenPartitionedPS': UnevenPartitionedPS(local_proxy_variable=True)
+    'UnevenPartitionedPS': UnevenPartitionedPS(local_proxy_variable=True),
+    'Poseidon': Poseidon(batch_size=32, local_proxy_variable=True, staleness=3)
 }
 
 
