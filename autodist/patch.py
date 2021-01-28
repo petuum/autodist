@@ -55,7 +55,6 @@ class PatchTensorFlow:
     @staticmethod
     def patch_var_reading():
         """It only works with tf.gradients but not tape.gradients."""
-
         def value(self):
             """A cached operation which reads the value of this variable."""
             if self._cached_value is not None:
