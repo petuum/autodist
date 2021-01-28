@@ -18,6 +18,7 @@ from collections import defaultdict
 from tensorflow.python import ops
 from tensorflow.python.framework import device_spec
 from tensorflow.python.ops import collective_ops
+from tensorflow.python.framework.ops import Tensor  # pylint: disable=unused-import
 
 import autodist
 from autodist.const import ENV

@@ -47,7 +47,7 @@ message AllReduceSynchronizer {
         NoneCompressor = 0;  // No compression
         HorovodCompressor = 1;  //  Horovod's Compression
         HorovodCompressorEF = 2;  // Horovod's Compression but with Error Feedback.
-        // PowerSGDCompressor = 3;  // PowerSGD compression algorithm (arxiv.org/abs/1905.13727)
+        PowerSGDCompressor = 3;  // PowerSGD compression algorithm (arxiv.org/abs/1905.13727)
     }
 
     Compressor compressor = 2;  // One of the compressors to choose

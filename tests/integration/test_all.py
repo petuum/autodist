@@ -38,6 +38,7 @@ strategies = [
     AllReduce(chunk_size=1, all_reduce_spec='NCCL', compressor='NoneCompressor'),
     AllReduce(chunk_size=1, all_reduce_spec='NCCL', compressor='HorovodCompressor'),
     AllReduce(chunk_size=1, all_reduce_spec='RING', compressor='HorovodCompressorEF'),
+    AllReduce(chunk_size=1, all_reduce_spec='RING', compressor='PowerSGDCompressor'),
     PSLoadBalancing(local_proxy_variable=True),
     Parallax(local_proxy_variable=True),
     PartitionedAR(),
