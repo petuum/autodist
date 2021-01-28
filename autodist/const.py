@@ -23,7 +23,6 @@ influence AutoDist behavior.
 from enum import Enum, auto
 
 import os
-
 # Below consts can be modified if necessary.
 # Note that if one of these consts requires frequent modification,
 # it should probably be moved into `ENV`.
@@ -80,10 +79,32 @@ class ENV(Enum):
     AUTODIST_INTERNAL_TF = auto(), lambda v: (v or "False") == "True"       # noqa: E731
     SYS_DATA_PATH = auto(), lambda v: v or ""                         # noqa: E731
     SYS_RESOURCE_PATH = auto(), lambda v: v or ""                     # noqa: E731
+    ADAPTDL = auto(), lambda v: v or ""                        # noqa: E731
 
     @property
     def val(self):
         """Return the output of the lambda on the system's value in the environment."""
-        # pylint: disable=invalid-envvar-value, unpacking-non-sequence
+        # pylint: disable=invalid-envvar-value, unpacking-non-sequence, comparison-with-callable
+        if self.name == "AUTODIST_WORKER" and self.ADAPTDL.val:
+            return self.val_autodist_worker()
         _, default_fn = self.value
         return default_fn(os.getenv(self.name))
+
+    # pylint: disable=import-outside-toplevel
+    @staticmethod
+    def val_autodist_worker():
+        """Evaluate autodist_worker in AdaptDL."""
+        import adaptdl.env as env
+        import socket
+        f = open(os.path.join(env.share_path(), "resource_spec.yml"))
+        lines = f.readlines()
+        line_chief = lines[1]
+        chief_addr = line_chief.split(":")[1].strip()
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        f.close()
+
+        if chief_addr != local_ip:
+            return local_ip
+        else:
+            return ""

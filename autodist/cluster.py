@@ -40,12 +40,15 @@ import warnings
 from abc import ABCMeta, abstractmethod
 
 import paramiko
-
 from autodist.const import DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, ENV
 from autodist.resource_spec import ResourceSpec
 from autodist.utils import logging
 
 warnings.filterwarnings(action='ignore', module=paramiko.__name__)
+IS_ADAPTDL = bool(ENV.ADAPTDL.val)
+if IS_ADAPTDL:
+    import adaptdl.collective as collective
+    import socket
 
 
 class Cluster(metaclass=ABCMeta):
@@ -144,6 +147,13 @@ class Cluster(metaclass=ABCMeta):
         Returns:
             int: Task index
         """
+        if IS_ADAPTDL:
+            logging.info(f"full address {self._full_addresses}")
+            logging.info(f"local address {self.get_local_address()}") 
+            return_ = [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
+            logging.info(f"returning {return_}")
+            return return_
+
         return [i for i, a in enumerate(self._full_addresses) if self.get_local_address() in a][0]
 
     def get_local_session_target(self):
@@ -200,7 +210,7 @@ class Cluster(metaclass=ABCMeta):
                         full_address, job_name, task_index
                     ))
                 else:  # remote
-                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
+                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file, chief=False)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
                     bash = envs + envs_cuda + ['python', '-u', file] + args
                     logging.info("Launching tf.server on %s" % address)
@@ -209,28 +219,102 @@ class Cluster(metaclass=ABCMeta):
                     # to ensure no gap for termination failure due to the empty proc list.
                     self.subprocesses.append(proc)
 
+    # pylint: disable=too-many-locals
+    def start_chief(self):
+        """Start tf.servers on all nodes. AdaptDL version. Run on chief."""
+        # pylint: disable=import-outside-toplevel
+        from autodist.utils import server_starter
+        envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
+        envs = ['{}={}'.format(k, v) for k, v in envs.items()]
+        module_name = server_starter.__name__
+        module_file = server_starter.__file__
+        for job_name, tasks in self.cluster_spec.items():
+            for task_index, full_address in enumerate(tasks):
+                address = full_address.split(':')[0]
+                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
+                        '--cpu_device_num=%d' % len(self._cpu_devices[address])]
+                if address in self._gpu_devices:
+                    envs_cuda = []
+                else:
+                    envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
+                if self.is_chief(address):
+                    json.dump(self.cluster_spec, open(os.path.join(DEFAULT_WORKING_DIR, 'cluster_spec.json'), 'w+'))
+                    cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
+                    # pylint: disable=subprocess-popen-preexec-fn
+                    logging.info("cmd at chief: %s", cmd)
+                    proc = subprocess.Popen(' '.join(cmd), shell=True, preexec_fn=os.setsid)
+                    self.subprocesses.append(proc)
+                    logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
+                        full_address, job_name, task_index
+                    ))
+        self.remote_pre_start_tf_server(None, tf_server_starter_filepath=module_file, chief=True)
+
+    # pylint: disable=too-many-locals
+    def start_worker(self):
+        """Start tf.servers on all nodes. AdaptDL version. Run on non-chief."""
+        # pylint: disable=import-outside-toplevel
+        from autodist.utils import server_starter
+        envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
+        envs = ['{}={}'.format(k, v) for k, v in envs.items()]
+        module_name = server_starter.__name__
+        module_file = server_starter.__file__
+        for job_name, tasks in self.cluster_spec.items():
+            for task_index, full_address in enumerate(tasks):
+                address = full_address.split(':')[0]
+                hostname = socket.gethostname()
+                local_ip = socket.gethostbyname(hostname)
+                if local_ip != address:
+                    continue
+                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
+                        '--cpu_device_num=%d' % len(self._cpu_devices[address])]
+                if address in self._gpu_devices:
+                    envs_cuda = []
+                else:
+                    envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
+                assert not self.is_chief(address)
+                self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file, chief=False)
+
+                cmd = envs + envs_cuda + [sys.executable, '-m', module_name] + args
+                logging.info("Launching tf.server on %s" % address)
+                proc = self.local_exec(cmd, address)
+                self.subprocesses.append(proc)
+                assert len(self.subprocesses) <= 1
+
     def terminate(self):
         """Terminate."""
         logging.debug('Terminating cluster...')
         for p in self.subprocesses:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
-    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, working_dir=DEFAULT_WORKING_DIR):
+    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, chief, working_dir=DEFAULT_WORKING_DIR):
         """
         Prepare to start a TensorFlow server remotely.
 
         Args:
             hostname (str): host name or address
             tf_server_starter_filepath (str): local starter file path
+            chief (bool): indicator that this process is on chief or not. Only apply with adaptDL.
             working_dir (str): remote working directory
         """
         logging.info("Copying necessary files to %s" % hostname)
-        self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname)
-        self.remote_file_write(
-            remote_path=os.path.join(working_dir, 'cluster_spec.json'),
-            data=json.dumps(self.cluster_spec),
-            hostname=hostname,
-        )
+        if IS_ADAPTDL:
+            # pylint: disable=unexpected-keyword-arg
+            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir,
+                             hostname=hostname, chief=chief)
+            self.remote_file_write(
+                remote_path=os.path.join(working_dir, 'cluster_spec.json'),
+                data=json.dumps(self.cluster_spec),
+                hostname=hostname,
+                chief=chief
+            )
+        else:
+            assert chief is False
+            self.remote_copy(local_path=tf_server_starter_filepath, remote_path=working_dir, hostname=hostname)
+            self.remote_file_write(
+                remote_path=os.path.join(working_dir, 'cluster_spec.json'),
+                data=json.dumps(self.cluster_spec),
+                hostname=hostname
+            )
 
     @abstractmethod
     def remote_exec(self, args, hostname):
@@ -291,6 +375,7 @@ class SSHCluster(Cluster):
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy)
         client.connect(hostname=hostname, port=ssh_config.port, username=ssh_config.username, pkey=ssh_config.pkey)
+        assert not IS_ADAPTDL
         yield client
         client.close()
 
@@ -372,3 +457,100 @@ class SSHCluster(Cluster):
 
         with self._get_sftp_client(hostname) as sftp:
             sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))
+
+
+class ADAPTDLCluster(Cluster):
+    """An AutoDist Cluster Based on AdaptDL."""
+
+    def __init__(self, resource_spec):
+        assert IS_ADAPTDL
+        super().__init__(resource_spec)
+
+    @staticmethod
+    def get_local_address():
+        """
+        Get the local (ip) address.
+
+        Returns:
+            str: local ip
+        """
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        return local_ip 
+
+    def remote_exec(self, args, hostname):
+        """
+        Execute a bash script remotely. disabled in AdaptDL.
+
+        Args:
+            args (list): bash commands
+            hostname (str): host name or address
+
+        Returns:
+            None
+        """
+        return
+
+    @staticmethod
+    def local_exec(args, hostname):
+        """
+        Execute a bash script locally.
+
+        Args:
+            args (list): bash commands
+            hostname (str): host name or address
+
+        Returns:
+            Process: process handle
+        """
+        full_cmd = ' '.join(args)
+        logging.info(full_cmd)
+        if ENV.AUTODIST_DEBUG_REMOTE.val:
+            return None
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
+        return proc
+
+    def remote_file_write(self, remote_path, data, hostname, **kwargs):
+        """
+        Write a remote file.
+
+        Args:
+            remote_path (str): remote file path
+            data (str): data to be written
+            hostname (str): host name or address
+            chief (boolean): whether this is autodist chief
+        """
+        if kwargs["chief"]:
+            _ = collective.broadcast(data)
+        else:
+            data_ = collective.broadcast(None)
+            f = open(remote_path, "w")
+            f.write(data_)
+            f.close()
+
+    def remote_copy(self, local_path, remote_path, hostname, **kwargs):
+        """
+        Copy a file to a remote directory.
+
+        Args:
+            local_path (str): local file path to be copied
+            remote_path (str): remote directory path
+            hostname (str): host name or address
+            chief (boolean): whether this is autodist chief
+        """
+        # Make sure directory exists
+
+        if kwargs["chief"]:
+            f = open(local_path, "r")
+            lines = f.readlines()
+            _ = collective.broadcast(lines)
+            f.close()
+        else:
+            lines = collective.broadcast(None)
+            if not os.path.isdir(remote_path):
+                os.mkdir(remote_path)
+            f = open(os.path.join(remote_path, os.path.basename(local_path)), "w")
+            for line in lines:
+                f.write(line)
+            f.close()

@@ -23,7 +23,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
-from autodist.cluster import Cluster, SSHCluster
+from autodist.cluster import Cluster, SSHCluster, ADAPTDLCluster
 from autodist.const import ENV
 from autodist.coordinator import Coordinator
 from autodist.graph_item import GraphItem
@@ -39,7 +39,8 @@ from autodist.utils import logging
 
 IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
 IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
-
+IS_ADAPTDL = bool(ENV.ADAPTDL.val)
+logging.info(f"is chief: {IS_AUTODIST_CHIEF}, is from adaptdl: {IS_ADAPTDL}")
 _DEFAULT_AUTODIST = {}
 
 
@@ -74,7 +75,10 @@ class _AutoDistInterface:
         self._remapper = None
         self._built = None  # Ref to the built GraphDef
 
-        self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
+        if IS_ADAPTDL:
+            self._cluster: Cluster = ADAPTDLCluster(self._resource_spec)
+        else:
+            self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
         self._coordinator: Coordinator
 
     @tf_contextlib.contextmanager
@@ -97,12 +101,18 @@ class _AutoDistInterface:
         """
         return self._strategy_builder.build(self._original_graph_item, self._resource_spec)
 
-    def _build_or_load_strategy(self):
+    def _build_or_load_strategy(self, load=False):
         self._original_graph_item.prepare()
         if IS_AUTODIST_CHIEF:
             s = self.build_strategy()
             s.serialize()
         else:
+            # At AdaptDL mode, when the worker pass through this before
+            # the chief has created the strategy, this should returns
+            # nothing. Later, when the chief has created the strategy,
+            # it can load it.
+            if IS_ADAPTDL and not load:
+                return None
             strategy_id = ENV.AUTODIST_STRATEGY_ID.val
             assert strategy_id
             s = base.Strategy.deserialize(strategy_id)
@@ -119,12 +129,22 @@ class _AutoDistInterface:
 
     def _setup(self, strategy):
         """Prepare for the execution."""
-        if IS_AUTODIST_CHIEF:
-            # we should only have one single coordinator for one single AutoDist() instance scope,
-            # even though we could have multiple strategies.
-            self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
-            self._cluster.start()
-            self._coordinator.launch_clients()
+        if not IS_ADAPTDL:
+            if IS_AUTODIST_CHIEF:
+                # we should only have one single coordinator for one single AutoDist() instance scope,
+                # even though we could have multiple strategies.
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
+                self._cluster.start()
+                self._coordinator.launch_clients()
+        else:
+            if IS_AUTODIST_CHIEF:
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
+                self._cluster.start_chief()
+                self._coordinator.launch_clients_chief()
+            else:
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
+                self._cluster.start_worker()
+                self._coordinator.launch_clients_worker()
         logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
 
 
@@ -139,6 +159,8 @@ class _GraphModeInterface(_AutoDistInterface):
     def _build(self):
         strategy = self._build_or_load_strategy()
         self._setup(strategy)  # Put it before transforming to allow multiple works to transform concurrently
+        if IS_ADAPTDL and not IS_AUTODIST_CHIEF:
+            strategy = self._build_or_load_strategy(load=True)
         compiled_strategy = self._compile_strategy(strategy)
         graph_transformer = GraphTransformer(
             compiled_strategy=compiled_strategy,
