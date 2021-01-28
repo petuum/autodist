@@ -1,0 +1,6 @@
+Simulator
+=========
+.. automodule:: autodist.simulator
+    :members:
+    :undoc-members:
+    :show-inheritance:

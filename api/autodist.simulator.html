@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Coordinator &mdash; AutoDist  documentation</title>
+  <title>Simulator &mdash; AutoDist  documentation</title>
   
 
   
@@ -41,8 +41,8 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Graph Item" href="autodist.graph_item.html" />
-    <link rel="prev" title="Const" href="autodist.const.html" /> 
+    <link rel="next" title="Strategy" href="autodist.strategy.html" />
+    <link rel="prev" title="Synchronizers Pb2" href="autodist.proto.synchronizers_pb2.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -149,7 +149,7 @@
 <li class="toctree-l3"><a class="reference internal" href="autodist.proto.synchronizers_pb2.html">Synchronizers Pb2</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="autodist.simulator.html">Simulator</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Simulator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autodist.strategy.html">Strategy</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="autodist.strategy.all_reduce_strategy.html">All Reduce Strategy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autodist.strategy.base.html">Base</a></li>
@@ -172,7 +172,7 @@
 <li class="toctree-l2"><a class="reference internal" href="autodist.autodist.html">Autodist</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autodist.cluster.html">Cluster</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autodist.const.html">Const</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Coordinator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autodist.coordinator.html">Coordinator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autodist.graph_item.html">Graph Item</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autodist.patch.html">Patch</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autodist.remapper.html">Remapper</a></li>
@@ -230,13 +230,13 @@
         
           <li><a href="autodist.html">Autodist</a> &raquo;</li>
         
-      <li>Coordinator</li>
+      <li>Simulator</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
           
-            <a href="../_sources/api/autodist.coordinator.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/api/autodist.simulator.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -249,38 +249,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-autodist.coordinator">
-<span id="coordinator"></span><h1>Coordinator<a class="headerlink" href="#module-autodist.coordinator" title="Permalink to this headline">¶</a></h1>
-<p>Coordinator.</p>
-<dl class="py class">
-<dt id="autodist.coordinator.Coordinator">
-<em class="property">class </em><code class="sig-name descname">Coordinator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">strategy</span></em>, <em class="sig-param"><span class="n">cluster</span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/coordinator.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.coordinator.Coordinator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Coordinator is responsible for running user code on a cluster.</p>
-<p>Has one main method, <cite>launch_clients</cite>, which runs the user’s code
-on every node of the cluster. Since all we pass to each worker are
-their worker id and the distribution strategy, this means that each
-worker will do its own full graph transformation based on the strategy.
-Then the workers will sync up when they run the graphs.</p>
-<p><cite>join</cite> is called by <cite>atexit</cite> so that we can try to make sure the
-remote processes are killed with the chief’s process is ended.</p>
-<dl class="py method">
-<dt id="autodist.coordinator.Coordinator.launch_clients">
-<code class="sig-name descname">launch_clients</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/coordinator.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.coordinator.Coordinator.launch_clients" title="Permalink to this definition">¶</a></dt>
-<dd><p>Launch the user’s code on each worker.</p>
-<p>Sets environment variables so that we run the correct AutoDist code paths on workers.
-(i.e., the non-chief code-paths).</p>
-<p>Store each new process created into the class so they can be monitored with <cite>join</cite>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="autodist.coordinator.Coordinator.join">
-<code class="sig-name descname">join</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/petuum/autodist/blob/master/autodist/coordinator.py"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#autodist.coordinator.Coordinator.join" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wait for all subprocesses of remote workers to be completed.</p>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="module-autodist.simulator">
+<span id="simulator"></span><h1>Simulator<a class="headerlink" href="#module-autodist.simulator" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -289,8 +259,8 @@ remote processes are killed with the chief’s process is ended.</p>
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="autodist.graph_item.html" class="btn btn-neutral float-right" title="Graph Item" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="autodist.const.html" class="btn btn-neutral float-left" title="Const" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="autodist.strategy.html" class="btn btn-neutral float-right" title="Strategy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="autodist.proto.synchronizers_pb2.html" class="btn btn-neutral float-left" title="Synchronizers Pb2" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

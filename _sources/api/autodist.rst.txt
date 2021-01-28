@@ -13,6 +13,7 @@ Subpackages
     autodist.checkpoint
     autodist.kernel
     autodist.proto
+    autodist.simulator
     autodist.strategy
     autodist.utils
 
