@@ -52,6 +52,7 @@ class Cluster(metaclass=ABCMeta):
     """Cluster manager for TensorFlow servers."""
 
     def __init__(self, resource_spec: ResourceSpec):
+        self._resource_spec = resource_spec
         self.cluster_spec = self._get_default_cluster_spec(resource_spec)
         self._cpu_devices = self._get_node_cpu_devices(resource_spec)
         self._gpu_devices = self._get_node_gpu_devices(resource_spec)
@@ -94,6 +95,9 @@ class Cluster(metaclass=ABCMeta):
         for device in resource_spec.gpu_devices:
             _gpu_devices.setdefault(device[0].split(':')[0], []).append(':'.join(device[0].split(':')[1:]))
         return _gpu_devices
+
+    def get_resource_spec(self):
+        return self._resource_spec
 
     def is_chief(self, address=None):
         """
@@ -196,14 +200,14 @@ class Cluster(metaclass=ABCMeta):
                     self.subprocesses.append(proc)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.
-                    logging.debug('$ local tf.server started at {}: job_name={} task_index={}'.format(
+                    logging.info('$ local tf.server started at {}: job_name={} task_index={}'.format(
                         full_address, job_name, task_index
                     ))
                 else:  # remote
-                    self.remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
+                    self._remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
                     file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
                     bash = envs + envs_cuda + ['python', '-u', file] + args
-                    logging.info("Launching tf.server on %s" % address)
+                    logging.info(f"Launching tf.server on {address} with {bash}")
                     proc = self.remote_exec(bash, hostname=address)
                     # The above line immediately follows the Popen
                     # to ensure no gap for termination failure due to the empty proc list.
@@ -215,7 +219,7 @@ class Cluster(metaclass=ABCMeta):
         for p in self.subprocesses:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
-    def remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, working_dir=DEFAULT_WORKING_DIR):
+    def _remote_pre_start_tf_server(self, hostname, tf_server_starter_filepath, working_dir=DEFAULT_WORKING_DIR):
         """
         Prepare to start a TensorFlow server remotely.
 
@@ -372,3 +376,223 @@ class SSHCluster(Cluster):
 
         with self._get_sftp_client(hostname) as sftp:
             sftp.put(localpath=local_path, remotepath=os.path.join(remote_path, os.path.basename(local_path)))
+
+
+# Ray related contents
+import asyncio
+import ray
+import yaml
+import socket
+import time
+
+
+@ray.remote
+class NodeActor(object):
+    def __init__(self):
+        self._ready_event = asyncio.Event()
+        self._proc_dict = {}
+
+    def send(self, clear=False):
+        self._ready_event.set()
+        if clear:
+            self._ready_event.clear()
+
+    async def wait(self, should_wait=True):
+        if should_wait:
+            await self._ready_event.wait()
+
+    def get_node_ip(self):
+        return ray._private.services.get_node_ip_address()
+
+    def execute_cmd(self, args):
+        cmd_list = []
+        full_cmd = ' '.join(cmd_list + args)
+        logging.info(f"exec remote cmd {full_cmd}")
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid)
+        pid = proc.pid
+        self._proc_dict[pid] = proc
+        return pid
+
+    def launch_tf_server(self, args):
+        cmd_list = []
+        full_cmd = ' '.join(cmd_list + args)
+        logging.info(f"launch {full_cmd}")
+        # pylint: disable=subprocess-popen-preexec-fn
+        proc = subprocess.Popen(full_cmd, shell=True, preexec_fn=os.setsid,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while True:
+            line = proc.stderr.readline().decode()
+            print(f"LOG {line}")
+            if "Started server with target" in line:
+                break
+
+        pid = proc.pid
+        self._proc_dict[pid] = proc
+        return pid
+
+    def join(self, pid):
+        self._proc_dict[pid].wait()
+        del self._proc_dict[pid]
+
+    def kill(self):
+        logging.info('Terminating the Ray node...')
+        for pid, p in self._proc_dict.items():
+            os.killpg(os.getpgid(pid), signal.SIGTERM)
+        self._proc_dict.clear()
+
+    def file_write(self, remote_path, data):
+        with open(remote_path, 'w') as f:
+            f.write(data)
+
+
+class RayCluster(Cluster):
+    """An AutoDist Cluster Based on Ray."""
+
+    def __init__(self, resource_spec=None):
+        # this should be the autodist chief
+        if not resource_spec:
+            # init the ray cluster
+            # create the resource spec from ray nodes
+            print("Init Ray Cluster")
+            self._init_ray_actors()
+            resource_spec = ResourceSpec(
+                resource_file=os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"))
+
+        super().__init__(resource_spec)
+
+    def _init_ray_actors(self):
+        ray_head_address = os.getenv("RAY_HEAD_ADDRESS")
+        if ray_head_address and not ray.is_initialized():
+            ray.init(address=ray_head_address)
+
+        self._actor_dict = {}
+        # temporarily just look for GPU resources
+        gpu_list = []
+        for node in ray.nodes():
+            print(f"Node {node}")
+            node_ip = node["NodeManagerAddress"]
+            gpu_count = node["Resources"].get("GPU")
+            if not gpu_count or not node["Alive"]:
+               continue
+            gpu_list.append((gpu_count, node_ip))
+
+        gpu_list = [t for t in reversed(sorted(gpu_list))]
+        print(f"gpu_list {gpu_list}")
+        for gpu_count, _ in gpu_list:
+            actor = NodeActor.options(num_gpus=gpu_count).remote()
+            actor.wait.remote()
+            node_ip = ray.get(actor.get_node_ip.remote())
+            print(f"node ip {node_ip}")
+            self._actor_dict[node_ip] = actor
+
+        chief_address = ray._private.services.get_node_ip_address()
+        print(f"chief address: {chief_address} ")
+        resource_dict = {}
+        resource_dict["nodes"] = []
+        for gpu_count, node_ip in gpu_list:
+            node_dict = {"address": node_ip, "gpus": [i for i in range(int(gpu_count))] }
+            if node_ip == chief_address:
+                node_dict["chief"] = True
+            resource_dict["nodes"].append(node_dict)
+
+        resource_yaml = yaml.dump(resource_dict)
+        print("resource yaml")
+        print(resource_yaml)
+        for node_ip, actor in self._actor_dict.items():
+            ray.get(actor.file_write.remote(
+                os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"), resource_yaml))
+
+    def remote_exec(self, args, hostname):
+        """
+        Execute a bash script remotely.
+
+        Args:
+            args (list): bash commands
+            hostname (str): means ip address in a ray cluster
+
+        Returns:
+            Process: process handle
+        """
+        return ray.get(self._actor_dict[hostname].execute_cmd.remote(args))
+
+    def remote_join(self, pid, hostname):
+        return ray.get(self._actor_dict[hostname].join.remote(pid))
+
+    def remote_file_write(self, remote_path, data, hostname):
+        """
+        Write a remote file.
+
+        Args:
+            remote_path (str): remote file path
+            data (str): data to be written
+            hostname (str): host name or address
+        """
+        ray.get(self._actor_dict[hostname].file_write.remote(remote_path, data))
+
+    def remote_copy(self, local_path, remote_path, hostname):
+        """
+        Copy a file to a remote directory.
+
+        Args:
+            local_path (str): local file path to be copied
+            remote_path (str): remote directory path
+            hostname (str): host name or address
+        """
+        # use remote_file_write internally
+        with open(local_path,"r") as f:
+            data = f.read()
+
+        self.remote_file_write(os.path.join(remote_path, os.path.basename(local_path)), data, hostname)
+
+    # pylint: disable=too-many-locals
+    def start(self):
+        """
+        Start tf.servers on all nodes.
+
+        Note that this only runs (and only should run) on the chief node.
+        """
+        # pylint: disable=import-outside-toplevel
+        from autodist.utils import server_starter
+
+        # atexit registration should be placed
+        #   - before the beginning of the start
+        #   (to ensure the clean termination if the start fails in its half way); and
+        #   - at the same module as the start
+        #   (to follow the python assumption that
+        #   lower level modules will normally be imported
+        #   before higher level modules and thus must be cleaned up later).
+        atexit.register(self.terminate)
+        envs = {ENV.AUTODIST_MIN_LOG_LEVEL.name: 'ERROR'}
+        envs = ['{}={}'.format(k, v) for k, v in envs.items()]
+        module_name = server_starter.__name__
+        module_file = server_starter.__file__
+
+        for job_name, tasks in self.cluster_spec.items():
+            for task_index, full_address in enumerate(tasks):
+                address, port = full_address.split(':')
+                args = ['--job_name=%s' % job_name, '--task_index=%d' % task_index,
+                        '--cpu_device_num=%d' % len(self._cpu_devices[address])]
+                if address in self._gpu_devices:
+                    envs_cuda = []
+                else:
+                    envs_cuda = ['CUDA_VISIBLE_DEVICES=""']
+
+                self._remote_pre_start_tf_server(address, tf_server_starter_filepath=module_file)
+                file = os.path.join(DEFAULT_WORKING_DIR, os.path.basename(module_file))
+                bash = envs + envs_cuda + ['python', '-u', file] + args
+                logging.info(f"Launching tf.server on {address} with {bash}")
+                # self.remote_exec(bash, hostname=address)
+                ray.get(self._actor_dict[address].launch_tf_server.remote(bash))
+
+        # time.sleep(10)
+
+    def terminate(self):
+        # call actor methods to cleanup tf servers
+        # cleanup ray actors
+        for node_ip, actor in self._actor_dict.items():
+            ray.get(actor.kill.remote())
+            ray.get(actor.send.remote())
+
+        self._actor_dict.clear()
+        ray.shutdown()

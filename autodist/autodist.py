@@ -23,9 +23,9 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops
 from tensorflow.python.util import tf_contextlib
 
-from autodist.cluster import Cluster, SSHCluster
-from autodist.const import ENV
-from autodist.coordinator import Coordinator
+from autodist.cluster import Cluster, SSHCluster, RayCluster
+from autodist.const import ENV, DEFAULT_WORKING_DIR
+from autodist.coordinator import Coordinator, RayCoordinator
 from autodist.graph_item import GraphItem
 from autodist.kernel.device.resolver import DeviceResolver
 from autodist.kernel.graph_transformer import GraphTransformer
@@ -64,17 +64,27 @@ class _AutoDistInterface:
     Ancestor of _V1Graph, _V2Graph, and _V2Eager -- the different ways to run TF code.
     """
 
-    def __init__(self, resource_spec_file, strategy_builder=None):
+    def __init__(self, resource_spec_file=None, strategy_builder=None):
         set_default_autodist(self)
-        self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
         self._strategy_builder = strategy_builder or PSLoadBalancing()
 
         self._original_graph_item = None
         self._transformed_graph_item = None
         self._remapper = None
         self._built = None  # Ref to the built GraphDef
-
-        self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
+        if resource_spec_file:
+            self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
+            self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
+        else :
+            # init ray cluster here and return the resource spec of Ray cluster
+            if IS_AUTODIST_CHIEF:
+                self._cluster: Cluster = RayCluster()
+                self._resource_spec = self._cluster.get_resource_spec()
+            else:
+                # create resource spec with the file in DEFAULT_WORKING_DIR
+                self._resource_spec = ResourceSpec(
+                    resource_file=os.path.join(DEFAULT_WORKING_DIR, "resource_spec.yml"))
+                self._cluster: Cluster = RayCluster(self._resource_spec)
         self._coordinator: Coordinator
 
     @tf_contextlib.contextmanager
@@ -122,7 +132,11 @@ class _AutoDistInterface:
         if IS_AUTODIST_CHIEF:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
-            self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
+            if isinstance(self._cluster, RayCluster):
+            # Switch to Ray coordinator temporarily
+                self._coordinator = RayCoordinator(strategy=strategy, cluster=self._cluster)
+            else:
+                self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
             self._cluster.start()
             self._coordinator.launch_clients()
         logging.info('Current PID {} belongs to address {}'.format(os.getpid(), self._cluster.get_local_address()))
