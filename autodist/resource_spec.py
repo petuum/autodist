@@ -52,7 +52,7 @@ class ResourceSpec:
         This would allow for even more intelligent strategy generation.
     """
 
-    def __init__(self, resource_file=None):
+    def __init__(self, resource_file=None, resource_info=None):
         """
         Construct a device graph containing the connectivity between devices.
 
@@ -75,7 +75,10 @@ class ResourceSpec:
         self.__network_bandwidth = dict()
 
         # set self.__devices
-        self._from_resource_info(resource_file)
+        if resource_info is not None:
+            self._from_resource_info(resource_info)
+        else:
+            self._from_resource_info_file(resource_file)
 
     @property
     def chief(self):
@@ -125,7 +128,7 @@ class ResourceSpec:
 
     @property
     def node_cpu_devices(self):
-        """Node_address-to-device_string mapping of all cpu devices."""        
+        """Node_address-to-device_string mapping of all cpu devices."""
         _cpu_devices = dict()
         for device in self.cpu_devices:
             _cpu_devices.setdefault(device[0].split(':')[0], []).append(device[0])
@@ -157,12 +160,7 @@ class ResourceSpec:
         if device_spec.name_string() not in self.__devices:
             self.__devices[device_spec.name_string()] = device_spec
 
-    def _from_resource_info(self, resource_file=None):
-        if resource_file is None:
-            # TODO(Hao): To deal with single-node GPUs
-            return
-
-        resource_info = yaml.safe_load(open(resource_file, 'r'))
+    def _from_resource_info(self, resource_info):
         num_nodes = len(resource_info.get('nodes', {}))
 
         for node in resource_info.pop('nodes', {}):
@@ -181,6 +179,14 @@ class ResourceSpec:
         # checks
         if self.__chief_address is None:
             raise ValueError('Must provide "chief: true" in one of the nodes in resource spec.')
+
+    def _from_resource_info_file(self, resource_file=None):
+        if resource_file is None:
+            # TODO(Hao): To deal with single-node GPUs
+            return
+
+        resource_info = yaml.safe_load(open(resource_file, 'r'))
+        self._from_resource_info(resource_info)
 
     def _parse_node(self, node, num_nodes):
         host_address = node['address']
