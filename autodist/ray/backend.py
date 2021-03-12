@@ -194,17 +194,9 @@ class TFTrainer:
 
         ray.get([replica.step.remote() for replica in self._replicas])
 
-    def validate(self):
-        pass
-
     def shutdown(self):
         for server in self._servers:
             ray.kill(server)
         for replica in self._replicas:
             ray.kill(replica)
 
-    def save(self):
-        pass
-
-    def restore(self):
-        pass
