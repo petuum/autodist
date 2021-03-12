@@ -14,4 +14,3 @@
 
 from .backend import TFTrainer
 from .backend import TFRunner
-

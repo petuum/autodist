@@ -29,8 +29,10 @@ from autodist.cluster import Cluster
 
 @ray.remote
 class TFServer:
+    """ Tensorflow Server Actor responsible for executing the actual ops and
+    storing parameters """
+
     def launch(self, cluster_spec, job_name, task_index, num_cpu_device):
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
         experimental = config_pb2.ConfigProto.Experimental(
             collective_nccl=True,
             collective_group_leader=DEFAULT_GROUP_LEADER)
@@ -49,6 +51,8 @@ class TFServer:
 
 
 class TFRunner:
+    """ Each TFRunner including master represents one replica of the training job """
+
     def __init__(self,
                  strategy_builder,
                  strategy,
@@ -83,6 +87,10 @@ class TFRunner:
 
 
 class TFTrainer:
+    """ TFTrainer represents one training job. It starts master replica first,
+    fetches the strategy from it and spawns the rest of the replicas if needed.
+    """
+
     def __init__(self, strategy_builder, model, data_creator, train_step):
 
         # Go from resource_info -> ResourceSpec -> ClusterSpec
@@ -140,6 +148,8 @@ class TFTrainer:
                 self._replicas.append(spawn_replica(replica_host, None, strategy, env))
 
     def _start_tf_servers(self, resource_spec):
+        """ Launch TF server actors on each Ray nodes """
+
         cluster_spec = Cluster._get_default_cluster_spec(resource_spec)
         cpu_devices = Cluster._get_node_cpu_devices(resource_spec)
         gpu_devices = Cluster._get_node_gpu_devices(resource_spec)
@@ -160,6 +170,8 @@ class TFTrainer:
         return servers
 
     def _get_resource_info(self):
+        """ Create resource_info from resources available to the Ray cluster"""
+
         resource_info = {}
         resource_info["nodes"] = []
         chief_address = ray._private.services.get_node_ip_address()
@@ -179,6 +191,7 @@ class TFTrainer:
 
     def train(self):
         """Runs a training epoch."""
+
         ray.get([replica.step.remote() for replica in self._replicas])
 
     def validate(self):
