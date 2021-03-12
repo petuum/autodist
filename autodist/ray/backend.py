@@ -21,7 +21,7 @@ from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.training.server_lib import ClusterSpec, Server
 
 from autodist import AutoDist
-from autodist.const import ENV, DEFAULT_PORT_RANGE, DEFAULT_WORKING_DIR, DEFAULT_GROUP_LEADER
+from autodist.const import ENV, DEFAULT_GROUP_LEADER
 from autodist.resource_spec import ResourceSpec
 from autodist.resource_spec import DeviceSpec
 from autodist.cluster import Cluster
@@ -30,6 +30,7 @@ from autodist.cluster import Cluster
 @ray.remote
 class TFServer:
     def launch(self, cluster_spec, job_name, task_index, num_cpu_device):
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
         experimental = config_pb2.ConfigProto.Experimental(
             collective_nccl=True,
             collective_group_leader=DEFAULT_GROUP_LEADER)
@@ -56,7 +57,6 @@ class TFRunner:
                  train_step,
                  env,
                  resource_spec):
-
         # Setup environment vars for the new runner
         for var, val in env.items():
             if type(val) == bool:
@@ -84,6 +84,7 @@ class TFRunner:
 
 class TFTrainer:
     def __init__(self, strategy_builder, model, data_creator, train_step):
+
         # Go from resource_info -> ResourceSpec -> ClusterSpec
         self._resource_spec = ResourceSpec(
             resource_info=self._get_resource_info())
@@ -141,14 +142,16 @@ class TFTrainer:
     def _start_tf_servers(self, resource_spec):
         cluster_spec = Cluster._get_default_cluster_spec(resource_spec)
         cpu_devices = Cluster._get_node_cpu_devices(resource_spec)
+        gpu_devices = Cluster._get_node_gpu_devices(resource_spec)
 
         servers = []
         for job_name, tasks in cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 node_ip, _ = full_address.split(':')
-                # Make sure we spawn one per Ray node
+                # Make sure we spawn one server per Ray node
+                # Give it all the GPUs on that node
                 server = TFServer.options(resources={f"node:{node_ip}": 0.01},
-                                               num_cpus=1).remote()
+                                          num_gpus=gpu_devices.get('node_ip', 0)).remote()
                 servers.append(server)
                 server.launch.remote(cluster_spec, 
                                      job_name, 
