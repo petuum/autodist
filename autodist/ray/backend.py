@@ -161,7 +161,7 @@ class TFTrainer:
                 # Make sure we spawn one server per Ray node
                 # Give it all the GPUs on that node
                 server = TFServer.options(resources={f"node:{node_ip}": 0.01},
-                                          num_gpus=gpu_devices.get('node_ip', 0)).remote()
+                                          num_gpus=len(gpu_devices.get(node_ip, []))).remote()
                 servers.append(server)
                 server.launch.remote(cluster_spec, 
                                      job_name, 
