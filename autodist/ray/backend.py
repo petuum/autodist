@@ -68,6 +68,9 @@ class TFRunner:
             else:
                 os.environ[var] = val
 
+        # Set Ray backend to True
+        os.environ[ENV.AUTODIST_RAY_BACKEND.name] = "True"
+
         # We either pass a strategy_builder or directly a strategy
         self._autodist = AutoDist(strategy_builder=strategy_builder,
                                   strategy=strategy,
@@ -79,8 +82,7 @@ class TFRunner:
 
     def step(self):
         with self._g.as_default(), self._autodist.scope():
-            l, t, b = self._session.run(self._fetches)
-            print(f"loss: {l}\tb:{b}")
+            return self._session.run(self._fetches)
 
     def get_strategy(self):
         return self._autodist._strategy
@@ -92,6 +94,9 @@ class TFTrainer:
     """
 
     def __init__(self, strategy_builder, model, data_creator, train_step):
+
+        # Set Ray backend
+        os.environ[ENV.AUTODIST_RAY_BACKEND.name] = "True"
 
         # Go from resource_info -> ResourceSpec -> ClusterSpec
         self._resource_spec = ResourceSpec(
@@ -119,7 +124,7 @@ class TFTrainer:
         master = spawn_replica(ray._private.services.get_node_ip_address(), strategy_builder)
 
         # Add master to replicas list because it also acts as one of the clients
-        self._replicas.append(master)
+        self._replicas.append((ray._private.services.get_node_ip_address(), master))
 
         # Fetch the strategy directly from the master
         strategy = ray.get(master.get_strategy.remote())
@@ -145,7 +150,7 @@ class TFTrainer:
                     ENV.SYS_DATA_PATH.name: ENV.SYS_DATA_PATH.val,
                     ENV.SYS_RESOURCE_PATH.name: ENV.SYS_RESOURCE_PATH.val,
                 }
-                self._replicas.append(spawn_replica(replica_host, None, strategy, env))
+                self._replicas.append((replica_host, spawn_replica(replica_host, None, strategy, env)))
 
     def _start_tf_servers(self, resource_spec):
         """ Launch TF server actors on each Ray nodes """
@@ -170,7 +175,7 @@ class TFTrainer:
         return servers
 
     def _get_resource_info(self):
-        """ Create resource_info from resources available to the Ray cluster"""
+        """ Create resource_info from resources available to the Ray cluster """
 
         resource_info = {}
         resource_info["nodes"] = []
@@ -190,13 +195,14 @@ class TFTrainer:
         return resource_info
 
     def train(self):
-        """Runs a training epoch."""
-
-        ray.get([replica.step.remote() for replica in self._replicas])
+        """ Runs a training epoch """
+        
+        return dict(zip([replica[0] for replica in self._replicas],
+                        ray.get([replica[1].step.remote() for replica in self._replicas])))
 
     def shutdown(self):
         for server in self._servers:
             ray.kill(server)
         for replica in self._replicas:
-            ray.kill(replica)
+            ray.kill(replica[1])
 

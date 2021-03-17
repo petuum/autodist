@@ -80,6 +80,7 @@ class ENV(Enum):
     AUTODIST_INTERNAL_TF = auto(), lambda v: (v or "False") == "True"       # noqa: E731
     SYS_DATA_PATH = auto(), lambda v: v or ""                         # noqa: E731
     SYS_RESOURCE_PATH = auto(), lambda v: v or ""                     # noqa: E731
+    AUTODIST_RAY_BACKEND = auto(), lambda v: True if v == "True" else False
 
     @property
     def val(self):

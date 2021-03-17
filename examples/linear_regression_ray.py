@@ -76,7 +76,10 @@ def train_step(model, inputs, outputs):
 def main(_):
     trainer = TFTrainer(PS(), Model, data_creator, train_step)
     for epoch in range(EPOCHS):
-        trainer.train()
+        per_replica = trainer.train()
+        for host, output in per_replica.items():
+            l, _, b = output
+            print(f"node:{host}\tloss: {l}\tb:{b}")
 
     trainer.shutdown()
 

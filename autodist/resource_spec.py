@@ -22,6 +22,7 @@ import paramiko
 
 from autodist.utils import logging
 from autodist.utils.network import is_loopback_address, is_local_address
+from autodist.const import ENV
 
 
 class Connectivity(Enum):
@@ -210,7 +211,8 @@ class ResourceSpec:
             gpu = DeviceSpec(host_address, host_cpu, DeviceType.GPU, gpu_index)
             self._add_device(gpu)
         self.__ssh_group[host_address] = node.get('ssh_config')
-        if self.__ssh_group[host_address] is None and self.__chief_address != host_address:
+        if self.__ssh_group[host_address] is None and self.__chief_address != host_address \
+                and not ENV.AUTODIST_RAY_BACKEND.val:
             raise ValueError("Need to define SSH groups for all non-chief nodes.")
         # handle network bandwidth (optional)
         if node.get('network_bandwidth'):

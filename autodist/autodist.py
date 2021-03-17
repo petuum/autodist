@@ -66,10 +66,8 @@ class _AutoDistInterface:
         set_default_autodist(self)
         if resource_spec_file is not None:
             self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
-            self._on_ray = False
         else:
             self._resource_spec = resource_spec
-            self._on_ray = True  # Autodist running on Ray
         self._strategy_builder = strategy_builder or PSLoadBalancing()
 
         self._original_graph_item = None
@@ -125,7 +123,7 @@ class _AutoDistInterface:
 
     def _setup(self, strategy):
         """Prepare for the execution."""
-        if not bool(ENV.AUTODIST_WORKER.val) and not self._on_ray:
+        if not bool(ENV.AUTODIST_WORKER.val) and not ENV.AUTODIST_RAY_BACKEND.val:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
             self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
