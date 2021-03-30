@@ -37,12 +37,15 @@ def data_creator():
     outputs = inputs * TRUE_W + TRUE_b + noises
 
     class MyIterator:
+        def __init__(self, data):
+            self.data = data
         def initialize(self):
             return tf.zeros(1)
         def get_next(self):
             # a fake one
-            return inputs
-    return MyIterator().get_next(), outputs
+            return self.data 
+
+    return MyIterator(inputs), outputs
 
 
 class Model:
@@ -72,9 +75,11 @@ def train_step(model, inputs, outputs):
     train_op = optimizer.apply_gradients(zip(gradients, vs))
     return loss, train_op, model.b
 
+def model_creator():
+    return Model()
 
 def main(_):
-    trainer = TFTrainer(PS(), Model, data_creator, train_step)
+    trainer = TFTrainer(PS(), train_step, model_creator, data_creator)
     for epoch in range(EPOCHS):
         per_replica = trainer.train()
         for host, output in per_replica.items():

@@ -33,6 +33,7 @@ class TFServer:
     storing parameters """
 
     def launch(self, cluster_spec, job_name, task_index, num_cpu_device):
+        """ Start the TF server. This call blocks. """
         experimental = config_pb2.ConfigProto.Experimental(
             collective_nccl=True,
             collective_group_leader=DEFAULT_GROUP_LEADER)
@@ -56,9 +57,9 @@ class TFRunner:
     def __init__(self,
                  strategy_builder,
                  strategy,
-                 model,
-                 data_creator,
                  train_step,
+                 model_fn,
+                 input_fn,
                  env,
                  resource_spec):
         # Setup environment vars for the new runner
@@ -77,14 +78,29 @@ class TFRunner:
                                   resource_spec=resource_spec)
         self._g = v1.Graph()
         with self._g.as_default(), self._autodist.scope():
-            self._fetches = train_step(model(), *data_creator())
+            # model_fn and input_fn can return multiple things, pack and
+            # unpack them into the step function
+            models = model_fn()
+            inputs = input_fn()
+            if isinstance(inputs, tuple):
+                iterators = (i.get_next() if hasattr(i, 'get_next')
+                             else i for i in inputs)
+            else:
+                iterators = (inputs.get_next(),)
+
+            if not isinstance(models, tuple):
+                models = (models,)
+
+            self._fetches = train_step(*models, *iterators)
             self._session = self._autodist.create_distributed_session()
 
     def step(self):
+        """ Take one training step """
         with self._g.as_default(), self._autodist.scope():
             return self._session.run(self._fetches)
 
     def get_strategy(self):
+        """ fetch the current strategy """
         return self._autodist._strategy
 
 
@@ -93,7 +109,7 @@ class TFTrainer:
     fetches the strategy from it and spawns the rest of the replicas if needed.
     """
 
-    def __init__(self, strategy_builder, model, data_creator, train_step):
+    def __init__(self, strategy_builder, train_step, model_fn, input_fn):
 
         # Set Ray backend
         os.environ[ENV.AUTODIST_RAY_BACKEND.name] = "True"
@@ -113,9 +129,9 @@ class TFTrainer:
                                 num_cpus=1)(TFRunner)
             return Runner.remote(strategy_builder,
                                  strategy,
-                                 model,
-                                 data_creator,
                                  train_step,
+                                 model_fn,
+                                 input_fn,
                                  env,
                                  self._resource_spec)
 
@@ -201,6 +217,7 @@ class TFTrainer:
                         ray.get([replica[1].step.remote() for replica in self._replicas])))
 
     def shutdown(self):
+        """ Shutdown all the actors and the training job """
         for server in self._servers:
             ray.kill(server)
         for replica in self._replicas:
