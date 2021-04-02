@@ -81,6 +81,8 @@ common_flags.define_common_bert_flags()
 FLAGS = flags.FLAGS
 
 
+
+
 def get_pretrain_dataset_fn(input_file_pattern, seq_length,
                             max_predictions_per_seq, global_batch_size,
                             num_replicas_in_sync):
@@ -119,7 +121,8 @@ def run_customized_training(strategy,
                             epochs,
                             initial_lr,
                             input_files,
-                            train_batch_size):
+                            train_batch_size,
+                            num_replicas):
     def _get_pretrain_model():
         """Gets a pretraining model."""
         pretrain_model, core_model = bert_models.pretrain_model(
@@ -131,12 +134,10 @@ def run_customized_training(strategy,
     time_callback = keras_utils.TimeHistory(
         train_batch_size * steps_per_loop, 1)
 
-    ray.init(address="auto")
-
     train_input_fn = get_pretrain_dataset_fn(input_files, max_seq_length,
                                              max_predictions_per_seq,
                                              train_batch_size,
-                                             len(ray.nodes()))
+                                             num_replicas)
 
     ray_utils.run_ray_job(strategy=strategy,
                           model_fn=_get_pretrain_model,
@@ -149,18 +150,15 @@ def run_customized_training(strategy,
                           sub_model_export_name='pretrained/bert_model',
                           custom_callbacks=[time_callback])
 
-    return None
 
-
-def run_bert_pretrain(strategy, gpu_num=1, node_num=1):
+def run_bert_pretrain(strategy, num_gpus=1, num_nodes=1):
     """Runs BERT pre-training."""
 
     bert_config = modeling.BertConfig.from_json_file(FLAGS.bert_config_file)
     logging.info(
-        'Training using customized training loop TF 2.0 with distrubuted'
-        'strategy.')
+        'Training using customized training loop TF 2.0 with AutoDist')
 
-    return run_customized_training(
+    run_customized_training(
         strategy,
         bert_config,
         FLAGS.max_seq_length,
@@ -171,7 +169,8 @@ def run_bert_pretrain(strategy, gpu_num=1, node_num=1):
         FLAGS.num_train_epochs,
         FLAGS.learning_rate,
         FLAGS.input_files,
-        FLAGS.train_batch_size * 2)
+        FLAGS.train_batch_size * num_nodes * num_gpus,
+        num_nodes * num_gpus)
 
 
 def main(_):
@@ -187,12 +186,31 @@ def main(_):
     else:
         os.environ['AUTODIST_PATCH_TF'] = 'False'
 
+    strategy_table = {'PS': PS(local_proxy_variable=FLAGS.proxy),
+                      'PSLoadBalancing': PSLoadBalancing(local_proxy_variable=FLAGS.proxy),
+                      'PartitionedPS': PartitionedPS(local_proxy_variable=FLAGS.proxy),
+                      'AllReduce': AllReduce(chunk_size=FLAGS.chunk_size),
+                      'Parallax': Parallax(chunk_size=FLAGS.chunk_size,
+                                           local_proxy_variable=FLAGS.proxy)}
+
+    if FLAGS.autodist_strategy not in strategy_table: 
+        raise ValueError(
+                f"the strategy can be only from {','.join(strategy_table.keys())}")
+
     logdir = '/tmp/logs'
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    # start running
-    run_bert_pretrain(PS())
+    ray.init(address="auto")
+    num_nodes = len(ray.nodes())
+    num_gpus_per_node = max(1, ray.nodes()[0]['Resources'].get('GPU', 0))
+    
+    logname = 'bert_strategy_{}_node_{}_gpu_{}_patch_{}_proxy_{}'.format(
+        FLAGS.autodist_strategy, num_nodes, num_gpus_per_node, FLAGS.autodist_patch_tf, FLAGS.proxy)
+
+    logging.get_absl_handler().use_absl_log_file(logname, logdir)
+
+    run_bert_pretrain(strategy_table[FLAGS.autodist_strategy], num_gpus_per_node, num_nodes)
 
 
 if __name__ == '__main__':

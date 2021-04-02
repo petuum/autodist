@@ -20,7 +20,6 @@ import ray
 import numpy as np
 import tensorflow as tf
 
-from autodist.strategy import PS, PSLoadBalancing, PartitionedPS, AllReduce, Parallax
 from autodist.ray import TFTrainer, TFRunner
 
 def run_ray_job(strategy,
@@ -75,11 +74,12 @@ def run_ray_job(strategy,
 
     trainer = TFTrainer(strategy, _replicated_step, model_fn, input_fn)
 
-    for epoch in range(2):
+    for epoch in range(epochs):
         per_replica = trainer.train()
-        for host, output in per_replica.items():
-            _, l = output
-            print(f"node:{host}\tloss: {l}")
+        avg_loss = sum(val[1] for val in per_replica.values()) / len(per_replica)
+        print(f"Avg loss: {avg_loss}")
+
+    trainer.save("/tmp/ckpt/", checkpoint_prefix="bert")
 
     trainer.shutdown()
 

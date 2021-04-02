@@ -25,6 +25,7 @@ from autodist.const import ENV, DEFAULT_GROUP_LEADER
 from autodist.resource_spec import ResourceSpec
 from autodist.resource_spec import DeviceSpec
 from autodist.cluster import Cluster
+from autodist.checkpoint.saver import Saver as autodist_saver
 
 
 @ray.remote
@@ -62,6 +63,7 @@ class TFRunner:
                  input_fn,
                  env,
                  resource_spec):
+        self._epoch = 0
         # Setup environment vars for the new runner
         for var, val in env.items():
             if type(val) == bool:
@@ -86,22 +88,36 @@ class TFRunner:
                 iterators = (i.get_next() if hasattr(i, 'get_next')
                              else i for i in inputs)
             else:
-                iterators = (inputs.get_next(),)
+                iterators = (inputs.get_next() if hasattr(inputs, 'get_next')
+                             else inputs,)
 
             if not isinstance(models, tuple):
                 models = (models,)
 
+            # Create saver before creating the session
+            self._saver = autodist_saver()
             self._fetches = train_step(*models, *iterators)
             self._session = self._autodist.create_distributed_session()
 
     def step(self):
-        """ Take one training step """
+        self._epoch += 1
+        """ Take one training step. """
         with self._g.as_default(), self._autodist.scope():
             return self._session.run(self._fetches)
 
     def get_strategy(self):
-        """ fetch the current strategy """
+        """ Fetch the current strategy. """
         return self._autodist._strategy
+
+    def save(self, checkpoint_dir, checkpoint_prefix=""):
+        """ Save a TF checkpoint. """
+        self._saver.save(self._session, checkpoint_dir + checkpoint_prefix, global_step=self._epoch + 1)
+        self._saver.restore(self._session, tf.train.latest_checkpoint(checkpoint_dir))
+        
+    def restore(self, checkpoint_dir):
+        """ Restore the checkpoint from the directory. """
+        with self._g.as_default(), self._autodist.scope():
+            self._saver.restore(self._session, tf.train.latest_checkpoint(checkpoint_dir))
 
 
 class TFTrainer:
@@ -137,13 +153,13 @@ class TFTrainer:
 
 
         # Start the master worker, let it build a strategy from the strategy builder
-        master = spawn_replica(ray._private.services.get_node_ip_address(), strategy_builder)
+        self._master = spawn_replica(ray._private.services.get_node_ip_address(), strategy_builder)
 
         # Add master to replicas list because it also acts as one of the clients
-        self._replicas.append((ray._private.services.get_node_ip_address(), master))
+        self._replicas.append((ray._private.services.get_node_ip_address(), self._master))
 
         # Fetch the strategy directly from the master
-        strategy = ray.get(master.get_strategy.remote())
+        strategy = ray.get(self._master.get_strategy.remote())
 
         assert strategy is not None
 
@@ -169,7 +185,7 @@ class TFTrainer:
                 self._replicas.append((replica_host, spawn_replica(replica_host, None, strategy, env)))
 
     def _start_tf_servers(self, resource_spec):
-        """ Launch TF server actors on each Ray nodes """
+        """ Launch TF server actors on each Ray nodes. """
 
         cluster_spec = Cluster._get_default_cluster_spec(resource_spec)
         cpu_devices = Cluster._get_node_cpu_devices(resource_spec)
@@ -191,7 +207,7 @@ class TFTrainer:
         return servers
 
     def _get_resource_info(self):
-        """ Create resource_info from resources available to the Ray cluster """
+        """ Create resource_info from resources available to the Ray cluster. """
 
         resource_info = {}
         resource_info["nodes"] = []
@@ -211,13 +227,21 @@ class TFTrainer:
         return resource_info
 
     def train(self):
-        """ Runs a training epoch """
+        """ Runs one training epoch. """
         
         return dict(zip([replica[0] for replica in self._replicas],
                         ray.get([replica[1].step.remote() for replica in self._replicas])))
 
+    def save(self, checkpoint_dir, checkpoint_prefix):
+        """ Save a checkpoint with prefix. """
+        ray.get(self._master.save.remote(checkpoint_dir, checkpoint_prefix))
+
+    def restore(self, checkpoint_dir):
+        """ Restore the latest checkpoint from directory. """
+        ray.get(self._master.restore.remote(checkpoint_dir))
+
     def shutdown(self):
-        """ Shutdown all the actors and the training job """
+        """ Shutdown all the actors and the training job. """
         for server in self._servers:
             ray.kill(server)
         for replica in self._replicas:
