@@ -72,6 +72,10 @@ flags.DEFINE_boolean(
     name='autodist_patch_tf',
     default=True,
     help='AUTODIST_PATCH_TF')
+flags.DEFINE_string(
+    'address',
+    'auto',
+    'IP address of the Ray head node')
 
 flags.DEFINE_boolean(name='proxy', default=True, help='turn on off the proxy')
 
@@ -79,8 +83,6 @@ flags.DEFINE_boolean(name='proxy', default=True, help='turn on off the proxy')
 common_flags.define_common_bert_flags()
 
 FLAGS = flags.FLAGS
-
-
 
 
 def get_pretrain_dataset_fn(input_file_pattern, seq_length,
@@ -177,7 +179,7 @@ def main(_):
     assert tf.version.VERSION.startswith('2.')
 
     if not FLAGS.model_dir:
-        FLAGS.model_dir = '/tmp/bert/'
+        FLAGS.model_dir = "/tmp/ckpt/"
 
     #########################################################################
     # Construct AutoDist with ResourceSpec for Different Strategies
@@ -201,7 +203,7 @@ def main(_):
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    ray.init(address="auto")
+    ray.init(address=FLAGS.address)
     num_nodes = len(ray.nodes())
     num_gpus_per_node = max(1, ray.nodes()[0]['Resources'].get('GPU', 0))
     

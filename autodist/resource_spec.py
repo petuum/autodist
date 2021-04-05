@@ -62,6 +62,7 @@ class ResourceSpec:
 
         Args:
             resource_file (string, optional): path to the file containing the resource info. Defaults to None.
+            resource_info (optional): resource_info object, used if resource_file is None
         """
         # protected properties
         self.__devices = dict()

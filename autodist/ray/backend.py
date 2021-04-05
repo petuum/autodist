@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+"""Autodist Ray Backend, includes TFRunner and TFTrainer implementations."""
 import os
-import ray
 import tensorflow as tf
 import tensorflow.compat.v1 as v1
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.training.server_lib import ClusterSpec, Server
+import ray
 
 from autodist import AutoDist
 from autodist.const import ENV, DEFAULT_GROUP_LEADER
@@ -30,11 +30,11 @@ from autodist.checkpoint.saver import Saver as autodist_saver
 
 @ray.remote
 class TFServer:
-    """ Tensorflow Server Actor responsible for executing the actual ops and
-    storing parameters """
+    """Tensorflow Server Actor responsible for executing the actual ops."""
 
-    def launch(self, cluster_spec, job_name, task_index, num_cpu_device):
-        """ Start the TF server. This call blocks. """
+    @staticmethod
+    def launch(cluster_spec, job_name, task_index, num_cpu_device):
+        """Start the TF server. This call blocks."""
         experimental = config_pb2.ConfigProto.Experimental(
             collective_nccl=True,
             collective_group_leader=DEFAULT_GROUP_LEADER)
@@ -53,9 +53,9 @@ class TFServer:
 
 
 class TFRunner:
-    """ Each TFRunner including master represents one replica of the training job """
+    """Each TFRunner including master represents one replica of the training job."""
 
-    def __init__(self,
+    def __init__(self,  # pylint: disable=too-many-arguments
                  strategy_builder,
                  strategy,
                  train_step,
@@ -66,7 +66,7 @@ class TFRunner:
         self._epoch = 0
         # Setup environment vars for the new runner
         for var, val in env.items():
-            if type(val) == bool:
+            if isinstance(val, bool):
                 os.environ[var] = "True" if val else "False"
             else:
                 os.environ[var] = val
@@ -100,30 +100,28 @@ class TFRunner:
             self._session = self._autodist.create_distributed_session()
 
     def step(self):
+        """Take one training step."""
         self._epoch += 1
-        """ Take one training step. """
         with self._g.as_default(), self._autodist.scope():
             return self._session.run(self._fetches)
 
     def get_strategy(self):
-        """ Fetch the current strategy. """
+        """Fetch the current strategy."""
         return self._autodist._strategy
 
     def save(self, checkpoint_dir, checkpoint_prefix=""):
-        """ Save a TF checkpoint. """
+        """Save a TF checkpoint."""
         self._saver.save(self._session, checkpoint_dir + checkpoint_prefix, global_step=self._epoch + 1)
         self._saver.restore(self._session, tf.train.latest_checkpoint(checkpoint_dir))
-        
+
     def restore(self, checkpoint_dir):
-        """ Restore the checkpoint from the directory. """
+        """Restore the checkpoint from the directory."""
         with self._g.as_default(), self._autodist.scope():
             self._saver.restore(self._session, tf.train.latest_checkpoint(checkpoint_dir))
 
 
 class TFTrainer:
-    """ TFTrainer represents one training job. It starts master replica first,
-    fetches the strategy from it and spawns the rest of the replicas if needed.
-    """
+    """TFTrainer represents one training job."""
 
     def __init__(self, strategy_builder, train_step, model_fn, input_fn):
 
@@ -137,20 +135,19 @@ class TFTrainer:
         self._replicas = []   # Replica actors, also contains master
 
         # Start TF Servers on each node of the cluster
-        self._servers = self._start_tf_servers(self._resource_spec)
+        self._start_tf_servers()
 
-        def spawn_replica(replica_host, strategy_builder, strategy=None, env={}):
+        def spawn_replica(replica_host, strategy_builder, strategy=None, env=None):
             # Enforce actor placement on the provided host
-            Runner = ray.remote(resources={f"node:{replica_host}": 0.01},
+            runner = ray.remote(resources={f"node:{replica_host}": 0.01},
                                 num_cpus=1)(TFRunner)
-            return Runner.remote(strategy_builder,
+            return runner.remote(strategy_builder,
                                  strategy,
                                  train_step,
                                  model_fn,
                                  input_fn,
-                                 env,
+                                 env if env is not None else {},
                                  self._resource_spec)
-
 
         # Start the master worker, let it build a strategy from the strategy builder
         self._master = spawn_replica(ray._private.services.get_node_ip_address(), strategy_builder)
@@ -184,14 +181,13 @@ class TFTrainer:
                 }
                 self._replicas.append((replica_host, spawn_replica(replica_host, None, strategy, env)))
 
-    def _start_tf_servers(self, resource_spec):
-        """ Launch TF server actors on each Ray nodes. """
+    def _start_tf_servers(self):
+        """Launch TF server actors on each Ray nodes."""
+        cluster_spec = Cluster._get_default_cluster_spec(self._resource_spec)
+        cpu_devices = Cluster._get_node_cpu_devices(self._resource_spec)
+        gpu_devices = Cluster._get_node_gpu_devices(self._resource_spec)
 
-        cluster_spec = Cluster._get_default_cluster_spec(resource_spec)
-        cpu_devices = Cluster._get_node_cpu_devices(resource_spec)
-        gpu_devices = Cluster._get_node_gpu_devices(resource_spec)
-
-        servers = []
+        self._servers = []
         for job_name, tasks in cluster_spec.items():
             for task_index, full_address in enumerate(tasks):
                 node_ip, _ = full_address.split(':')
@@ -199,16 +195,15 @@ class TFTrainer:
                 # Give it all the GPUs on that node
                 server = TFServer.options(resources={f"node:{node_ip}": 0.01},
                                           num_gpus=len(gpu_devices.get(node_ip, []))).remote()
-                servers.append(server)
+                self._servers.append(server)
                 server.launch.remote(cluster_spec, 
                                      job_name, 
                                      task_index,
                                      len(cpu_devices[node_ip]))
-        return servers
 
-    def _get_resource_info(self):
-        """ Create resource_info from resources available to the Ray cluster. """
-
+    @staticmethod
+    def _get_resource_info():
+        """Create resource_info from resources available to the Ray cluster."""
         resource_info = {}
         resource_info["nodes"] = []
         chief_address = ray._private.services.get_node_ip_address()
@@ -227,23 +222,21 @@ class TFTrainer:
         return resource_info
 
     def train(self):
-        """ Runs one training epoch. """
-        
+        """Runs one training epoch."""
         return dict(zip([replica[0] for replica in self._replicas],
                         ray.get([replica[1].step.remote() for replica in self._replicas])))
 
     def save(self, checkpoint_dir, checkpoint_prefix):
-        """ Save a checkpoint with prefix. """
+        """Save a checkpoint with prefix."""
         ray.get(self._master.save.remote(checkpoint_dir, checkpoint_prefix))
 
     def restore(self, checkpoint_dir):
-        """ Restore the latest checkpoint from directory. """
+        """Restore the latest checkpoint from directory."""
         ray.get(self._master.restore.remote(checkpoint_dir))
 
     def shutdown(self):
-        """ Shutdown all the actors and the training job. """
+        """Shutdown all the actors and the training job."""
         for server in self._servers:
             ray.kill(server)
         for replica in self._replicas:
             ray.kill(replica[1])
-
