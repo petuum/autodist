@@ -41,6 +41,16 @@ from autodist.utils import logging
 _DEFAULT_AUTODIST = {}
 
 
+def IS_AUTODIST_WORKER():  # noqa
+    """True if current worker is just a worker."""
+    return bool(ENV.AUTODIST_WORKER.val)
+
+
+def IS_AUTODIST_CHIEF():  # noqa
+    """True if current worker is the Chief."""
+    return not IS_AUTODIST_WORKER()
+
+
 def set_default_autodist(o):
     """Set the AutoDist object the scope of which you are in."""
     global _DEFAULT_AUTODIST
@@ -101,7 +111,7 @@ class _AutoDistInterface:
 
     def _build_or_load_strategy(self):
         self._original_graph_item.prepare()
-        if not bool(ENV.AUTODIST_WORKER.val):
+        if IS_AUTODIST_CHIEF():
             s = self.build_strategy()
             s.serialize()
         elif self._strategy is not None:
@@ -123,7 +133,7 @@ class _AutoDistInterface:
 
     def _setup(self, strategy):
         """Prepare for the execution."""
-        if not bool(ENV.AUTODIST_WORKER.val) and not ENV.AUTODIST_RAY_BACKEND.val:
+        if IS_AUTODIST_CHIEF() and not ENV.AUTODIST_RAY_BACKEND.val:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
             self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
