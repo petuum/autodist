@@ -72,10 +72,26 @@ def run_ray_job(strategy,
     def input_fn():
         return _get_input_iterator(train_input_fn, strategy)
 
+    def _run_callbacks_on_batch_begin(batch):
+        """Runs custom callbacks at the start of every step."""
+        if not custom_callbacks:
+            return
+        for callback in custom_callbacks:
+            callback.on_batch_begin(batch)
+
+    def _run_callbacks_on_batch_end(batch):
+        """Runs custom callbacks at the end of every step."""
+        if not custom_callbacks:
+            return
+        for callback in custom_callbacks:
+            callback.on_batch_end(batch)
+
     trainer = TFTrainer(strategy, _replicated_step, model_fn, input_fn)
 
     for epoch in range(epochs):
+        _run_callbacks_on_batch_begin(epoch)
         per_replica = trainer.train()
+        _run_callbacks_on_batch_end(epoch)
         avg_loss = sum(val[1] for val in per_replica.values()) / len(per_replica)
         print(f"Avg loss: {avg_loss}")
 
