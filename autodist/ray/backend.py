@@ -102,8 +102,7 @@ class TFRunner:
     def step(self):
         """Take one training step."""
         self._epoch += 1
-        with self._g.as_default(), self._autodist.scope():
-            return self._session.run(self._fetches)
+        return self._session.run(self._fetches)
 
     def get_strategy(self):
         """Fetch the current strategy."""
