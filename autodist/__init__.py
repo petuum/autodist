@@ -26,7 +26,8 @@ from .utils import logging
 logging.set_verbosity(ENV.AUTODIST_MIN_LOG_LEVEL.val)
 
 # Enforce abspath
-if sys.argv and os.path.exists(sys.argv[0]) and not os.path.isabs(sys.argv[0]):
+if sys.argv and os.path.exists(sys.argv[0]) and not os.path.isabs(sys.argv[0]) \
+        and "ray" not in sys.modules:
     logging.error('AutoDist requires the script path "{}" to be an absolute path to be shared across workers. '
                   'Now exit.'.format(sys.argv[0]))
     sys.exit(1)

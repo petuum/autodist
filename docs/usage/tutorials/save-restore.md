@@ -114,7 +114,7 @@ from autodist.autodist import IS_AUTODIST_CHIEF
 # Some training code
 ...
 
-if IS_AUTODIST_CHIEF:
+if IS_AUTODIST_CHIEF():
     saver.save(session, checkpoint_name, global_step=epoch)
     print('Checkpoint saved at {%s}' % checkpoint_name)
 else:

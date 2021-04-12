@@ -77,7 +77,7 @@ def main(autodist):
         # Only save the model on master node if autodist is used with NFS.
         checkpoint_suffix = 'c10'
         checkpoint_name = checkpoint_dir + checkpoint_suffix
-        if IS_AUTODIST_CHIEF:
+        if IS_AUTODIST_CHIEF():
             saver.save(session, checkpoint_name, global_step=epoch)
             print('Checkpoint saved at {%s}' % checkpoint_name)
         else:
@@ -85,7 +85,7 @@ def main(autodist):
 
         # check the checkpoint existence only on master node
         checkpoint = checkpoint_name + '-' + str(epoch)
-        if IS_AUTODIST_CHIEF:
+        if IS_AUTODIST_CHIEF():
             assert(os.path.exists(checkpoint + '.meta')) # meta file
             assert(os.path.exists(checkpoint + '.index'))  # meta file
             assert(os.path.exists(checkpoint + '.data-00000-of-00001'))  # meta file

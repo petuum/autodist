@@ -37,10 +37,18 @@ from autodist.strategy import base
 from autodist.strategy.ps_lb_strategy import PSLoadBalancing
 from autodist.utils import logging
 
-IS_AUTODIST_WORKER = bool(ENV.AUTODIST_WORKER.val)
-IS_AUTODIST_CHIEF = not IS_AUTODIST_WORKER
 
 _DEFAULT_AUTODIST = {}
+
+
+def IS_AUTODIST_WORKER():  # noqa
+    """True if current worker is just a worker."""
+    return bool(ENV.AUTODIST_WORKER.val)
+
+
+def IS_AUTODIST_CHIEF():  # noqa
+    """True if current worker is the Chief."""
+    return not IS_AUTODIST_WORKER()
 
 
 def set_default_autodist(o):
@@ -64,9 +72,12 @@ class _AutoDistInterface:
     Ancestor of _V1Graph, _V2Graph, and _V2Eager -- the different ways to run TF code.
     """
 
-    def __init__(self, resource_spec_file, strategy_builder=None):
+    def __init__(self, resource_spec_file=None, strategy_builder=None, resource_spec=None, strategy=None):
         set_default_autodist(self)
-        self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
+        if resource_spec_file is not None:
+            self._resource_spec = ResourceSpec(resource_file=resource_spec_file)
+        else:
+            self._resource_spec = resource_spec
         self._strategy_builder = strategy_builder or PSLoadBalancing()
 
         self._original_graph_item = None
@@ -76,6 +87,7 @@ class _AutoDistInterface:
 
         self._cluster: Cluster = SSHCluster(self._resource_spec)  # which can be also defined with strategy
         self._coordinator: Coordinator
+        self._strategy = strategy  # Directly passed strategy to Ray workers if not None
 
     @tf_contextlib.contextmanager
     def _scope(self):
@@ -99,9 +111,11 @@ class _AutoDistInterface:
 
     def _build_or_load_strategy(self):
         self._original_graph_item.prepare()
-        if IS_AUTODIST_CHIEF:
+        if IS_AUTODIST_CHIEF():
             s = self.build_strategy()
             s.serialize()
+        elif self._strategy is not None:
+            s = self._strategy
         else:
             strategy_id = ENV.AUTODIST_STRATEGY_ID.val
             assert strategy_id
@@ -119,7 +133,7 @@ class _AutoDistInterface:
 
     def _setup(self, strategy):
         """Prepare for the execution."""
-        if IS_AUTODIST_CHIEF:
+        if IS_AUTODIST_CHIEF() and not ENV.AUTODIST_RAY_BACKEND.val:
             # we should only have one single coordinator for one single AutoDist() instance scope,
             # even though we could have multiple strategies.
             self._coordinator = Coordinator(strategy=strategy, cluster=self._cluster)
@@ -148,6 +162,7 @@ class _GraphModeInterface(_AutoDistInterface):
         self._transformed_graph_item = graph_transformer.transform()
         self._remapper = Remapper(graph_transformer, self._transformed_graph_item)
         self._built = self._original_graph_item.graph.as_graph_def()
+        self._strategy = strategy
 
     def is_built(self):
         """
